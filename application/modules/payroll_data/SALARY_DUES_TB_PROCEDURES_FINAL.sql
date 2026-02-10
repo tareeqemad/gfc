@@ -1,0 +1,385 @@
+-- ============================================
+-- Procedures متوافقة مع rmodel->get() و rmodel->delete()
+-- ============================================
+
+-- =========================
+-- 1) إجمالي المستحقات (ALL)
+-- =========================
+CREATE OR REPLACE FUNCTION GET_EMP_TOTAL_DUE (
+    P_EMP_NO IN NUMBER
+) RETURN NUMBER
+IS
+    V_TOTAL NUMBER := 0;
+BEGIN
+    SELECT NVL(SUM(M.VALUE), 0)
+      INTO V_TOTAL
+      FROM DATA.SALARY M
+     WHERE M.EMP_NO = P_EMP_NO
+       AND M.CON_NO IN (SELECT NO FROM CONSTANT WHERE CON_G = 48);
+
+    RETURN V_TOTAL;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN 0;
+END GET_EMP_TOTAL_DUE;
+/
+
+
+-- Wrapper للاسم القديم (إذا عندك شاشات/كود قديم)
+CREATE OR REPLACE FUNCTION GET_EMP_PAYABLE_AMOUNT (
+    P_EMP_NO IN NUMBER
+) RETURN NUMBER
+IS
+BEGIN
+    RETURN GET_EMP_TOTAL_DUE(P_EMP_NO);
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN 0;
+END GET_EMP_PAYABLE_AMOUNT;
+/
+
+
+-- =========================
+-- 2) إجمالي المسدد (ALL)
+-- =========================
+CREATE OR REPLACE FUNCTION GET_EMP_TOTAL_PAID_ALL (
+    P_EMP_NO IN NUMBER
+) RETURN NUMBER
+IS
+    V_TOTAL NUMBER := 0;
+BEGIN
+    SELECT NVL(SUM(PAY), 0)
+      INTO V_TOTAL
+      FROM SALARY_DUES_TB
+     WHERE EMP_NO = P_EMP_NO
+       AND NVL(STATUS, 1) = 1;
+
+    RETURN V_TOTAL;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN 0;
+END GET_EMP_TOTAL_PAID_ALL;
+/
+
+
+-- (اختياري للتقارير فقط) إجمالي المسدد حتى شهر
+CREATE OR REPLACE FUNCTION GET_EMP_TOTAL_PAID (
+    P_EMP_NO   IN NUMBER,
+    P_TO_MONTH IN NUMBER DEFAULT NULL
+) RETURN NUMBER
+IS
+    V_TOTAL    NUMBER := 0;
+    V_TO_MONTH NUMBER;
+BEGIN
+    IF P_TO_MONTH IS NULL THEN
+        SELECT TO_NUMBER(TO_CHAR(SYSDATE,'YYYYMM')) INTO V_TO_MONTH FROM DUAL;
+    ELSE
+        V_TO_MONTH := P_TO_MONTH;
+    END IF;
+
+    SELECT NVL(SUM(PAY), 0)
+      INTO V_TOTAL
+      FROM SALARY_DUES_TB
+     WHERE EMP_NO = P_EMP_NO
+       AND NVL(STATUS, 1) = 1
+       AND THE_MONTH BETWEEN 202404 AND V_TO_MONTH;
+
+    RETURN V_TOTAL;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN 0;
+END GET_EMP_TOTAL_PAID;
+/
+
+
+-- =========================
+-- 3) المتبقي (ALL)
+-- =========================
+CREATE OR REPLACE FUNCTION GET_EMP_TOTAL_BALANCE (
+    P_EMP_NO IN NUMBER
+) RETURN NUMBER
+IS
+BEGIN
+    RETURN GET_EMP_TOTAL_DUE(P_EMP_NO)
+         - GET_EMP_TOTAL_PAID_ALL(P_EMP_NO);
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN 0;
+END GET_EMP_TOTAL_BALANCE;
+/
+
+
+-- Wrapper قديم: اسم واضح في الشاشات القديمة
+CREATE OR REPLACE FUNCTION SALARY_SUM_VALUE(EMP_NO_IN NUMBER) RETURN NUMBER
+IS
+BEGIN
+    RETURN GET_EMP_TOTAL_DUE(EMP_NO_IN);
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN 0;
+END SALARY_SUM_VALUE;
+/
+
+
+-- مجموع المسدد (ALL) للاستخدام القديم
+CREATE OR REPLACE FUNCTION SALARY_DUES_TB_SUM(EMP_NO_IN NUMBER) RETURN NUMBER
+IS
+    RES NUMBER := 0;
+BEGIN
+    SELECT NVL(SUM(PAY), 0)
+      INTO RES
+      FROM SALARY_DUES_TB
+     WHERE EMP_NO = EMP_NO_IN
+       AND NVL(STATUS, 1) = 1;
+
+    RETURN RES;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN 0;
+END SALARY_DUES_TB_SUM;
+/
+
+
+-- =========================
+-- 4) INSERT (تحقق سلة واحدة)
+-- =========================
+CREATE OR REPLACE PROCEDURE SALARY_DUES_TB_INSERT (
+    EMP_NO_IN    IN SALARY_DUES_TB.EMP_NO%TYPE,
+    THE_MONTH_IN IN SALARY_DUES_TB.THE_MONTH%TYPE,
+    PAY_TYPE_IN  IN SALARY_DUES_TB.PAY_TYPE%TYPE,
+    PAY_IN       IN SALARY_DUES_TB.PAY%TYPE,
+    NOTE_IN      IN SALARY_DUES_TB.NOTE%TYPE,
+    MSG_OUT      OUT VARCHAR2
+) AS
+    V_DUE     NUMBER := 0;
+    V_PAID    NUMBER := 0;
+    V_BALANCE NUMBER := 0;
+    V_SEQ     NUMBER;
+    V_MONTH   NUMBER;
+BEGIN
+    IF NVL(PAY_IN, 0) <= 0 THEN
+        MSG_OUT := 'قيمة الدفعة يجب أن تكون أكبر من صفر';
+        RETURN;
+    END IF;
+
+    -- الشهر للتخزين فقط
+    IF THE_MONTH_IN IS NULL THEN
+        SELECT TO_NUMBER(TO_CHAR(SYSDATE,'YYYYMM')) INTO V_MONTH FROM DUAL;
+    ELSE
+        V_MONTH := THE_MONTH_IN;
+    END IF;
+
+    -- سلة واحدة
+    V_DUE     := GET_EMP_TOTAL_DUE(EMP_NO_IN);
+    V_PAID    := GET_EMP_TOTAL_PAID_ALL(EMP_NO_IN);
+    V_BALANCE := V_DUE - V_PAID;
+
+    IF PAY_IN > V_BALANCE THEN
+        MSG_OUT := 'الدفعة تتجاوز المتبقي. المتبقي=' || TO_CHAR(V_BALANCE);
+        RETURN;
+    END IF;
+
+    V_SEQ := SALARY_DUES_TB_SEQ.NEXTVAL;
+
+    INSERT INTO SALARY_DUES_TB (
+        SERIAL, EMP_NO, THE_MONTH, PAY_TYPE, PAY,
+        THE_DATE, NOTE, ENTRY_USER, STATUS
+    ) VALUES (
+        V_SEQ, EMP_NO_IN, V_MONTH, PAY_TYPE_IN, PAY_IN,
+        SYSDATE, NOTE_IN, USER_PKG.GET_USER_ID, 1
+    );
+
+    MSG_OUT := '1';
+
+EXCEPTION
+    WHEN OTHERS THEN
+        MSG_OUT := SQLERRM;
+END SALARY_DUES_TB_INSERT;
+/
+
+
+-- =========================
+-- 5) UPDATE (تحقق سلة واحدة)
+-- =========================
+CREATE OR REPLACE PROCEDURE SALARY_DUES_TB_UPDATE (
+    SERIAL_IN    IN SALARY_DUES_TB.SERIAL%TYPE,
+    EMP_NO_IN    IN SALARY_DUES_TB.EMP_NO%TYPE,
+    THE_MONTH_IN IN SALARY_DUES_TB.THE_MONTH%TYPE,
+    PAY_TYPE_IN  IN SALARY_DUES_TB.PAY_TYPE%TYPE,
+    PAY_IN       IN SALARY_DUES_TB.PAY%TYPE,
+    NOTE_IN      IN SALARY_DUES_TB.NOTE%TYPE,
+    MSG_OUT      OUT VARCHAR2
+) AS
+    V_DUE     NUMBER := 0;
+    V_PAID    NUMBER := 0;
+    V_BALANCE NUMBER := 0;
+    V_MONTH   NUMBER;
+BEGIN
+    IF NVL(PAY_IN, 0) <= 0 THEN
+        MSG_OUT := 'قيمة الدفعة يجب أن تكون أكبر من صفر';
+        RETURN;
+    END IF;
+
+    IF THE_MONTH_IN IS NULL THEN
+        SELECT TO_NUMBER(TO_CHAR(SYSDATE,'YYYYMM')) INTO V_MONTH FROM DUAL;
+    ELSE
+        V_MONTH := THE_MONTH_IN;
+    END IF;
+
+    -- سلة واحدة
+    V_DUE := GET_EMP_TOTAL_DUE(EMP_NO_IN);
+
+    -- إجمالي المسدد (ALL) بدون السطر الحالي
+    SELECT NVL(SUM(PAY), 0)
+      INTO V_PAID
+      FROM SALARY_DUES_TB
+     WHERE EMP_NO = EMP_NO_IN
+       AND NVL(STATUS, 1) = 1
+       AND SERIAL <> SERIAL_IN;
+
+    V_BALANCE := V_DUE - V_PAID;
+
+    IF PAY_IN > V_BALANCE THEN
+        MSG_OUT := 'التعديل يتجاوز المتبقي. المتبقي=' || TO_CHAR(V_BALANCE);
+        RETURN;
+    END IF;
+
+    UPDATE SALARY_DUES_TB
+       SET EMP_NO      = EMP_NO_IN,
+           THE_MONTH   = V_MONTH,
+           PAY_TYPE    = PAY_TYPE_IN,
+           PAY         = PAY_IN,
+           NOTE        = NOTE_IN,
+           UPDATE_USER = USER_PKG.GET_USER_ID,
+           UPDATE_DATE = SYSDATE
+     WHERE SERIAL = SERIAL_IN;
+
+    MSG_OUT := TO_CHAR(SQL%ROWCOUNT);
+
+EXCEPTION
+    WHEN OTHERS THEN
+        MSG_OUT := SQLERRM;
+END SALARY_DUES_TB_UPDATE;
+/
+
+
+-- =========================
+-- 6) DELETE = CANCEL (متوافق مع rmodel->delete() الذي يستخدم :ID)
+-- =========================
+CREATE OR REPLACE PROCEDURE SALARY_DUES_TB_DELETE (
+    ID       IN SALARY_DUES_TB.SERIAL%TYPE,  -- rmodel->delete() يرسل :ID
+    MSG_OUT  OUT VARCHAR2
+) AS
+BEGIN
+    UPDATE SALARY_DUES_TB
+       SET STATUS      = 0,
+           CANCEL_USER = USER_PKG.GET_USER_ID,
+           CANCEL_DATE = SYSDATE,
+           CANCEL_NOTE = 'Canceled'
+     WHERE SERIAL = ID;
+
+    MSG_OUT := TO_CHAR(SQL%ROWCOUNT);
+
+EXCEPTION
+    WHEN OTHERS THEN
+        MSG_OUT := SQLERRM;
+END SALARY_DUES_TB_DELETE;
+/
+
+
+-- =========================
+-- 7) GET (متوافق مع rmodel->get() الذي يستخدم :ID و :REF_CURSOR_OUT)
+-- =========================
+CREATE OR REPLACE PROCEDURE SALARY_DUES_TB_GET (
+    ID            IN  SALARY_DUES_TB.SERIAL%TYPE,  -- rmodel->get() يرسل :ID
+    REF_CURSOR_OUT OUT SYS_REFCURSOR,              -- rmodel->get() يتوقع :REF_CURSOR_OUT
+    MSG_OUT       OUT VARCHAR2
+) AS
+BEGIN
+    OPEN REF_CURSOR_OUT FOR
+        SELECT M.*,
+               EMP_PKG.GET_EMP_NAME(M.EMP_NO) EMP_NO_NAME,
+               SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(537, M.PAY_TYPE) PAY_TYPE_NAME
+          FROM SALARY_DUES_TB M
+         WHERE M.SERIAL = ID;
+
+    MSG_OUT := '1';
+
+EXCEPTION
+    WHEN OTHERS THEN
+        MSG_OUT := SQLERRM;
+END SALARY_DUES_TB_GET;
+/
+
+
+-- =========================
+-- 8) LIST (يعرض totals الجديدة + ترتيب حسب الموظف)
+-- =========================
+CREATE OR REPLACE PROCEDURE SALARY_DUES_TB_LIST (
+    INSQL       IN VARCHAR2,
+    OFFSET      NUMBER,
+    ROW         NUMBER,
+    REF_CUR_OUT OUT SYS_REFCURSOR,
+    MSG_OUT     OUT VARCHAR2
+) AS
+    XSQL VARCHAR2(4000);
+BEGIN
+    XSQL := '
+    SELECT * FROM (
+        SELECT M.*,
+               EMP_PKG.GET_EMP_NAME(M.EMP_NO) EMP_NO_NAME,
+               SETTING_PKG.GCC_BRANCHES_TB_GET_NAME(EMP_PKG.GET_EMP_BRANCH(M.EMP_NO)) AS BRANCH_NAME,
+               SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(537, M.PAY_TYPE) PAY_TYPE_NAME,
+               SALARYFORM.GET_EMP_TOTAL_DUE(M.EMP_NO) TOTAL_DUE,
+               SALARYFORM.GET_EMP_TOTAL_PAID_ALL(M.EMP_NO) TOTAL_PAID,
+               SALARYFORM.GET_EMP_TOTAL_BALANCE(M.EMP_NO) TOTAL_BALANCE,
+               ROW_NUMBER() OVER (ORDER BY M.EMP_NO, M.THE_MONTH, M.PAY_TYPE, M.SERIAL DESC) RN
+          FROM SALARY_DUES_TB M ' || NVL(INSQL, '') || '
+    )
+    WHERE RN BETWEEN ' || (OFFSET + 1) || ' AND ' || ROW || '
+    ORDER BY RN';
+
+    OPEN REF_CUR_OUT FOR XSQL;
+    MSG_OUT := '1';
+
+EXCEPTION
+    WHEN OTHERS THEN
+        MSG_OUT := SQLERRM;
+END SALARY_DUES_TB_LIST;
+/
+
+
+-- =========================
+-- 9) SUMMARY (سلة واحدة)
+-- =========================
+CREATE OR REPLACE PROCEDURE SALARY_DUES_SUMMARY_LIST (
+    EMP_NO_IN    IN NUMBER,
+    THE_MONTH_IN IN NUMBER DEFAULT NULL,  -- للتوافق فقط
+    REF_CUR_OUT  OUT SYS_REFCURSOR,
+    MSG_OUT      OUT VARCHAR2
+) AS
+    V_TOTAL_DUE  NUMBER := 0;
+    V_TOTAL_PAID NUMBER := 0;
+BEGIN
+    V_TOTAL_DUE  := GET_EMP_TOTAL_DUE(EMP_NO_IN);
+    V_TOTAL_PAID := GET_EMP_TOTAL_PAID_ALL(EMP_NO_IN);
+
+    OPEN REF_CUR_OUT FOR
+        SELECT
+            V_TOTAL_DUE AS TOTAL_DUE,
+            V_TOTAL_PAID AS TOTAL_PAID,
+            (V_TOTAL_DUE - V_TOTAL_PAID) AS TOTAL_BALANCE
+        FROM DUAL;
+
+    MSG_OUT := '1';
+
+EXCEPTION
+    WHEN OTHERS THEN
+        MSG_OUT := SQLERRM;
+END SALARY_DUES_SUMMARY_LIST;
+/

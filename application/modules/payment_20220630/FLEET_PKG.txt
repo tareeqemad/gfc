@@ -1,0 +1,1733 @@
+PACKAGE BODY FLEET_PKG is
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CARS_TB_INSERT(CAR_NUM_IN  IN CARS_TB.CAR_NUM%TYPE ,
+                             CAR_CLASS_IN  IN CARS_TB.CAR_CLASS%TYPE ,
+                             CAR_MODEL_IN  IN CARS_TB.CAR_MODEL%TYPE ,
+                             FUEL_TYPE_IN  IN CARS_TB.FUEL_TYPE%TYPE ,
+                             MONTHLY_ALLOCATED_IN  IN CARS_TB.MONTHLY_ALLOCATED%TYPE ,
+                             MONTHLY_ALLOCATED_DATE_IN  IN CARS_TB.MONTHLY_ALLOCATED_DATE%TYPE ,
+                             CAR_OWNER_IN  IN CARS_TB.CAR_OWNER%TYPE ,
+                             CAR_OWNER_NO_IN  IN CARS_TB.CAR_OWNER_NO%TYPE ,
+                             BRANCH_ID_IN  IN CARS_TB.BRANCH_ID%TYPE ,
+                             YEAR_PRODUCE_IN  IN CARS_TB.YEAR_PRODUCE%TYPE ,
+                             ENGINE_POWER_IN  IN CARS_TB.ENGINE_POWER%TYPE ,
+                             DEFINITION_CODE_IN  IN CARS_TB.DEFINITION_CODE%TYPE ,
+                             USER_JOB_IN  IN CARS_TB.USER_JOB%TYPE ,
+                             USED_PURPOSE_IN  IN CARS_TB.USED_PURPOSE%TYPE ,
+
+                             HINTS_IN  IN CARS_TB.HINTS%TYPE ,
+                             CAR_COST_HOURE_IN  IN CARS_TB.CAR_COST_HOURE%TYPE ,
+                             CAR_OWNERSHIP_IN  IN CARS_TB.CAR_OWNERSHIP%TYPE ,
+                             PRODUCTION_DATE_IN  IN CARS_TB.PRODUCTION_DATE%TYPE ,
+                             SERVICE_DATE_IN  IN CARS_TB.SERVICE_DATE%TYPE ,
+                             SELF_WEIGHT_IN  IN CARS_TB.SELF_WEIGHT%TYPE ,
+                             TOTAL_WEIGHT_IN  IN CARS_TB.TOTAL_WEIGHT%TYPE ,
+                             LICENSE_TYPE_IN  IN CARS_TB.LICENSE_TYPE%TYPE ,
+                             CUSTODY_TYPE_IN  IN CARS_TB.CUSTODY_TYPE%TYPE ,
+                             ENTRY_USER_IN  IN CARS_TB.ENTRY_USER%TYPE ,
+                             PRICE_IN  IN CARS_TB.PRICE%TYPE ,
+                             DEPRECIATION_RATE_IN  IN CARS_TB.DEPRECIATION_RATE%TYPE ,
+                             INSURANCE_START_DATE_IN  IN CARS_TB.INSURANCE_START_DATE%TYPE ,
+                             INSURANCE_END_DATE_IN  IN CARS_TB.INSURANCE_END_DATE%TYPE ,
+                             INSURANCE_VALUE_IN  IN CARS_TB.INSURANCE_VALUE%TYPE ,
+                             LETTER_PER_KILOMETER_IN  IN CARS_TB.LETTER_PER_KILOMETER%TYPE ,
+                             CAR_LICENSE_START_IN  IN CARS_TB.CAR_LICENSE_START%TYPE ,
+                             CAR_LICENSE_END_IN  IN CARS_TB.CAR_LICENSE_END%TYPE ,
+                             CAR_LICENSE_VALUE_IN  IN CARS_TB.CAR_LICENSE_VALUE%TYPE ,
+                             CAR_LICENSE_NUMBER_IN  IN CARS_TB.CAR_LICENSE_NUMBER%TYPE ,
+                             DATE_OF_LICENSE_IN  IN CARS_TB.DATE_OF_LICENSE%TYPE ,
+                             INSURANCE_NUMBER_IN  IN CARS_TB.INSURANCE_NUMBER%TYPE ,
+                             INSURANCE_TYPE_IN  IN CARS_TB.INSURANCE_TYPE%TYPE ,
+                             INSURANCE_DATE_IN  IN CARS_TB.INSURANCE_DATE%TYPE ,
+                             LICENSE_COMBANY_IN  IN CARS_TB.LICENSE_COMBANY%TYPE ,
+                             CAR_CASE_IN  IN CARS_TB.CAR_CASE%TYPE ,
+                             MACHINE_CASE_IN  IN CARS_TB.MACHINE_CASE%TYPE ,							 
+                             MSG_OUT OUT VARCHAR2)
+
+
+
+
+                             AS
+                             SEQ_VAL NUMBER ;
+    BEGIN
+
+    SEQ_VAL  := CARS_TB_SEQ.NEXTVAL;
+    INSERT INTO CARS_TB
+  (CAR_FILE_ID, CAR_NUM,CAR_CLASS, CAR_MODEL, FUEL_TYPE,MONTHLY_ALLOCATED, BRANCH_ID, YEAR_PRODUCE,
+  ENGINE_POWER,MONTHLY_ALLOCATED_DATE, DEFINITION_CODE,
+   USER_JOB, USED_PURPOSE, INSURANCE_VALUE, INSURANCE_START_DATE, INSURANCE_END_DATE,
+    HINTS , CAR_COST_HOURE,CAR_OWNERSHIP,PRODUCTION_DATE,SERVICE_DATE,SELF_WEIGHT,
+   TOTAL_WEIGHT,LICENSE_TYPE,CUSTODY_TYPE,ENTRY_USER,ENTRY_DATE,PRICE,DEPRECIATION_RATE,LETTER_PER_KILOMETER,
+   CAR_LICENSE_START,CAR_LICENSE_END,CAR_LICENSE_VALUE,CAR_LICENSE_NUMBER,DATE_OF_LICENSE,INSURANCE_NUMBER,INSURANCE_TYPE,
+   INSURANCE_DATE,LICENSE_COMBANY,CAR_OWNER,LAST_UPDATE,CAR_OWNER_NO,CAR_CASE,MACHINE_CASE)
+VALUES
+  ( SEQ_VAL ,CAR_NUM_IN, CAR_CLASS_IN, CAR_MODEL_IN, FUEL_TYPE_IN, MONTHLY_ALLOCATED_IN,
+   BRANCH_ID_IN, YEAR_PRODUCE_IN, ENGINE_POWER_IN, MONTHLY_ALLOCATED_DATE_IN,DEFINITION_CODE_IN, USER_JOB_IN,
+    USED_PURPOSE_IN, INSURANCE_VALUE_IN, INSURANCE_START_DATE_IN, INSURANCE_END_DATE_IN,HINTS_IN ,CAR_COST_HOURE_IN
+  ,CAR_OWNERSHIP_IN,PRODUCTION_DATE_IN,SERVICE_DATE_IN,SELF_WEIGHT_IN,TOTAL_WEIGHT_IN,LICENSE_TYPE_IN,
+  CUSTODY_TYPE_IN,ENTRY_USER_IN , SYSDATE ,PRICE_IN,DEPRECIATION_RATE_IN,LETTER_PER_KILOMETER_IN,
+  CAR_LICENSE_START_IN,CAR_LICENSE_END_IN,CAR_LICENSE_VALUE_IN,CAR_LICENSE_NUMBER_IN,DATE_OF_LICENSE_IN,INSURANCE_NUMBER_IN,
+  INSURANCE_TYPE_IN,INSURANCE_DATE_IN,LICENSE_COMBANY_IN,CAR_OWNER_IN,SYSDATE,CAR_OWNER_NO_IN,CAR_CASE_IN,MACHINE_CASE_IN);
+MSG_OUT:= SEQ_VAL;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CARS_TB_INSERT '|| SQLERRM;
+END CARS_TB_INSERT ;
+
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CARS_TB_UPDATE (   CAR_FILE_ID_IN  IN CARS_TB.CAR_FILE_ID%TYPE ,
+                             CAR_NUM_IN  IN CARS_TB.CAR_NUM%TYPE ,
+                             CAR_CLASS_IN  IN CARS_TB.CAR_CLASS%TYPE ,
+                             CAR_MODEL_IN  IN CARS_TB.CAR_MODEL%TYPE ,
+                             FUEL_TYPE_IN  IN CARS_TB.FUEL_TYPE%TYPE ,
+                             MONTHLY_ALLOCATED_IN  IN CARS_TB.MONTHLY_ALLOCATED%TYPE ,
+                             MONTHLY_ALLOCATED_DATE_IN  IN CARS_TB.MONTHLY_ALLOCATED_DATE%TYPE ,
+                             CAR_OWNER_IN  IN CARS_TB.CAR_OWNER%TYPE ,
+                             CAR_OWNER_NO_IN  IN CARS_TB.CAR_OWNER_NO%TYPE ,
+                             BRANCH_ID_IN  IN CARS_TB.BRANCH_ID%TYPE ,
+                             YEAR_PRODUCE_IN  IN CARS_TB.YEAR_PRODUCE%TYPE ,
+                             ENGINE_POWER_IN  IN CARS_TB.ENGINE_POWER%TYPE ,
+                             DEFINITION_CODE_IN  IN CARS_TB.DEFINITION_CODE%TYPE ,
+                             USER_JOB_IN  IN CARS_TB.USER_JOB%TYPE ,
+                             USED_PURPOSE_IN  IN CARS_TB.USED_PURPOSE%TYPE ,
+                             HINTS_IN  IN CARS_TB.HINTS%TYPE ,
+                             CAR_COST_HOURE_IN  IN CARS_TB.CAR_COST_HOURE%TYPE ,
+                             CAR_OWNERSHIP_IN  IN CARS_TB.CAR_OWNERSHIP%TYPE ,
+                             PRODUCTION_DATE_IN  IN CARS_TB.PRODUCTION_DATE%TYPE ,
+                             SERVICE_DATE_IN  IN CARS_TB.SERVICE_DATE%TYPE ,
+                             SELF_WEIGHT_IN  IN CARS_TB.SELF_WEIGHT%TYPE ,
+                             TOTAL_WEIGHT_IN  IN CARS_TB.TOTAL_WEIGHT%TYPE ,
+                             LICENSE_TYPE_IN  IN CARS_TB.LICENSE_TYPE%TYPE ,
+                             CUSTODY_TYPE_IN  IN CARS_TB.CUSTODY_TYPE%TYPE ,
+                             ENTRY_USER_IN  IN CARS_TB.ENTRY_USER%TYPE ,
+                             PRICE_IN  IN CARS_TB.PRICE%TYPE ,
+                             DEPRECIATION_RATE_IN  IN CARS_TB.DEPRECIATION_RATE%TYPE ,
+                             INSURANCE_START_DATE_IN  IN CARS_TB.INSURANCE_START_DATE%TYPE ,
+                             INSURANCE_END_DATE_IN  IN CARS_TB.INSURANCE_END_DATE%TYPE ,
+                             INSURANCE_VALUE_IN  IN CARS_TB.INSURANCE_VALUE%TYPE ,
+                             LETTER_PER_KILOMETER_IN  IN CARS_TB.LETTER_PER_KILOMETER%TYPE ,
+                             CAR_LICENSE_START_IN  IN CARS_TB.CAR_LICENSE_START%TYPE ,
+                             CAR_LICENSE_END_IN  IN CARS_TB.CAR_LICENSE_END%TYPE ,
+                             CAR_LICENSE_VALUE_IN  IN CARS_TB.CAR_LICENSE_VALUE%TYPE ,
+                             CAR_LICENSE_NUMBER_IN  IN CARS_TB.CAR_LICENSE_NUMBER%TYPE ,
+                             DATE_OF_LICENSE_IN  IN CARS_TB.DATE_OF_LICENSE%TYPE ,
+                             INSURANCE_NUMBER_IN  IN CARS_TB.INSURANCE_NUMBER%TYPE ,
+                             INSURANCE_TYPE_IN  IN CARS_TB.INSURANCE_TYPE%TYPE ,
+                             INSURANCE_DATE_IN  IN CARS_TB.INSURANCE_DATE%TYPE ,
+                             LICENSE_COMBANY_IN  IN CARS_TB.LICENSE_COMBANY%TYPE ,
+                             CAR_CASE_IN  IN CARS_TB.CAR_CASE%TYPE ,
+							 MACHINE_CASE_IN  IN CARS_TB.MACHINE_CASE%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+
+      AS
+      BEGIN
+      UPDATE CARS_TB SET
+
+      CAR_NUM = CAR_NUM_IN,
+      CAR_CLASS = CAR_CLASS_IN,
+      CAR_MODEL = CAR_MODEL_IN,
+      FUEL_TYPE = FUEL_TYPE_IN,
+      MONTHLY_ALLOCATED = MONTHLY_ALLOCATED_IN,
+      BRANCH_ID = BRANCH_ID_IN,
+      YEAR_PRODUCE = YEAR_PRODUCE_IN,
+      ENGINE_POWER = ENGINE_POWER_IN,
+      CAR_OWNER = CAR_OWNER_IN,
+      CAR_OWNER_NO = CAR_OWNER_NO_IN,
+      DEFINITION_CODE = DEFINITION_CODE_IN,
+      USER_JOB = USER_JOB_IN,
+      USED_PURPOSE = USED_PURPOSE_IN,
+      HINTS = HINTS_IN,
+      MONTHLY_ALLOCATED_DATE = MONTHLY_ALLOCATED_DATE_IN,
+      CAR_COST_HOURE = CAR_COST_HOURE_IN,
+      CAR_OWNERSHIP = CAR_OWNERSHIP_IN,
+      PRODUCTION_DATE = PRODUCTION_DATE_IN,
+      SERVICE_DATE = SERVICE_DATE_IN,
+      SELF_WEIGHT = SELF_WEIGHT_IN,
+      TOTAL_WEIGHT = TOTAL_WEIGHT_IN ,
+      LICENSE_TYPE = LICENSE_TYPE_IN,
+      CUSTODY_TYPE = CUSTODY_TYPE_IN,
+      PRICE = PRICE_IN,
+      LETTER_PER_KILOMETER = LETTER_PER_KILOMETER_IN,
+      DEPRECIATION_RATE = DEPRECIATION_RATE_IN,
+      INSURANCE_START_DATE=INSURANCE_START_DATE_IN,
+      INSURANCE_END_DATE=INSURANCE_END_DATE_IN,
+      INSURANCE_VALUE = INSURANCE_VALUE_IN,
+      CAR_LICENSE_START = CAR_LICENSE_START_IN,
+      CAR_LICENSE_END = CAR_LICENSE_END_IN,
+      CAR_LICENSE_VALUE = CAR_LICENSE_VALUE_IN,
+      CAR_LICENSE_NUMBER = CAR_LICENSE_NUMBER_IN,
+      DATE_OF_LICENSE = DATE_OF_LICENSE_IN,
+      INSURANCE_NUMBER = INSURANCE_NUMBER_IN,
+      INSURANCE_TYPE = INSURANCE_TYPE_IN,
+      INSURANCE_DATE = INSURANCE_DATE_IN,
+      LAST_UPDATE = SYSDATE,
+      LICENSE_COMBANY = LICENSE_COMBANY_IN,
+      CAR_CASE = CAR_CASE_IN,
+      DATE_UPDATE = SYSDATE,
+      USER_UPDATE = USER_PKG.GET_USER_ID,
+	  MACHINE_CASE = MACHINE_CASE_IN
+
+   WHERE  CAR_FILE_ID = CAR_FILE_ID_IN   ;
+   MSG_OUT:= CAR_FILE_ID_IN;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLET_PKG'||'CARS_TB_UPDATE '|| SQLERRM;
+END CARS_TB_UPDATE ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE  CARS_TB_LIST ( INSQL IN VARCHAR2 ,
+                          OFFSET    number,ROW    number,
+                          REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2  )
+      AS
+      XSQL  VARCHAR2(4000);
+      BEGIN
+
+      XSQL := ' SELECT * FROM
+      (   SELECT A.*, rownum r
+    FROM
+    (
+     SELECT  CARS_TB.*,
+     SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(43 ,CAR_CLASS)  CAR_CLASS_NAME ,
+     SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(58 ,FUEL_TYPE)  FUEL_TYPE_NAME ,
+     SETTING_PKG.GCC_BRANCHES_TB_GET_NAME (BRANCH_ID)  BRANCH_ID_NAME ,
+     USER_PKG.GET_USER_NAME(CHECK_CANCEL_USER)  CHECK_CANCEL_USER_NAME ,
+     FLEET_PKG.CARS_TB_GET_NAME(CAR_FILE_ID) CAR_NUM_NAME,
+     FINANCIAL_PKG.ACCOUNT_ID_BALANCE_CAR(CAR_FILE_ID) BANLANCE,
+     SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(405 ,CAR_CASE)  CAR_CASE_NAME,
+	 SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(414 ,MACHINE_CASE)  MACHINE_CASE_NAME,
+     USER_PKG.GET_USER_NAME(USER_UPDATE)  USER_UPDATE_NAME
+    FROM CARS_TB WHERE 1=1 '||INSQL||'
+    ) A
+    WHERE ( (rownum <= '||ROW||' and '||ROW||' != -1 ) or '||ROW||'= -1 )
+)
+WHERE r > ' ||OFFSET ;
+
+  OPEN REF_CUR_OUT FOR XSQL;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  ' FLEET_PKG '||' CARS_TB_LIST '|| SQLERRM;
+MSG_OUT:= XSQL;
+END  CARS_TB_LIST ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CARS_TB_GET ( SER_IN  IN CARS_TB.SER%TYPE ,
+                        REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2   )
+
+       AS
+       BEGIN
+       OPEN REF_CUR_OUT FOR SELECT M.*,
+       FLEET_PKG.CARS_TB_GET_NAME(M.CAR_FILE_ID) CAR_NUM_NAME
+        FROM  CARS_TB M WHERE CAR_FILE_ID  = SER_IN  ;
+       MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CARS_TB_GET '|| SQLERRM;
+END CARS_TB_GET ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CARS_TB_GET_ALL ( REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2   )
+
+          AS
+          BEGIN
+          OPEN REF_CUR_OUT FOR SELECT * FROM  CARS_TB ;
+          MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CARS_TB_GET_ALL '|| SQLERRM;
+END CARS_TB_GET_ALL ;
+
+  -------------------------------------------------------------------------------------------------
+
+  PROCEDURE CARS_TB_DELETE ( SER_IN  IN CARS_TB.SER%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+
+        AS
+        BEGIN
+        DELETE  FROM  CARS_TB
+        WHERE   SER  = SER_IN ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CARS_TB_DELETE '|| SQLERRM;
+END CARS_TB_DELETE ;
+
+-------------------------------------------------------------------------------------
+
+FUNCTION CARS_TB_GET_NAME
+(CAR_FILE_ID_IN IN CARS_TB.CAR_FILE_ID%TYPE ) RETURN  VARCHAR2 IS
+RES  VARCHAR2(400);
+BEGIN
+SELECT  CAR_OWNER  INTO  RES  FROM CARS_TB
+WHERE    CAR_FILE_ID   = CAR_FILE_ID_IN  ;
+RETURN RES;
+EXCEPTION
+WHEN NO_DATA_FOUND  THEN
+             RETURN ' ';
+WHEN OTHERS  THEN
+             RETURN ' ';
+END  CARS_TB_GET_NAME ;
+
+---------------------------------------------------------------------------------------------------------
+
+PROCEDURE CAR_DEPRECIATION_TB_INSERT(PRICE_IN  IN CAR_DEPRECIATION_TB.PRICE%TYPE ,
+                                     DEPRECIATION_RATE_IN  IN CAR_DEPRECIATION_TB.DEPRECIATION_RATE%TYPE ,
+                                     DEPRECIATION_DATE_IN  IN CAR_DEPRECIATION_TB.DEPRECIATION_DATE%TYPE ,
+                                     NEW_RATE_IN  IN CAR_DEPRECIATION_TB.NEW_RATE%TYPE ,
+                                     CAR_ID_IN  IN CAR_DEPRECIATION_TB.CAR_ID%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+                             AS
+                             SEQ_VAL NUMBER ;
+    BEGIN
+
+    SEQ_VAL := CAR_DEPRECIATION_TB_SEQ.NEXTVAL;
+    INSERT INTO CAR_DEPRECIATION_TB
+  (SER,PRICE,DEPRECIATION_RATE,DEPRECIATION_DATE,NEW_RATE,CAR_ID,LAST_UPDATE)
+VALUES
+  ( SEQ_VAL,PRICE_IN, DEPRECIATION_RATE_IN, DEPRECIATION_DATE_IN, NEW_RATE_IN, CAR_ID_IN,SYSDATE);
+MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_DEPRECIATION_TB_INSERT '|| SQLERRM;
+END CAR_DEPRECIATION_TB_INSERT ;
+
+----------------------------------------------------------------------------------------------------
+
+PROCEDURE CAR_DEPRECIATION_TB_UPDATE (SER_IN  IN CAR_DEPRECIATION_TB.SER%TYPE ,
+                                      PRICE_IN  IN CAR_DEPRECIATION_TB.PRICE%TYPE ,
+                                      DEPRECIATION_RATE_IN  IN CAR_DEPRECIATION_TB.DEPRECIATION_RATE%TYPE ,
+                                      DEPRECIATION_DATE_IN  IN CAR_DEPRECIATION_TB.DEPRECIATION_DATE%TYPE ,
+                                      NEW_RATE_IN  IN CAR_DEPRECIATION_TB.NEW_RATE%TYPE ,
+                                      CAR_ID_IN  IN CAR_DEPRECIATION_TB.CAR_ID%TYPE ,
+
+                             MSG_OUT OUT VARCHAR2)
+
+      AS
+      BEGIN
+      UPDATE CAR_DEPRECIATION_TB SET
+      PRICE = PRICE_IN,
+      DEPRECIATION_RATE = DEPRECIATION_RATE_IN,
+      DEPRECIATION_DATE = DEPRECIATION_DATE_IN,
+      LAST_UPDATE = SYSDATE,
+      NEW_RATE = NEW_RATE_IN
+
+   WHERE  SER = SER_IN   ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLET_PKG'||'CAR_DEPRECIATION_TB_UPDATE '|| SQLERRM;
+END CAR_DEPRECIATION_TB_UPDATE ;
+-----------------------------------------------------------------------------
+
+PROCEDURE  CAR_DEPRECIATION_TB_LIST ( INSQL IN VARCHAR2 ,
+                          OFFSET    number,ROW    number,
+                          REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2  )
+      AS
+      XSQL  VARCHAR2(4000);
+      BEGIN
+
+      XSQL := ' SELECT * FROM
+      (   SELECT A.*, rownum r
+    FROM
+    (
+     SELECT  CAR_DEPRECIATION_TB.*
+
+    FROM CAR_DEPRECIATION_TB WHERE 1=1 '||INSQL||'
+    ) A
+    WHERE ( (rownum <= '||ROW||' and '||ROW||' != -1 ) or '||ROW||'= -1 )
+)
+WHERE r > ' ||OFFSET ;
+
+ OPEN REF_CUR_OUT FOR XSQL;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  ' FLEET_PKG '||' CAR_DEPRECIATION_TB_LIST '|| SQLERRM;
+MSG_OUT:= XSQL;
+END  CAR_DEPRECIATION_TB_LIST ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CAR_DEPRECIATION_TB_GET ( SER_IN  IN CAR_DEPRECIATION_TB.SER%TYPE ,
+                        REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2   )
+
+       AS
+       BEGIN
+       OPEN REF_CUR_OUT FOR SELECT * FROM  CAR_DEPRECIATION_TB WHERE CAR_ID  = SER_IN  ;
+       MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_DEPRECIATION_TB_GET '|| SQLERRM;
+END CAR_DEPRECIATION_TB_GET ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CAR_DEPRECIATION_TB_GET_ALL ( REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2   )
+
+          AS
+          BEGIN
+          OPEN REF_CUR_OUT FOR SELECT * FROM  CAR_DEPRECIATION_TB ;
+          MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_DEPRECIATION_TB_GET_ALL '|| SQLERRM;
+END CAR_DEPRECIATION_TB_GET_ALL ;
+
+  -------------------------------------------------------------------------------------------------
+
+  PROCEDURE CAR_DEPRECIATION_TB_DELETE ( SER_IN  IN CAR_DEPRECIATION_TB.SER%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+
+        AS
+        BEGIN
+        DELETE  FROM  CAR_DEPRECIATION_TB
+        WHERE   SER  = SER_IN ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_DEPRECIATION_TB_DELETE '|| SQLERRM;
+END CAR_DEPRECIATION_TB_DELETE ;
+
+-------------------------------------------------------------------------------------
+
+PROCEDURE CAR_INSURANCE_TB_INSERT(INSURANCE_NUMBER_IN  IN CAR_INSURANCE_TB.INSURANCE_NUMBER%TYPE ,
+                                  INSURANCE_TYPE_IN  IN CAR_INSURANCE_TB.INSURANCE_TYPE%TYPE ,
+                                  INSURANCE_DATE_IN  IN CAR_INSURANCE_TB.INSURANCE_DATE%TYPE ,
+                                  INSURANCE_START_DATE_IN  IN CAR_INSURANCE_TB.INSURANCE_START_DATE%TYPE ,
+                                  INSURANCE_END_DATE_IN  IN CAR_INSURANCE_TB.INSURANCE_END_DATE%TYPE ,
+                                  LICENSE_COMBANY_IN  IN CAR_INSURANCE_TB.LICENSE_COMBANY%TYPE ,
+                                  INSURANCE_VALUE_IN  IN CAR_INSURANCE_TB.INSURANCE_VALUE%TYPE ,
+                                  CAR_ID_IN  IN CAR_INSURANCE_TB.CAR_ID%TYPE ,
+
+                             MSG_OUT OUT VARCHAR2)
+
+                             AS
+                             SEQ_VAL NUMBER ;
+    BEGIN
+
+    SEQ_VAL  := CAR_INSURANCE_TB_SEQ.NEXTVAL;
+    INSERT INTO CAR_INSURANCE_TB
+  (SER,INSURANCE_NUMBER, INSURANCE_TYPE,INSURANCE_DATE, INSURANCE_START_DATE, INSURANCE_END_DATE,LICENSE_COMBANY,
+  INSURANCE_VALUE,CAR_ID,LAST_UPDATE)
+VALUES
+  ( SEQ_VAL , INSURANCE_NUMBER_IN, INSURANCE_TYPE_IN, INSURANCE_DATE_IN, INSURANCE_START_DATE_IN, INSURANCE_END_DATE_IN,
+   LICENSE_COMBANY_IN, INSURANCE_VALUE_IN, CAR_ID_IN,SYSDATE);
+
+
+    UPDATE CARS_TB SET
+      INSURANCE_START_DATE = INSURANCE_START_DATE_IN,
+      INSURANCE_END_DATE = INSURANCE_END_DATE_IN,
+      INSURANCE_VALUE = INSURANCE_VALUE_IN
+   WHERE  CAR_FILE_ID = CAR_ID_IN   ;
+
+
+MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_INSURANCE_TB_INSERT '|| SQLERRM;
+END CAR_INSURANCE_TB_INSERT ;
+
+ ------------------------------------------------------------------------------------------
+ PROCEDURE CAR_INSURANCE_TB_UPDATE (  SER_IN  IN CAR_INSURANCE_TB.SER%TYPE ,
+                                   INSURANCE_NUMBER_IN  IN CAR_INSURANCE_TB.INSURANCE_NUMBER%TYPE ,
+                                   INSURANCE_TYPE_IN  IN CAR_INSURANCE_TB.INSURANCE_TYPE%TYPE ,
+                                   INSURANCE_DATE_IN  IN CAR_INSURANCE_TB.INSURANCE_DATE%TYPE ,
+                                   INSURANCE_START_DATE_IN  IN CAR_INSURANCE_TB.INSURANCE_START_DATE%TYPE ,
+                                   INSURANCE_END_DATE_IN  IN CAR_INSURANCE_TB.INSURANCE_END_DATE%TYPE ,
+                                   LICENSE_COMBANY_IN  IN CAR_INSURANCE_TB.LICENSE_COMBANY%TYPE ,
+                                   INSURANCE_VALUE_IN  IN CAR_INSURANCE_TB.INSURANCE_VALUE%TYPE ,
+                                  CAR_ID_IN  IN CAR_INSURANCE_TB.CAR_ID%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+
+      AS
+      BEGIN
+      UPDATE CAR_INSURANCE_TB SET
+      INSURANCE_NUMBER = INSURANCE_NUMBER_IN,
+      INSURANCE_TYPE = INSURANCE_TYPE_IN,
+      INSURANCE_DATE = INSURANCE_DATE_IN,
+      INSURANCE_START_DATE = INSURANCE_START_DATE_IN,
+      INSURANCE_END_DATE = INSURANCE_END_DATE_IN,
+      LICENSE_COMBANY = LICENSE_COMBANY_IN,
+      INSURANCE_VALUE = INSURANCE_VALUE_IN,
+      LAST_UPDATE = SYSDATE,
+      CAR_ID= CAR_ID_IN
+
+
+   WHERE  SER = SER_IN   ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLET_PKG'||'CAR_INSURANCE_TB_UPDATE '|| SQLERRM;
+END CAR_INSURANCE_TB_UPDATE ;
+
+----------------------------------------------------------------------------------------
+PROCEDURE  CAR_INSURANCE_TB_LIST ( INSQL IN VARCHAR2 ,
+                          OFFSET    number,ROW    number,
+                          REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2  )
+      AS
+      XSQL  VARCHAR2(4000);
+      BEGIN
+
+      XSQL := ' SELECT * FROM
+      (   SELECT A.*, rownum r
+    FROM
+    (
+     SELECT  CAR_INSURANCE_TB.*
+
+    FROM CAR_INSURANCE_TB WHERE 1=1 '||INSQL||'
+    ) A
+    WHERE ( (rownum <= '||ROW||' and '||ROW||' != -1 ) or '||ROW||'= -1 )
+)
+WHERE r > ' ||OFFSET ;
+
+ OPEN REF_CUR_OUT FOR XSQL;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  ' FLEET_PKG '||' CAR_INSURANCE_TB_LIST '|| SQLERRM;
+MSG_OUT:= XSQL;
+END  CAR_INSURANCE_TB_LIST ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CAR_INSURANCE_TB_GET ( SER_IN  IN CAR_INSURANCE_TB.SER%TYPE ,
+                        REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2   )
+
+       AS
+       BEGIN
+       OPEN REF_CUR_OUT FOR SELECT M.*,
+       SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(178,M.INSURANCE_TYPE)  INSURANCE_TYPE_NAME,
+       SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(177,M.LICENSE_COMBANY)  LICENSE_COMBANY_NAME
+        FROM  CAR_INSURANCE_TB M WHERE CAR_ID  = SER_IN  ;
+       MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_INSURANCE_TB_GET '|| SQLERRM;
+END CAR_INSURANCE_TB_GET ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CAR_INSURANCE_TB_GET_ALL ( REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2   )
+
+          AS
+          BEGIN
+          OPEN REF_CUR_OUT FOR SELECT * FROM  CAR_INSURANCE_TB ;
+          MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_INSURANCE_TB_GET_ALL '|| SQLERRM;
+END CAR_INSURANCE_TB_GET_ALL ;
+
+  -------------------------------------------------------------------------------------------------
+
+  PROCEDURE CAR_INSURANCE_TB_DELETE ( SER_IN  IN CAR_INSURANCE_TB.SER%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+
+        AS
+        BEGIN
+        DELETE  FROM  CAR_INSURANCE_TB
+        WHERE   SER  = SER_IN ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_INSURANCE_TB_DELETE '|| SQLERRM;
+END CAR_INSURANCE_TB_DELETE ;
+
+-------------------------------------------------------------------------------------
+PROCEDURE CAR_LICENSE_TB_INSERT(CAR_LICENSE_NUMBER_IN  IN CAR_LICENSE_TB.CAR_LICENSE_NUMBER%TYPE ,
+                                  CAR_LICENSE_START_IN  IN CAR_LICENSE_TB.CAR_LICENSE_START%TYPE ,
+                                  CAR_LICENSE_END_IN  IN CAR_LICENSE_TB.CAR_LICENSE_END%TYPE ,
+                                  CAR_LICENSE_VALUE_IN  IN CAR_LICENSE_TB.CAR_LICENSE_VALUE%TYPE ,
+                                  DATE_OF_LICENSE_IN  IN CAR_LICENSE_TB.DATE_OF_LICENSE%TYPE ,
+                                  CAR_ID_IN  IN CAR_LICENSE_TB.CAR_ID%TYPE ,
+
+                             MSG_OUT OUT VARCHAR2)
+
+                             AS
+                             SEQ_VAL NUMBER ;
+    BEGIN
+
+    SEQ_VAL  := CAR_LICENSE_TB_SEQ.NEXTVAL;
+    INSERT INTO CAR_LICENSE_TB
+  (SER,CAR_LICENSE_NUMBER, CAR_LICENSE_START,CAR_LICENSE_END, CAR_LICENSE_VALUE, DATE_OF_LICENSE,CAR_ID,LAST_UPDATE)
+VALUES
+  ( SEQ_VAL , CAR_LICENSE_NUMBER_IN, CAR_LICENSE_START_IN, CAR_LICENSE_END_IN, CAR_LICENSE_VALUE_IN, DATE_OF_LICENSE_IN,
+   CAR_ID_IN,SYSDATE);
+
+
+      UPDATE CARS_TB SET
+      CAR_LICENSE_VALUE = CAR_LICENSE_VALUE_IN,
+      CAR_LICENSE_START = CAR_LICENSE_START_IN,
+      CAR_LICENSE_END = CAR_LICENSE_END_IN
+   WHERE  CAR_FILE_ID = CAR_ID_IN   ;
+
+
+
+MSG_OUT:= SEQ_VAL;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_LICENSE_TB_INSERT '|| SQLERRM;
+END CAR_LICENSE_TB_INSERT ;
+
+ ------------------------------------------------------------------------------------------
+ PROCEDURE CAR_LICENSE_TB_UPDATE ( SER_IN  IN CAR_INSURANCE_TB.SER%TYPE ,
+                                   CAR_LICENSE_NUMBER_IN  IN CAR_LICENSE_TB.CAR_LICENSE_NUMBER%TYPE ,
+                                  CAR_LICENSE_START_IN  IN CAR_LICENSE_TB.CAR_LICENSE_START%TYPE ,
+                                  CAR_LICENSE_END_IN  IN CAR_LICENSE_TB.CAR_LICENSE_END%TYPE ,
+                                  CAR_LICENSE_VALUE_IN  IN CAR_LICENSE_TB.CAR_LICENSE_VALUE%TYPE ,
+                                  DATE_OF_LICENSE_IN  IN CAR_LICENSE_TB.DATE_OF_LICENSE%TYPE ,
+                                  CAR_ID_IN  IN CAR_LICENSE_TB.CAR_ID%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+
+      AS
+      BEGIN
+      UPDATE CAR_LICENSE_TB SET
+      CAR_LICENSE_NUMBER = CAR_LICENSE_NUMBER_IN,
+      CAR_LICENSE_START = CAR_LICENSE_START_IN,
+      CAR_LICENSE_END = CAR_LICENSE_END_IN,
+      CAR_LICENSE_VALUE = CAR_LICENSE_VALUE_IN,
+      DATE_OF_LICENSE = DATE_OF_LICENSE_IN,
+      LAST_UPDATE = SYSDATE,
+      CAR_ID = CAR_ID_IN
+
+
+   WHERE  SER = SER_IN   ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLET_PKG'||'CAR_LICENSE_TB_UPDATE '|| SQLERRM;
+END CAR_LICENSE_TB_UPDATE ;
+
+----------------------------------------------------------------------------------------
+PROCEDURE  CAR_LICENSE_TB_LIST ( INSQL IN VARCHAR2 ,
+                          OFFSET    number,ROW    number,
+                          REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2  )
+      AS
+      XSQL  VARCHAR2(4000);
+      BEGIN
+
+      XSQL := ' SELECT * FROM
+      (   SELECT A.*, rownum r
+    FROM
+    (
+     SELECT  CAR_LICENSE_TB.*
+
+    FROM CAR_LICENSE_TB WHERE 1=1 '||INSQL||'
+    ) A
+    WHERE ( (rownum <= '||ROW||' and '||ROW||' != -1 ) or '||ROW||'= -1 )
+)
+WHERE r > ' ||OFFSET ;
+
+ OPEN REF_CUR_OUT FOR XSQL;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  ' FLEET_PKG '||' CAR_LICENSE_TB_LIST '|| SQLERRM;
+MSG_OUT:= XSQL;
+END  CAR_LICENSE_TB_LIST ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CAR_LICENSE_TB_GET ( SER_IN  IN CAR_LICENSE_TB.SER%TYPE ,
+                        REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2   )
+
+       AS
+       BEGIN
+       OPEN REF_CUR_OUT FOR SELECT * FROM  CAR_LICENSE_TB WHERE CAR_ID  = SER_IN  ;
+       MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_LICENSE_TB_GET '|| SQLERRM;
+END CAR_LICENSE_TB_GET ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CAR_LICENSE_TB_GET_ALL ( REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2   )
+
+          AS
+          BEGIN
+          OPEN REF_CUR_OUT FOR SELECT * FROM  CAR_LICENSE_TB ;
+          MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_LICENSE_TB_GET_ALL '|| SQLERRM;
+END CAR_LICENSE_TB_GET_ALL ;
+
+  -------------------------------------------------------------------------------------------------
+
+  PROCEDURE CAR_LICENSE_TB_DELETE ( SER_IN  IN CAR_LICENSE_TB.SER%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+
+        AS
+        BEGIN
+        DELETE  FROM  CAR_LICENSE_TB
+        WHERE   SER  = SER_IN ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_LICENSE_TB_DELETE '|| SQLERRM;
+END CAR_LICENSE_TB_DELETE ;
+
+
+-------------------------------------------------------------------------------------
+PROCEDURE CAR_NOTES_TB_INSERT(NOTE_IN  IN CAR_NOTES_TB.NOTE%TYPE ,
+                                  DATE_OF_ENTRY_IN  IN CAR_NOTES_TB.DATE_OF_ENTRY%TYPE ,
+                                  ENTRY_DATA_IN  IN CAR_NOTES_TB.ENTRY_DATA%TYPE ,
+                                  CAR_ID_IN  IN CAR_NOTES_TB.CAR_ID%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+
+                             AS
+                             SEQ_VAL NUMBER ;
+    BEGIN
+
+    SEQ_VAL  := CAR_NOTES_TB_SEQ.NEXTVAL;
+    INSERT INTO CAR_NOTES_TB
+  (SER,NOTE, DATE_OF_ENTRY,ENTRY_DATA, CAR_ID,LAST_UPDATE)
+VALUES
+  ( SEQ_VAL , NOTE_IN,DATE_OF_ENTRY_IN,ENTRY_DATA_IN, CAR_ID_IN,SYSDATE);
+MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_NOTES_TB_INSERT '|| SQLERRM;
+END CAR_NOTES_TB_INSERT ;
+
+ ------------------------------------------------------------------------------------------
+ PROCEDURE CAR_NOTES_TB_UPDATE ( SER_IN  IN CAR_INSURANCE_TB.SER%TYPE ,
+                                   NOTE_IN  IN CAR_NOTES_TB.NOTE%TYPE ,
+                                  DATE_OF_ENTRY_IN  IN CAR_NOTES_TB.DATE_OF_ENTRY%TYPE ,
+                                  ENTRY_DATA_IN  IN CAR_NOTES_TB.ENTRY_DATA%TYPE ,
+                                  CAR_ID_IN  IN CAR_NOTES_TB.CAR_ID%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+
+      AS
+      BEGIN
+      UPDATE CAR_NOTES_TB SET
+      NOTE = NOTE_IN,
+      DATE_OF_ENTRY = DATE_OF_ENTRY_IN,
+      ENTRY_DATA = ENTRY_DATA_IN,
+      LAST_UPDATE = SYSDATE,
+      CAR_ID = CAR_ID_IN
+
+   WHERE  SER = SER_IN   ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLET_PKG'||'CAR_NOTES_TB_UPDATE '|| SQLERRM;
+END CAR_NOTES_TB_UPDATE ;
+
+----------------------------------------------------------------------------------------
+PROCEDURE  CAR_NOTES_TB_LIST ( INSQL IN VARCHAR2 ,
+                          OFFSET    number,ROW    number,
+                          REF_CUR_OUT OUT SYS_REFCURSOR,
+                          MSG_OUT OUT VARCHAR2  )
+      AS
+      XSQL  VARCHAR2(4000);
+      BEGIN
+
+      XSQL := ' SELECT * FROM
+      (   SELECT A.*, rownum r
+    FROM
+    (
+     SELECT  CAR_NOTES_TB.*
+
+    FROM CAR_NOTES_TB WHERE 1=1 '||INSQL||'
+    ) A
+    WHERE ( (rownum <= '||ROW||' and '||ROW||' != -1 ) or '||ROW||'= -1 )
+)
+WHERE r > ' ||OFFSET ;
+
+ OPEN REF_CUR_OUT FOR XSQL;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  ' FLEET_PKG '||' CAR_NOTES_TB_LIST '|| SQLERRM;
+MSG_OUT:= XSQL;
+END  CAR_NOTES_TB_LIST ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CAR_NOTES_TB_GET ( SER_IN  IN CAR_NOTES_TB.SER%TYPE ,
+                        REF_CUR_OUT OUT SYS_REFCURSOR,
+                        MSG_OUT OUT VARCHAR2   )
+
+       AS
+       BEGIN
+       OPEN REF_CUR_OUT FOR SELECT * FROM  CAR_NOTES_TB WHERE SER  = SER_IN  ;
+       MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_NOTES_TB_GET '|| SQLERRM;
+END CAR_NOTES_TB_GET ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CAR_NOTES_TB_GET_ALL ( REF_CUR_OUT OUT SYS_REFCURSOR,
+                               MSG_OUT OUT VARCHAR2   )
+
+          AS
+          BEGIN
+          OPEN REF_CUR_OUT FOR SELECT * FROM  CAR_NOTES_TB ;
+          MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_NOTES_TB_GET_ALL '|| SQLERRM;
+END CAR_NOTES_TB_GET_ALL ;
+
+  -------------------------------------------------------------------------------------------------
+
+  PROCEDURE CAR_NOTES_TB_DELETE ( SER_IN  IN CAR_NOTES_TB.SER%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+
+        AS
+        BEGIN
+        DELETE  FROM  CAR_NOTES_TB
+        WHERE   SER  = SER_IN ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_NOTES_TB_DELETE '|| SQLERRM;
+END CAR_NOTES_TB_DELETE ;
+
+---------------------------------------------------------------------------
+
+PROCEDURE CARS_AUDIT_FUEL_TB_GET (
+CAR_FILE_ID_IN  IN CARS_AUDIT_FUEL_TB.CAR_FILE_ID%TYPE ,
+ REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2   ) AS
+BEGIN
+ OPEN REF_CUR_OUT FOR
+SELECT  M.* ,
+ USER_PKG.GET_USER_NAME(M.AUDIT_USER)  AUDIT_USER_NAME  ,
+ SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(58 ,M.FUEL_TYPE) FUEL_TYPE_NAME
+
+FROM CARS_AUDIT_FUEL_TB  M
+ WHERE M.CAR_FILE_ID = CAR_FILE_ID_IN  ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'PAYMENT_PKG'||'CARS_AUDIT_FUEL_TB_GET '|| SQLERRM;
+END CARS_AUDIT_FUEL_TB_GET ;
+-------------------------------------------------------------------------------------
+
+
+PROCEDURE CARS_MOVMENTS_TB_INSERT(CAR_ID_IN  IN CARS_MOVMENTS_TB.CAR_ID%TYPE ,
+                                  DRIVER_ID_IN  IN CARS_MOVMENTS_TB.DRIVER_ID%TYPE ,
+                                  MOVMENT_TYPE_IN  IN CARS_MOVMENTS_TB.MOVMENT_TYPE%TYPE ,
+                                  NOTES_IN  IN CARS_MOVMENTS_TB.NOTES%TYPE ,
+                                  THE_DATE_IN  IN CARS_MOVMENTS_TB.THE_DATE%TYPE ,
+                                  ENTRY_USER_IN  IN CARS_MOVMENTS_TB.ENTRY_USER%TYPE ,
+                                  CAR_OWNER_IN  IN CARS_MOVMENTS_TB.CAR_OWNER%TYPE ,
+                                   ORDER_NO_IN  IN number ,
+                             MSG_OUT OUT VARCHAR2)
+
+                             AS
+                             SEQ_VAL NUMBER ;
+    BEGIN
+
+    SEQ_VAL  := CARS_MOVMENTS_TB_SEQ.NEXTVAL;
+    INSERT INTO CARS_MOVMENTS_TB
+  (SER,CAR_ID, DRIVER_ID,MOVMENT_TYPE, NOTES,THE_DATE,ENTRY_USER,ENTRY_DATE,LAST_UPDATE,CAR_OWNER)
+VALUES
+  ( SEQ_VAL , CAR_ID_IN,DRIVER_ID_IN,MOVMENT_TYPE_IN, NOTES_IN,THE_DATE_IN,
+  ENTRY_USER_IN,SYSDATE,SYSDATE,CAR_OWNER_IN);
+MSG_OUT:= SEQ_VAL;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CARS_MOVMENTS_TB_INSERT '|| SQLERRM;
+END CARS_MOVMENTS_TB_INSERT ;
+
+------------------------------------------------------------------------------------------
+ PROCEDURE CARS_MOVMENTS_TB_UPDATE ( SER_IN  IN CARS_MOVMENTS_TB.SER%TYPE ,
+                                 CAR_ID_IN  IN CARS_MOVMENTS_TB.CAR_ID%TYPE ,
+                                  DRIVER_ID_IN  IN CARS_MOVMENTS_TB.DRIVER_ID%TYPE ,
+                                  MOVMENT_TYPE_IN  IN CARS_MOVMENTS_TB.MOVMENT_TYPE%TYPE ,
+                                  NOTES_IN  IN CARS_MOVMENTS_TB.NOTES%TYPE ,
+                                  THE_DATE_IN  IN CARS_MOVMENTS_TB.THE_DATE%TYPE ,
+                                  ENTRY_USER_IN  IN CARS_MOVMENTS_TB.ENTRY_USER%TYPE ,
+                                  CAR_OWNER_IN  IN CARS_MOVMENTS_TB.CAR_OWNER%TYPE ,
+                                  MSG_OUT OUT VARCHAR2)
+
+      AS
+      BEGIN
+      UPDATE CARS_MOVMENTS_TB SET
+      CAR_ID = CAR_ID_IN,
+      DRIVER_ID = DRIVER_ID_IN,
+      MOVMENT_TYPE = MOVMENT_TYPE_IN,
+      NOTES = NOTES_IN,
+      THE_DATE = THE_DATE_IN,
+      LAST_UPDATE = SYSDATE,
+      CAR_OWNER = CAR_OWNER_IN,
+      ENTRY_USER = ENTRY_USER_IN
+
+   WHERE  SER = SER_IN   ;
+   MSG_OUT:= SER_IN;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLET_PKG'||'CARS_MOVMENTS_TB_UPDATE '|| SQLERRM;
+END CARS_MOVMENTS_TB_UPDATE ;
+
+----------------------------------------------------------------------------------------
+
+PROCEDURE  CARS_MOVMENTS_TB_LIST ( INSQL IN VARCHAR2 ,
+OFFSET    number,ROW    number,
+REF_CUR_OUT OUT SYS_REFCURSOR,
+MSG_OUT OUT VARCHAR2  ) AS
+XSQL  VARCHAR2(4000);
+ BEGIN
+
+XSQL := 'SELECT * FROM (
+SELECT  M.* ,
+FLEET_PKG.CARS_TB_GET_NAME(M.CAR_ID) CAR_ID_NAME ,
+ FLEET_PKG.GET_COUNT_CAR_DETAILS(M.SER) DETAILS_COUNT ,
+SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(269,M.MOVMENT_TYPE)  MOVMENT_TYPE_NAME,
+SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(270,M.STATUS)  STATUS_NAME,
+USER_PKG.GET_USER_NAME(M.ENTRY_USER)  ENTRY_USER_NAME  ,
+ROW_NUMBER() OVER ( ORDER BY  M.SER DESC) RN
+FROM CARS_MOVMENTS_TB  M where 1=1 ' || INSQL || '  ORDER BY SER DESC )
+ WHERE  RN BETWEEN ' || (OFFSET + 1) || ' AND ' || ROW ||
+            ' ORDER BY RN ';
+    OPEN REF_CUR_OUT FOR XSQL;
+    MSG_OUT := 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  ' FLEET_PKG '||' CARS_MOVMENTS_TB_LIST '|| SQLERRM;
+MSG_OUT:= XSQL;
+END  CARS_MOVMENTS_TB_LIST ;
+
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CARS_MOVMENTS_TB_GET ( SER_IN  IN CARS_MOVMENTS_TB.SER%TYPE ,
+                        REF_CUR_OUT OUT SYS_REFCURSOR,
+                        MSG_OUT OUT VARCHAR2   )
+
+       AS
+       BEGIN
+       OPEN REF_CUR_OUT FOR SELECT M.*,
+       FLEET_PKG.CAR_DRIVE_NAME_GET_NAME(M.DRIVER_ID) DRIVER_ID_NAME,
+       FLEET_PKG.CARS_TB_GET_NAME(M.CAR_ID) CAR_ID_NAME
+
+        FROM  CARS_MOVMENTS_TB M WHERE SER  = SER_IN  ;
+       MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CARS_MOVMENTS_TB_GET '|| SQLERRM;
+END CARS_MOVMENTS_TB_GET ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CARS_MOVMENTS_TB_GET_ALL ( REF_CUR_OUT OUT SYS_REFCURSOR,
+                               MSG_OUT OUT VARCHAR2   )
+
+          AS
+          BEGIN
+          OPEN REF_CUR_OUT FOR SELECT * FROM  CARS_MOVMENTS_TB ;
+          MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CARS_MOVMENTS_TB_GET_ALL '|| SQLERRM;
+END CARS_MOVMENTS_TB_GET_ALL ;
+
+  -------------------------------------------------------------------------------------------------
+
+  PROCEDURE CARS_MOVMENTS_TB_DELETE ( SER_IN  IN CARS_MOVMENTS_TB.SER%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+
+        AS
+        BEGIN
+        DELETE  FROM  CARS_MOVMENTS_TB
+        WHERE   SER  = SER_IN ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CARS_MOVMENTS_TB_DELETE '|| SQLERRM;
+END CARS_MOVMENTS_TB_DELETE ;
+
+---------------------------------------------------------------------------
+ PROCEDURE CARS_MOVMENTS_DET_TB_INSERT(CAR_MOV_ID_IN  IN CARS_MOVMENTS_DET_TB.CAR_MOV_ID%TYPE ,
+                                  EXPECTED_LEAVE_TIME_IN  IN varchar2 ,
+                                  EXPECTED_ARRIVAL_TIME_IN  IN varchar2 ,
+                                  --ACTUAL_LEAVE_TIME_IN  IN CARS_MOVMENTS_DET_TB.ACTUAL_LEAVE_TIME%TYPE ,
+                                 -- ACTUAL_ARRIVAL_TIME_IN  IN CARS_MOVMENTS_DET_TB.ACTUAL_ARRIVAL_TIME%TYPE ,
+                                  FROM_ADDRESS_IN  IN CARS_MOVMENTS_DET_TB.FROM_ADDRESS%TYPE ,
+                                  TO_ADDRESS_IN  IN CARS_MOVMENTS_DET_TB.TO_ADDRESS%TYPE ,
+                                  PREDEFINE_START_GPS_IN  IN CARS_MOVMENTS_DET_TB.PREDEFINE_START_GPS%TYPE ,
+                                  PREDEFINE_FINISHED_GPS_IN  IN CARS_MOVMENTS_DET_TB.PREDEFINE_FINISHED_GPS%TYPE ,
+                                  PURPOSE_TYPE_IN  IN CARS_MOVMENTS_DET_TB.PURPOSE_TYPE%TYPE ,
+                                  NOTES_IN  IN CARS_MOVMENTS_DET_TB.NOTES%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+AS
+                             SEQ_VAL NUMBER ;
+    BEGIN
+
+
+    SEQ_VAL  := CARS_MOVMENTS_DET_TB_SEQ.NEXTVAL;
+    INSERT INTO CARS_MOVMENTS_DET_TB
+  (SER,CAR_MOV_ID, EXPECTED_LEAVE_TIME,EXPECTED_ARRIVAL_TIME,FROM_ADDRESS
+  ,TO_ADDRESS,PREDEFINE_START_GPS,PREDEFINE_FINISHED_GPS,PURPOSE_TYPE,NOTES,LAST_UPDATE)
+VALUES
+  ( SEQ_VAL ,
+  CAR_MOV_ID_IN,
+  TO_DATE(to_char(sysdate,'DD/MM/YYYY ')||EXPECTED_LEAVE_TIME_IN,'DD/MM/YYYY HH24:MI'),
+  TO_DATE(to_char(sysdate,'DD/MM/YYYY ')||EXPECTED_ARRIVAL_TIME_IN,'DD/MM/YYYY HH24:MI'),
+  FROM_ADDRESS_IN,
+  TO_ADDRESS_IN,
+  PREDEFINE_START_GPS_IN,
+  PREDEFINE_FINISHED_GPS_IN,
+  PURPOSE_TYPE_IN,
+  NOTES_IN,SYSDATE);
+
+
+MSG_OUT:= SEQ_VAL;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CARS_MOVMENTS_DET_TB_INSERT '|| SQLERRM;
+END CARS_MOVMENTS_DET_TB_INSERT ;
+
+------------------------------------------------------------------------------------------
+ PROCEDURE CARS_MOVMENTS_DET_TB_UPDATE ( SER_IN  IN CARS_MOVMENTS_DET_TB.SER%TYPE ,
+                                 CAR_MOV_ID_IN  IN CARS_MOVMENTS_DET_TB.CAR_MOV_ID%TYPE ,
+                                  EXPECTED_LEAVE_TIME_IN  IN varchar2 ,
+                                  EXPECTED_ARRIVAL_TIME_IN  IN varchar2 ,
+                                  --ACTUAL_LEAVE_TIME_IN  IN CARS_MOVMENTS_DET_TB.ACTUAL_LEAVE_TIME%TYPE ,
+                                 -- ACTUAL_ARRIVAL_TIME_IN  IN CARS_MOVMENTS_DET_TB.ACTUAL_ARRIVAL_TIME%TYPE ,
+                                  FROM_ADDRESS_IN  IN CARS_MOVMENTS_DET_TB.FROM_ADDRESS%TYPE ,
+                                  TO_ADDRESS_IN  IN CARS_MOVMENTS_DET_TB.TO_ADDRESS%TYPE ,
+                                  PREDEFINE_START_GPS_IN  IN CARS_MOVMENTS_DET_TB.PREDEFINE_START_GPS%TYPE ,
+                                  PREDEFINE_FINISHED_GPS_IN  IN CARS_MOVMENTS_DET_TB.PREDEFINE_FINISHED_GPS%TYPE ,
+                                  PURPOSE_TYPE_IN  IN CARS_MOVMENTS_DET_TB.PURPOSE_TYPE%TYPE ,
+                                  NOTES_IN  IN CARS_MOVMENTS_DET_TB.NOTES%TYPE ,
+                                  MSG_OUT OUT VARCHAR2)
+
+      AS
+      BEGIN
+      UPDATE CARS_MOVMENTS_DET_TB SET
+      EXPECTED_LEAVE_TIME = TO_DATE(to_char(sysdate,'DD/MM/YYYY ')||EXPECTED_LEAVE_TIME_IN,'DD/MM/YYYY HH24:MI'),
+      EXPECTED_ARRIVAL_TIME =TO_DATE(to_char(sysdate,'DD/MM/YYYY ')||EXPECTED_ARRIVAL_TIME_IN,'DD/MM/YYYY HH24:MI'),
+      FROM_ADDRESS = FROM_ADDRESS_IN,
+      TO_ADDRESS = TO_ADDRESS_IN,
+      PREDEFINE_START_GPS = PREDEFINE_START_GPS_IN,
+      PREDEFINE_FINISHED_GPS = PREDEFINE_FINISHED_GPS_IN,
+      PURPOSE_TYPE = PURPOSE_TYPE_IN,
+      LAST_UPDATE = SYSDATE,
+      NOTES = NOTES_IN
+
+
+   WHERE  SER = SER_IN   ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLET_PKG'||'CARS_MOVMENTS_DET_TB_UPDATE '|| SQLERRM;
+END CARS_MOVMENTS_DET_TB_UPDATE ;
+
+
+------------------------------------------------------------------------------------------
+PROCEDURE CARS_DET_STATUS_UPDATE (SER_IN  IN CARS_MOVMENTS_DET_TB.SER%TYPE ,
+                                  STATUS_IN  IN CARS_MOVMENTS_DET_TB.STATUS%TYPE ,
+                                  MSG_OUT OUT VARCHAR2)
+
+      AS
+      BEGIN
+      UPDATE CARS_MOVMENTS_DET_TB SET
+      STATUS = STATUS_IN
+
+   WHERE  SER = SER_IN   ;
+
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLET_PKG'||'CARS_DET_STATUS_UPDATE '|| SQLERRM;
+END CARS_DET_STATUS_UPDATE ;
+
+------------------------------------------------------------------------------------------
+ PROCEDURE CARS_DET_ACCIDENT_UPDATE ( SER_IN  IN CARS_MOVMENTS_DET_TB.SER%TYPE ,
+                                  ACCIDENT_IN  IN CARS_MOVMENTS_DET_TB.ACCIDENT%TYPE ,
+                                  MSG_OUT OUT VARCHAR2)
+
+      AS
+      BEGIN
+      UPDATE CARS_MOVMENTS_DET_TB SET
+      ACCIDENT = ACCIDENT_IN
+
+
+   WHERE  SER = SER_IN   ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLET_PKG'||'CARS_DET_ACCIDENT_UPDATE '|| SQLERRM;
+END CARS_DET_ACCIDENT_UPDATE ;
+
+----------------------------------------------------------------------------------------
+PROCEDURE  CARS_MOVMENTS_DET_TB_LIST ( INSQL IN VARCHAR2 ,
+                          OFFSET    number,ROW    number,
+                          REF_CUR_OUT OUT SYS_REFCURSOR,
+                          MSG_OUT OUT VARCHAR2  )
+      AS
+      XSQL  VARCHAR2(4000);
+      BEGIN
+
+      XSQL := ' SELECT * FROM
+      (   SELECT A.*, rownum r
+    FROM
+    (
+     SELECT  CARS_MOVMENTS_DET_TB.*
+
+    FROM CARS_MOVMENTS_DET_TB WHERE 1=1 '||INSQL||'
+    ) A
+    WHERE ( (rownum <= '||ROW||' and '||ROW||' != -1 ) or '||ROW||'= -1 )
+)
+WHERE r > ' ||OFFSET ;
+
+ OPEN REF_CUR_OUT FOR XSQL;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  ' FLEET_PKG '||' CARS_MOVMENTS_DET_TB_LIST '|| SQLERRM;
+MSG_OUT:= XSQL;
+END  CARS_MOVMENTS_DET_TB_LIST ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CARS_MOVMENTS_DET_TB_GET ( SER_IN  IN CARS_MOVMENTS_DET_TB.SER%TYPE ,
+                        REF_CUR_OUT OUT SYS_REFCURSOR,
+                        MSG_OUT OUT VARCHAR2   )
+
+       AS
+       BEGIN
+       OPEN REF_CUR_OUT FOR SELECT T.* ,
+       TO_CHAR(T.EXPECTED_LEAVE_TIME,'HH24:MI') EXPECTED_LEAVE_TIME_T ,
+       TO_CHAR(T.EXPECTED_ARRIVAL_TIME,'HH24:MI') EXPECTED_ARRIVAL_TIME_T
+       FROM  CARS_MOVMENTS_DET_TB T WHERE T.SER  = SER_IN  ;
+       MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CARS_MOVMENTS_DET_TB_GET '|| SQLERRM;
+END CARS_MOVMENTS_DET_TB_GET ;
+
+  -------------------------------------------------------------------------------------------------
+
+PROCEDURE CARS_MOVMENTS_DET_TB_GET_ALL ( SER_IN  IN CARS_MOVMENTS_DET_TB.SER%TYPE ,
+                        REF_CUR_OUT OUT SYS_REFCURSOR,
+                        MSG_OUT OUT VARCHAR2   )
+
+       AS
+       BEGIN
+       OPEN REF_CUR_OUT FOR
+       SELECT T.*,SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(270, T.STATUS) STATUS_NAME ,
+       SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(269, T.PURPOSE_TYPE) PURPOSE_TYPE_NAME ,
+       TO_CHAR(T.EXPECTED_LEAVE_TIME,'HH24:MI') EXPECTED_LEAVE_TIME_T ,
+       TO_CHAR(T.EXPECTED_ARRIVAL_TIME,'HH24:MI') EXPECTED_ARRIVAL_TIME_T
+       FROM  CARS_MOVMENTS_DET_TB T WHERE CAR_MOV_ID  = SER_IN;
+       MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CARS_MOVMENTS_DET_TB_GET_ALL '|| SQLERRM;
+END CARS_MOVMENTS_DET_TB_GET_ALL ;
+
+  -------------------------------------------------------------------------------------------------
+
+  PROCEDURE CARS_MOVMENTS_DET_TB_DELETE ( SER_IN  IN CARS_MOVMENTS_DET_TB.SER%TYPE ,
+                             MSG_OUT OUT VARCHAR2)
+
+        AS
+        BEGIN
+        DELETE  FROM  CARS_MOVMENTS_DET_TB
+        WHERE   SER  = SER_IN ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CARS_MOVMENTS_DET_TB_DELETE '|| SQLERRM;
+END CARS_MOVMENTS_DET_TB_DELETE ;
+
+---------------------------------------------------------------------------
+
+PROCEDURE CARS_MOVMENTS_TB_UPDATE_STATUS ( SER_IN  IN CARS_MOVMENTS_TB.SER%TYPE ,
+STATUS_IN  IN CARS_MOVMENTS_TB.STATUS%TYPE ,
+
+                                  MSG_OUT OUT VARCHAR2)
+
+      AS
+      BEGIN
+      UPDATE CARS_MOVMENTS_TB SET
+      STATUS = STATUS_IN
+
+   WHERE  SER = SER_IN   ;
+   MSG_OUT:= SER_IN;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLET_PKG'||'CARS_MOVMENTS_TB_UPDATE_STATUS '|| SQLERRM;
+END CARS_MOVMENTS_TB_UPDATE_STATUS ;
+
+---------------------------------------------------------------------------------------
+
+PROCEDURE CAR_DRIVE_NAME_LIST (INSQL IN VARCHAR2 ,
+ OFFSET    NUMBER,ROW    NUMBER ,
+  REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2  ) AS
+ XSQL VARCHAR2(4000);
+BEGIN
+XSQL:= 'SELECT * FROM (
+SELECT  M.* ,
+ROW_NUMBER() OVER ( ORDER BY  M.NO DESC) RN
+FROM CAR_DRIVE_NAME  M WHERE 1 = 1 '||INSQL||
+' ORDER BY M.NO DESC )
+ WHERE RN BETWEEN '||(OFFSET +1)||' AND '|| ROW ||' ORDER BY RN ';
+  OPEN REF_CUR_OUT FOR XSQL;
+     MSG_OUT:= 1;
+  EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_DRIVE_NAME_LIST '|| SQLERRM;
+ END  CAR_DRIVE_NAME_LIST ;
+----------------------------------------------------------------------------------------
+
+FUNCTION CAR_DRIVE_NAME_GET_NAME
+(NO_IN IN CAR_DRIVE_NAME.NO%TYPE ) RETURN  VARCHAR2 IS
+RES  VARCHAR2(400);
+BEGIN
+SELECT  NAME  INTO  RES  FROM CAR_DRIVE_NAME
+WHERE   NO   = NO_IN  ;
+RETURN RES;
+EXCEPTION
+WHEN NO_DATA_FOUND  THEN
+             RETURN ' ';
+WHEN OTHERS  THEN
+             RETURN ' ';
+END  CAR_DRIVE_NAME_GET_NAME ;
+
+
+----------------------------------------------------------------------------------------
+FUNCTION GET_COUNT_CAR_DETAILS
+(CAR_MOV_ID_IN IN CARS_MOVMENTS_DET_TB.CAR_MOV_ID%TYPE ) RETURN  VARCHAR2 IS
+RES  VARCHAR2(400);
+BEGIN
+SELECT  COUNT(SER)  INTO  RES  FROM CARS_MOVMENTS_DET_TB
+WHERE   CAR_MOV_ID   = CAR_MOV_ID_IN  ;
+RETURN RES;
+EXCEPTION
+WHEN NO_DATA_FOUND  THEN
+             RETURN ' ';
+WHEN OTHERS  THEN
+             RETURN ' ';
+END  GET_COUNT_CAR_DETAILS ;
+
+---------------------------------------------------------------------------------------------
+
+
+PROCEDURE CARS_COUPON_FUEL_TB_INSERT (
+CAR_FILE_ID_IN  IN CARS_COUPON_FUEL_TB.CAR_FILE_ID%TYPE ,
+FUEL_TYPE_IN  IN CARS_COUPON_FUEL_TB.FUEL_TYPE%TYPE ,
+COUPON_FUEL_ID_IN  IN CARS_COUPON_FUEL_TB.COUPON_FUEL_ID%TYPE ,
+COUPON_FUEL_AMOUNT_IN  IN CARS_COUPON_FUEL_TB.COUPON_FUEL_AMOUNT%TYPE ,
+COUPON_FUEL_DATE_IN  IN CARS_COUPON_FUEL_TB.COUPON_FUEL_DATE%TYPE ,
+HINTS_IN  IN CARS_COUPON_FUEL_TB.HINTS%TYPE ,
+EMP_ID_IN  IN CARS_COUPON_FUEL_TB.EMP_ID%TYPE  ,
+SUPPLIER_IN  IN CARS_COUPON_FUEL_TB.SUPPLIER%TYPE  ,
+METAR_COUNT_IN  IN CARS_COUPON_FUEL_TB.METAR_COUNT%TYPE  ,
+CAR_CASE_IN  IN CARS_COUPON_FUEL_TB.CAR_CASE%TYPE  ,
+MSG_OUT OUT VARCHAR2) AS
+SEQ_VAL NUMBER ;
+RES NUMBER;
+V_COUPON_NO NUMBER;
+V_METAR_COUNT_CHECK NUMBER;
+V_METAR_COUNT NUMBER;
+BEGIN
+
+SELECT count(0) COUPON_NO INTO V_COUPON_NO
+FROM CARS_COUPON_FUEL_TB
+WHERE CAR_FILE_ID = CAR_FILE_ID_IN  and trunc(coupon_fuel_date, 'MM') = trunc (COUPON_FUEL_DATE_IN, 'MM')
+order by coupon_fuel_date asc;
+
+
+SELECT count(METAR_COUNT) INTO V_METAR_COUNT_CHECK
+FROM CARS_COUPON_FUEL_TB
+WHERE CAR_FILE_ID = CAR_FILE_ID_IN  and trunc(coupon_fuel_date, 'MM') = add_months(trunc(COUPON_FUEL_DATE_IN,'MM'),-1)
+order by coupon_fuel_date asc ;
+
+
+IF V_METAR_COUNT_CHECK > 0 or V_METAR_COUNT_CHECK != null THEN
+
+SELECT METAR_COUNT INTO V_METAR_COUNT
+FROM
+(SELECT METAR_COUNT , coupon_fuel_date
+FROM CARS_COUPON_FUEL_TB
+WHERE CAR_FILE_ID = CAR_FILE_ID_IN  and trunc(coupon_fuel_date, 'MM') = add_months(trunc(COUPON_FUEL_DATE_IN,'MM'),-1)
+order by coupon_fuel_date asc)
+WHERE rownum=1;
+
+END IF;
+
+RES:= PAYMENT_PKG.CARS_FUEL_AMOUNT(  CAR_FILE_ID_IN ,   COUPON_FUEL_DATE_IN , 0  );
+
+IF NVL( COUPON_FUEL_AMOUNT_IN,0 ) >  RES THEN
+RAISE_APPLICATION_ERROR(-20010,' الكمية اكبر من المطلوب ');
+END IF;
+
+MSG_OUT := CAR_CASE_IN || V_COUPON_NO || METAR_COUNT_IN || V_METAR_COUNT  ;
+
+IF CAR_CASE_IN = 2 and V_COUPON_NO = 0 and  METAR_COUNT_IN <=  V_METAR_COUNT  THEN
+MSG_OUT :=  'الرجاء ادخال قراءة العداد بالشكل الصحيح';
+ELSE
+
+SEQ_VAL  := CARS_COUPON_FUEL_TB_SEQ.NEXTVAL;
+INSERT INTO  CARS_COUPON_FUEL_TB(
+SER ,CAR_FILE_ID  ,FUEL_TYPE ,COUPON_FUEL_ID ,COUPON_FUEL_AMOUNT ,COUPON_FUEL_DATE ,HINTS ,EMP_ID ,ENTRY_DATE ,ENTRY_USER ,COUPON_FUEL_CASE,SUPPLIER  ,METAR_COUNT,LAST_UPDATE ,CAR_CASE )
+
+VALUES
+(SEQ_VAL   ,CAR_FILE_ID_IN  ,FUEL_TYPE_IN ,COUPON_FUEL_ID_IN ,COUPON_FUEL_AMOUNT_IN ,COUPON_FUEL_DATE_IN ,HINTS_IN ,EMP_ID_IN ,SYSDATE ,User_Pkg.Get_User_Id ,1,SUPPLIER_IN ,METAR_COUNT_IN ,SYSDATE ,CAR_CASE_IN ) ;
+MSG_OUT:= SEQ_VAL ;
+
+END IF;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'PAYMENT_PKG'||'CARS_COUPON_FUEL_TB_INSERT '|| SQLERRM;
+END CARS_COUPON_FUEL_TB_INSERT ;
+
+-------------------------------------------------------------------------------------------------
+
+PROCEDURE CARS_COUPON_FUEL_TB_UPDATE (
+SER_IN  IN CARS_COUPON_FUEL_TB.SER%TYPE ,
+CAR_NUM_IN  IN CARS_COUPON_FUEL_TB.CAR_NUM%TYPE ,
+FUEL_TYPE_IN  IN CARS_COUPON_FUEL_TB.FUEL_TYPE%TYPE ,
+COUPON_FUEL_ID_IN  IN CARS_COUPON_FUEL_TB.COUPON_FUEL_ID%TYPE ,
+COUPON_FUEL_AMOUNT_IN  IN CARS_COUPON_FUEL_TB.COUPON_FUEL_AMOUNT%TYPE ,
+COUPON_FUEL_DATE_IN  IN CARS_COUPON_FUEL_TB.COUPON_FUEL_DATE%TYPE ,
+HINTS_IN  IN CARS_COUPON_FUEL_TB.HINTS%TYPE ,
+EMP_ID_IN  IN CARS_COUPON_FUEL_TB.EMP_ID%TYPE ,
+SUPPLIER_IN  IN CARS_COUPON_FUEL_TB.SUPPLIER%TYPE  ,
+METAR_COUNT_IN  IN CARS_COUPON_FUEL_TB.METAR_COUNT%TYPE  ,
+MSG_OUT OUT VARCHAR2) AS
+RES NUMBER;
+L_CAR_FILE_ID NUMBER;
+BEGIN
+
+SELECT CAR_FILE_ID INTO  L_CAR_FILE_ID FROM CARS_COUPON_FUEL_TB WHERE SER = SER_IN ;
+
+RES:= PAYMENT_PKG.CARS_FUEL_AMOUNT(  L_CAR_FILE_ID ,   COUPON_FUEL_DATE_IN , SER_IN  );
+
+IF NVL( COUPON_FUEL_AMOUNT_IN,0 ) >  RES THEN
+RAISE_APPLICATION_ERROR(-20010,' الكمية اكبر من المطلوب ');
+END IF;
+
+UPDATE CARS_COUPON_FUEL_TB SET
+    CAR_NUM = CAR_NUM_IN   ,
+    FUEL_TYPE = FUEL_TYPE_IN   ,
+    COUPON_FUEL_ID = COUPON_FUEL_ID_IN   ,
+    COUPON_FUEL_AMOUNT = COUPON_FUEL_AMOUNT_IN   ,
+    COUPON_FUEL_DATE = COUPON_FUEL_DATE_IN   ,
+    HINTS = HINTS_IN   ,
+    EMP_ID = EMP_ID_IN  ,
+    SUPPLIER = SUPPLIER_IN,
+    LAST_UPDATE = SYSDATE,
+    METAR_COUNT = METAR_COUNT_IN
+   WHERE SER = SER_IN  ;
+  MSG_OUT:=  SQL%ROWCOUNT;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'PAYMENT_PKG'||'CARS_COUPON_FUEL_TB_UPDATE '|| SQLERRM;
+END CARS_COUPON_FUEL_TB_UPDATE ;
+
+----------------------------------------------------------------------
+
+PROCEDURE CARS_COUPON_UPDATE_FUELTYPE (
+SER_IN  IN CARS_COUPON_FUEL_TB.SER%TYPE ,
+FUEL_TYPE_IN  IN CARS_COUPON_FUEL_TB.FUEL_TYPE%TYPE ,
+MSG_OUT OUT VARCHAR2) AS
+BEGIN
+
+UPDATE CARS_COUPON_FUEL_TB SET
+    FUEL_TYPE = FUEL_TYPE_IN
+    WHERE SER = SER_IN  ;
+  MSG_OUT:=  SQL%ROWCOUNT;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'PAYMENT_PKG'||'CARS_COUPON_UPDATE_FUELTYPE '|| SQLERRM;
+END CARS_COUPON_UPDATE_FUELTYPE ;
+----------------------------------------------------------------------
+PROCEDURE CARS_COUPON_FUEL_TB_DELETE (
+SER_IN  IN CARS_COUPON_FUEL_TB.SER%TYPE ,
+MSG_OUT OUT VARCHAR2) AS
+BEGIN
+ DELETE  FROM  CARS_COUPON_FUEL_TB
+ WHERE  SER = SER_IN  ;
+  MSG_OUT:=  SQL%ROWCOUNT;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'PAYMENT_PKG'||'CARS_COUPON_FUEL_TB_DELETE '|| SQLERRM;
+END CARS_COUPON_FUEL_TB_DELETE ;
+
+---------------------------------------------------------------------------
+
+PROCEDURE CARS_COUPON_FUEL_TB_GET (
+SER_IN  IN CARS_COUPON_FUEL_TB.CAR_FILE_ID%TYPE ,
+ REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2   ) AS
+BEGIN
+ OPEN REF_CUR_OUT FOR
+SELECT    M.ser,
+    M.car_file_id,
+    M.car_num,
+    M.fuel_type,
+    M.coupon_fuel_id,
+    M.coupon_fuel_amount,
+    M.coupon_fuel_date,
+    M.hints,
+    M.emp_id,
+    M.entry_date,
+    M.entry_user,
+    M.coupon_fuel_case,
+    M.user_cancel_coupon,
+    M.date_cancel_coupon,
+    M.branch_id,
+    M.empno,
+    M.supplier,
+    M.metar_count,
+    M.car_case,
+    M.car_balance , FINANCIAL_PKG.ACOUNTS_TB_GET_NAME_ALL(M.EMP_ID,2)  EMP_ID_NAME ,
+ CAR_FILE_ID||'-'||NVL(M.OWNER,PAYMENT_PKG.EXPENSE_BILL_CUST_NAME( CAR_FILE_ID , 2)) OWNER ,
+ SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(58 ,M.FUEL_TYPE) FUEL_TYPE_NAME,
+ SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(405 ,M.CAR_CASE) CAR_CASE_NAME
+FROM CARS_COUPON_FUEL_TB  M
+ WHERE M.SER = SER_IN  ;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'PAYMENT_PKG'||'CARS_COUPON_FUEL_TB_GET '|| SQLERRM;
+END CARS_COUPON_FUEL_TB_GET ;
+
+-------------------------------------------------------------
+
+PROCEDURE CARS_COUPON_FUEL_TB_LIST (INSQL IN VARCHAR2 ,
+ OFFSET    NUMBER,ROW    NUMBER ,
+  REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2  ) AS
+ XSQL VARCHAR2(4000);
+BEGIN
+XSQL:= 'SELECT * FROM (
+SELECT
+    M.ser,
+    M.car_file_id,
+    M.car_num,
+    M.fuel_type,
+    M.coupon_fuel_id,
+    M.coupon_fuel_amount,
+    M.coupon_fuel_date,
+    M.hints,
+    M.emp_id,
+    M.entry_date,
+    M.entry_user,
+    M.coupon_fuel_case,
+    M.user_cancel_coupon,
+    M.date_cancel_coupon,
+    M.branch_id,
+    M.empno,
+    M.supplier,
+    M.metar_count,
+    M.car_case,
+    M.car_balance , FINANCIAL_PKG.ACOUNTS_TB_GET_NAME_ALL(M.EMP_ID,2)  EMP_ID_NAME ,
+USER_PKG.GET_USER_NAME(M.ENTRY_USER)  ENTRY_USER_NAME  ,
+SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(58 ,M.FUEL_TYPE) FUEL_TYPE_NAME ,
+NVL(M.OWNER,PAYMENT_PKG.EXPENSE_BILL_CUST_NAME( CAR_FILE_ID , 2)) OWNER ,
+SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(144 ,M.COUPON_FUEL_CASE) COUPON_FUEL_CASE_NAME ,
+SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(405 ,M.CAR_CASE) CAR_CASE_NAME ,
+ROW_NUMBER() OVER ( ORDER BY  M.SER DESC) RN
+FROM CARS_COUPON_FUEL_TB  M WHERE 1=1  '||INSQL||
+'ORDER BY SER DESC )
+ WHERE RN BETWEEN '||(OFFSET +1)||' AND '|| ROW ||' ORDER BY RN ';
+
+ OPEN REF_CUR_OUT FOR XSQL;
+     MSG_OUT:= 1;
+  EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'PAYMENT_PKG'||'CARS_COUPON_FUEL_TB_LIST '|| SQLERRM;
+ END  CARS_COUPON_FUEL_TB_LIST ;
+
+----------------------------------------------------------------------------------------
+
+PROCEDURE CARS_COUPON_FUEL_TB_ADOPT(
+SER_IN  IN CARS_COUPON_FUEL_TB.SER%TYPE ,
+COUPON_FUEL_CASE_IN  IN CARS_COUPON_FUEL_TB.COUPON_FUEL_CASE%TYPE ,
+MSG_OUT OUT VARCHAR2)  AS
+BEGIN
+
+CASE COUPON_FUEL_CASE_IN
+
+ WHEN  0 THEN
+ UPDATE CARS_COUPON_FUEL_TB SET
+ COUPON_FUEL_CASE  = COUPON_FUEL_CASE_IN  ,
+ USER_CANCEL_COUPON = USER_PKG.GET_USER_ID  ,
+ DATE_CANCEL_COUPON = SYSDATE
+ WHERE SER = SER_IN  ;
+ MSG_OUT:=  SQL%ROWCOUNT;
+
+ WHEN  2 THEN
+ UPDATE CARS_COUPON_FUEL_TB SET
+ COUPON_FUEL_CASE  = COUPON_FUEL_CASE_IN
+ WHERE SER = SER_IN  ;
+ MSG_OUT:=  SQL%ROWCOUNT;
+
+ ELSE
+ MSG_OUT:= 'ERROR';
+ END CASE;
+ EXCEPTION
+ WHEN OTHERS THEN
+ MSG_OUT :=  'PAYMENT_PKG'||'CARS_COUPON_FUEL_TB_ADOPT '|| SQLERRM;
+ END  CARS_COUPON_FUEL_TB_ADOPT ;
+
+ ---------------------------------------------------------------------------------------------
+
+FUNCTION CARS_COUPON_FUEL_COUNT(
+CAR_FILE_ID_IN  IN CARS_COUPON_FUEL_TB.CAR_FILE_ID%TYPE ,
+COUPON_FUEL_DATE_IN  IN CARS_COUPON_FUEL_TB.COUPON_FUEL_DATE%TYPE  )
+RETURN NUMBER IS
+RES NUMBER ;
+
+BEGIN
+
+SELECT COUNT(*) INTO RES  FROM  CARS_COUPON_FUEL_TB T
+WHERE T.CAR_FILE_ID = CAR_FILE_ID_IN
+AND   TO_CHAR(T.COUPON_FUEL_DATE,'YYYYMM') = TO_CHAR(COUPON_FUEL_DATE_IN,'YYYYMM') ;
+
+RETURN NVL(RES,0);
+
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+RETURN 0;
+WHEN OTHERS THEN
+RETURN 0;
+
+END CARS_COUPON_FUEL_COUNT ;
+
+------------------------------------------------------------------------------------------
+PROCEDURE CARS_FUEL_AMOUNT_PROC(FILE_ID_IN NUMBER , THE_DATE DATE  , SER_IN NUMBER, REF_CUR_OUT OUT SYS_REFCURSOR,MSG_OUT OUT VARCHAR2 )
+IS
+A NUMBER ;
+B NUMBER ;
+C NUMBER ;
+D NUMBER ;
+F NUMBER ;
+G NUMBER ;
+BEGIN
+
+
+    BEGIN
+        SELECT SUM(M.MONTHLY_ALLOCATED) INTO  A
+        FROM cars_tb  M
+        WHERE M.CAR_FILE_ID = FILE_ID_IN
+        GROUP BY  M.CAR_FILE_ID ;
+
+    EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+          A:= 0;
+    END;
+
+    BEGIN
+        SELECT  SUM(COUPON_FUEL_AMOUNT) INTO   B
+        FROM  CARS_COUPON_FUEL_TB CO
+        WHERE CAR_FILE_ID =  FILE_ID_IN
+       -- AND   (SER <> SER_IN or SER_IN is null)
+        AND   Coupon_fuel_case <> 0
+        AND   TO_CHAR(COUPON_FUEL_DATE,'YYYYMM') = TO_CHAR(NVL(THE_DATE,SYSDATE),'YYYYMM')
+        /*GROUP BY  CAR_FILE_ID */;
+
+     EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+          B := 0;
+    END;
+
+    BEGIN
+        SELECT   SUM(MANAGER4_AMOUNT)  INTO C
+        FROM     CARS_ADDITIONAL_FUEL_DET_TB D , CARS_ADDITIONAL_FUEL_TB M
+        WHERE    D.CARS_ADDITIONAL_FUEL_ID  = M.CARS_ADDITIONAL_FUEL_ID
+        AND  CAR_NUM = FILE_ID_IN
+        AND  TO_CHAR(ENTRY_DATE,'YYYYMM') = TO_CHAR(NVL(THE_DATE,SYSDATE),'YYYYMM')
+        GROUP BY CAR_NUM ;
+
+    EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+          C := 0;
+    END;
+
+
+    BEGIN
+        SELECT   SUM(THE_COUNT)  INTO D
+        FROM     CARS_FUEL_TRANSFER_TB
+        WHERE    TO_FILE_ID = FILE_ID_IN
+        AND  TO_CHAR(ENTRY_DATE,'YYYYMM') = TO_CHAR(NVL(THE_DATE,SYSDATE),'YYYYMM')
+        AND Status = 1/*
+        GROUP BY TO_FILE_ID */;
+
+    EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+          D := 0;
+    END;
+
+      BEGIN
+        SELECT   SUM(THE_COUNT)  INTO F
+        FROM     CARS_FUEL_TRANSFER_TB
+        WHERE    From_File_Id = FILE_ID_IN
+        AND  TO_CHAR(ENTRY_DATE,'YYYYMM') = TO_CHAR(NVL(THE_DATE,SYSDATE),'YYYYMM')
+        AND Status = 1/*
+        GROUP BY TO_FILE_ID */;
+
+    EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+          F := 0;
+    END;
+	
+	BEGIN
+  /*
+		SELECT max(METAR_COUNT) INTO G
+		FROM CARS_COUPON_FUEL_TB
+		WHERE CAR_FILE_ID = FILE_ID_IN;
+*/
+
+        SELECT max(METAR_COUNT) INTO G
+        FROM CARS_COUPON_FUEL_TB c
+        WHERE CAR_FILE_ID = FILE_ID_IN
+        and c.coupon_fuel_date > '01/01/2022';
+
+
+	EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+	G := 0;
+	END;
+
+OPEN REF_CUR_OUT FOR SELECT   NVL(A,0) MONTHLY_ALLOCATED , NVL(C,0) ADDITION_AMOUNT , NVL(B,0) COUPON_FUEL_AMOUNT , (NVL(D,0) - NVL(F,0)) CARS_FUEL_TRANSFER ,NVL(G,0) METAR_COUNT FROM DUAL;
+
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+NULL;
+WHEN OTHERS THEN
+NULL;
+
+
+END CARS_FUEL_AMOUNT_PROC ;
+--------------------------------------------------------------------
+
+PROCEDURE CAR_GPS_TRACHING_DRIVER_NAME ( REF_CUR_OUT OUT SYS_REFCURSOR,
+                               MSG_OUT OUT VARCHAR2   )
+
+          AS
+          BEGIN
+          OPEN REF_CUR_OUT FOR
+       SELECT A.EMP_NO  , B.*
+       FROM
+       CAR_GPS_TRACKING_DRIVER_MV A ,
+       CAR_DRIVE_NAME B
+       WHERE A.EMP_NO = B.NO;
+
+MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  'FLEET_PKG'||'CAR_GPS_TRACHING_DRIVER_NAME '|| SQLERRM;
+END CAR_GPS_TRACHING_DRIVER_NAME ;
+
+-------------------------------------------------------
+
+
+
+PROCEDURE  CARS_GPS_TRACING_SPEED_GET ( INSQL IN VARCHAR2 ,
+                          REF_CUR_OUT OUT SYS_REFCURSOR,
+                          MSG_OUT OUT VARCHAR2  )
+      AS
+      XSQL  VARCHAR2(4000);
+      BEGIN
+
+      XSQL := 'SELECT Round(avg(SPEED) * 3.6) SPEED
+              FROM  CAR_GPS_TRACKING_TB
+               '||INSQL;
+
+ OPEN REF_CUR_OUT FOR XSQL;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  ' FLEET_PKG '||' CARS_GPS_TRACING_SPEED_GET '|| SQLERRM;
+MSG_OUT:= XSQL;
+END  CARS_GPS_TRACING_SPEED_GET ;
+---------------------------------------------------------------------
+
+
+PROCEDURE  CARS_GPS_TRACING_MOVEMENT_GET ( INSQL IN VARCHAR2 ,
+                          REF_CUR_OUT OUT SYS_REFCURSOR,
+                          MSG_OUT OUT VARCHAR2  )
+      AS
+      XSQL  VARCHAR2(4000);
+      BEGIN
+
+      XSQL := 'SELECT SER,LONGITUDE,LATITUDE,ENTRY_DATE
+              FROM  CAR_GPS_TRACKING_TB
+               '||INSQL;
+
+ OPEN REF_CUR_OUT FOR XSQL;
+   MSG_OUT:= 1;
+EXCEPTION
+WHEN OTHERS THEN
+MSG_OUT :=  ' FLEET_PKG '||' CARS_GPS_TRACING_MOVEMENT_GET '|| SQLERRM;
+MSG_OUT:= XSQL;
+END  CARS_GPS_TRACING_MOVEMENT_GET ;
+
+
+
+---------------------------------------------------------------------------------------
+
+FUNCTION CURRENT_READING(
+CAR_FILE_ID_IN  IN CARS_COUPON_FUEL_TB.CAR_FILE_ID%TYPE ,
+COUPON_FUEL_DATE_IN  IN CARS_COUPON_FUEL_TB.COUPON_FUEL_DATE%TYPE  )
+RETURN NUMBER IS
+RES NUMBER ;
+
+BEGIN
+
+SELECT * INTO RES
+FROM
+(SELECT METAR_COUNT
+FROM CARS_COUPON_FUEL_TB
+WHERE CAR_FILE_ID = CAR_FILE_ID_IN  and TRUNC(COUPON_FUEL_DATE,'MM')  = add_months( (COUPON_FUEL_DATE_IN),1)
+ORDER BY COUPON_FUEL_DATE asc)
+WHERE rownum=1;
+
+RETURN NVL(RES,0);
+
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+RETURN 0;
+WHEN OTHERS THEN
+RETURN 0;
+
+END CURRENT_READING ;
+
+---------------------------------------------------------------------------------------
+
+FUNCTION PREVIOUS_READING(
+CAR_FILE_ID_IN  IN CARS_COUPON_FUEL_TB.CAR_FILE_ID%TYPE ,
+COUPON_FUEL_DATE_IN  IN CARS_COUPON_FUEL_TB.COUPON_FUEL_DATE%TYPE  )
+RETURN NUMBER IS
+RES NUMBER ;
+
+BEGIN
+
+SELECT * INTO RES
+FROM
+(SELECT METAR_COUNT
+FROM CARS_COUPON_FUEL_TB
+WHERE CAR_FILE_ID = CAR_FILE_ID_IN  and TRUNC(COUPON_FUEL_DATE,'MM')  = COUPON_FUEL_DATE_IN
+ORDER BY COUPON_FUEL_DATE asc)
+WHERE rownum=1;
+
+RETURN NVL(RES,0);
+
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+RETURN 0;
+WHEN OTHERS THEN
+RETURN 0;
+
+END PREVIOUS_READING ;
+
+
+end fleet_pkg;
+
+ 

@@ -1,0 +1,163 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: mkilani
+ * Date: 08/10/18
+ * Time: 10:38 ص
+ */
+
+$MODULE_NAME= 'hr_attendance';
+$TB_NAME= 'emps_absence';
+
+$edit_url =base_url("$MODULE_NAME/$TB_NAME/edit");
+$get_page_url = base_url("$MODULE_NAME/$TB_NAME/get_page");
+
+if(HaveAccess($edit_url))
+    $edit= 'edit';
+else
+    $edit= '';
+
+$date_attr= " data-type='date' data-date-format='DD/MM/YYYY' data-val='true' data-val-regex-pattern='".date_format_exp()."' data-val-regex='Error' ";
+
+echo AntiForgeryToken();
+?>
+
+<script> var show_page=true; </script>
+
+<div class="row">
+    <div class="toolbar">
+
+        <div class="caption"><?= $title ?></div>
+
+        <ul>
+            <li><a  onclick="<?= $help ?>" href="javascript:;" class="help"><i class="icon icon-question-circle"></i></a> </li>
+        </ul>
+
+    </div>
+
+    <div class="form-body">
+
+        <form class="form-vertical" id="<?=$TB_NAME?>_form" >
+            <div class="modal-body inline_form">
+
+                <div class="form-group col-sm-2">
+                    <label class="control-label">الموظف</label>
+                    <div>
+                        <select name="emp_no" id="dp_emp_no" class="form-control sel2" >
+                            <option value="">_________</option>
+                            <?php foreach($emp_no_cons as $row) :?>
+                                <option value="<?=$row['EMP_NO']?>"><?=$row['EMP_NO'].': '.$row['EMP_NAME']?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group col-sm-2">
+                    <label class="control-label">التاريخ من</label>
+                    <div>
+                        <input type="text" <?=$date_attr?> value="<?=($dt1!=-1)?$dt1:date('d/m/Y')?>" name="dt1" id="txt_dt1" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group col-sm-2">
+                    <label class="control-label">الى</label>
+                    <div>
+                        <input type="text" <?=$date_attr?> value="<?=date('d/m/Y')?>" name="dt2" id="txt_dt2" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group col-sm-1">
+                    <label class="control-label">المقر </label>
+                    <div>
+                        <select name="branch_id" id="dp_branch_id" class="form-control sel2" >
+                            <option value="">_________</option>
+                            <?php foreach($branches as $row) :?>
+                                <option value="<?=$row['NO']?>" ><?=$row['NAME']?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group col-sm-1">
+                    <label class="control-label">له بيان</label>
+                    <div>
+                        <select name="is_note" id="dp_is_note" class="form-control sel2" >
+                            <option value="0">الكل</option>
+                            <option value="1">نعم</option>
+                            <option value="2">لا</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group col-sm-1" style="display: none">
+                    <label class="control-label">نوع الموظفين </label>
+                    <div>
+                        <select name="emp_type" id="dp_emp_type" class="form-control sel2" >
+                            <option selected value="1" >موظفي الشركة</option>
+                            <option value="2" >فنيي مشروع الفاقد</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+        </form>
+
+        <div class="modal-footer">
+            <button type="button" onclick="javascript:search();" class="btn btn-success"> إستعلام</button>
+            <button type="button" onclick="$('#page_tb').tableExport({type:'excel',escape:'false'});" class="btn btn-success">  اكسل </button>
+            <button type="button" onclick="javascript:clear_form();"  class="btn btn-default"> تفريغ الحقول</button>
+        </div>
+
+        <div id="msg_container"></div>
+
+        <div id="container">
+            <?=modules::run($get_page_url, $page, $page_act, $emp_no, $branch_id, $dt1, $dt2, $is_note, $emp_type );?>
+        </div>
+
+    </div>
+
+</div>
+
+
+<?php
+$scripts = <<<SCRIPT
+<script>
+
+    $('.sel2').select2();
+
+    if('{$page_act}'=='my'){
+        $('#dp_emp_no, #dp_branch_id, #dp_emp_type').select2('readonly',1);
+    }
+
+    $('.pagination li').click(function(e){
+        e.preventDefault();
+    });
+
+    function clear_form(){
+        clearForm($('#{$TB_NAME}_form'));
+        $('.sel2').select2('val','');
+    }
+
+    function values_search(add_page){
+        var values= {page:1, page_act: '{$page_act}', emp_no:$('#dp_emp_no').val(), branch_id:$('#dp_branch_id').val(), dt1:$('#txt_dt1').val(), dt2:$('#txt_dt2').val(), is_note:$('#dp_is_note').val(), emp_type:$('#dp_emp_type').val() };
+        if(add_page==0)
+            delete values.page;
+        return values;
+    }
+
+    function search(){
+        var values= values_search(1);
+        get_data('{$get_page_url}',values ,function(data){
+            $('#container').html(data);
+        },'html');
+    }
+
+    function LoadingData(){
+        var values= values_search(0);
+        ajax_pager_data('#page_tb > tbody',values);
+    }
+
+</script>
+SCRIPT;
+sec_scripts($scripts);
+?>

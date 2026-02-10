@@ -1,0 +1,6 @@
+{
+    "require": {
+        "jaspersoft/rest-client": "^2.0",
+        "phpoffice/phpspreadsheet": "^1.29"
+    }
+}

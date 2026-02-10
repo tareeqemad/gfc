@@ -1,0 +1,25 @@
+# Dependencies
+/vendor/
+
+# IDE
+.idea/
+*.iml
+
+# Temp & cache
+/temp/
+*.log
+perf.data
+
+# Uploads (optional - uncomment if you don't want to track uploads)
+# /uploads/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# QRCode cache
+/barcode/qrcode/cache/
+/barcode/qrcode/*.dat
+
+# Composer (keep lock file for reproducible builds)
+# composer.lock is usually committed

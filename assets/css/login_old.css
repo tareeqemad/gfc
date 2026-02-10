@@ -1,0 +1,61 @@
+@font-face {
+    font-family: 'Droid Arabic Naskh';
+    font-style: normal;
+    font-weight: 400;
+    src: url(../fonts/DroidNaskh-Regular.eot);
+    src: url(../fonts/DroidNaskh-Regular.eot?#iefix) format('embedded-opentype'),
+    url(../fonts/DroidNaskh-Regular.woff2) format('woff2'),
+    url(../fonts/DroidNaskh-Regular.woff) format('woff'),
+    url(../fonts/DroidNaskh-Regular.ttf) format('truetype');
+}
+@font-face {
+    font-family: 'Droid Arabic Naskh';
+    font-style: normal;
+    font-weight: 700;
+    src: url(../fonts/DroidNaskh-Bold.eot);
+    src: url(../fonts/DroidNaskh-Bold.eot?#iefix) format('embedded-opentype'),
+    url(../fonts/DroidNaskh-Bold.woff2) format('woff2'),
+    url(../fonts/DroidNaskh-Bold.woff) format('woff'),
+    url(../fonts/DroidNaskh-Bold.ttf) format('truetype');
+}
+
+body{
+    font-family: 'Droid Arabic Naskh';font-size: 14px;
+    background-color: #eee;
+}
+
+#login{
+    width: 400px;
+
+    margin: 50px auto;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0 0 10px #ccc;
+    background-color: #fff;
+    padding-bottom: 15px;
+}
+
+#login .toolbar{
+
+}
+
+#login .toolbar .caption{
+    padding: 10px;
+
+    background-color: #24A1F5;
+    border-radius: 10px 10px 0px 0;
+    color: #fff;
+    text-shadow: 0 0 2px #111;
+    border-bottom: 1px solid #353535;
+}
+
+.field-validation-error{
+    font-size: 12px;
+    color: #B00;
+    padding: 10px 2px;
+    display: inline-block;
+}
+
+.form-control.input-validation-error{
+    border-color: #B00;
+}
