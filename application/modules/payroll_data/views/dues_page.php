@@ -21,6 +21,10 @@ $delete_url  = base_url("$MODULE_NAME/$TB_NAME/delete");
     .table-info td { padding-top: .55rem; padding-bottom: .55rem; }
     .badge { font-weight: 600; }
     .summary-name { font-weight: 700; }
+    /* المتبقي: لون واضح بدون أصفر قوي */
+    .balance-remaining { font-weight: 700; color: #0d6efd !important; }
+    .balance-remaining.text-success { color: #198754 !important; }
+    .balance-remaining.text-danger { color: #dc3545 !important; }
 </style>
 
 <div class="table-responsive">
@@ -106,18 +110,18 @@ $delete_url  = base_url("$MODULE_NAME/$TB_NAME/delete");
             $emp_total_entitled = $emp_base_due + $emp_total_add;   // "من …" في نص تم سداد
             $emp_total_balance  = $emp_total_entitled - $emp_total_ded; // المتبقي
 
-            // Balance display + color
+            // Balance display + color (واضح بدون أصفر مبالغ فيه)
             $emp_balance_display = n_format(abs($emp_total_balance));
             if ($emp_total_balance > 0) {
-                $emp_balance_class = 'text-warning';
+                $emp_balance_class = 'balance-remaining'; /* أزرق بدل أصفر */
                 $emp_balance_icon  = '<i class="fa fa-arrow-up"></i>';
                 $emp_balance_title = 'متبقي';
             } elseif ($emp_total_balance < 0) {
-                $emp_balance_class = 'text-danger';
+                $emp_balance_class = 'balance-remaining text-danger';
                 $emp_balance_icon  = '<i class="fa fa-arrow-down"></i>';
                 $emp_balance_title = 'زيادة دفع';
             } else {
-                $emp_balance_class = 'text-success';
+                $emp_balance_class = 'balance-remaining text-success';
                 $emp_balance_icon  = '<i class="fa fa-check-circle"></i>';
                 $emp_balance_title = 'مغلق';
             }

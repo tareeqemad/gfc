@@ -81,10 +81,20 @@ class Salary_dues_types extends MY_Controller
 
     /**
      * Create new type
+     * الشجرة محدودة بثلاث مستويات فقط: جد، أب، أبناء. لا يُسمح بإضافة ابن للمستوى الثالث.
      */
     function create()
     {
         $this->_post_validation('create');
+
+        $parent_id = $this->p_parent_id;
+        if ($parent_id !== null && $parent_id !== '') {
+            $parent_depth = $this->{$this->MODEL_NAME}->get_node_depth($parent_id);
+            if ($parent_depth >= 3) {
+                $this->print_error('الشجرة محدودة بثلاث مستويات فقط (جد، أب، أبناء). لا يمكن إضافة ابن تحت «بدل مواصلات» أو أي بند من المستوى الثالث.');
+                return;
+            }
+        }
 
         $result = $this->{$this->MODEL_NAME}->create($this->_postedData('create'));
 
@@ -102,10 +112,20 @@ class Salary_dues_types extends MY_Controller
 
     /**
      * Edit existing type
+     * لا يُسمح بجعل الأب عقدة من المستوى الثالث (الحد الأقصى 3 مستويات).
      */
     function edit()
     {
         $this->_post_validation('edit');
+
+        $parent_id = $this->p_parent_id;
+        if ($parent_id !== null && $parent_id !== '') {
+            $parent_depth = $this->{$this->MODEL_NAME}->get_node_depth($parent_id);
+            if ($parent_depth >= 3) {
+                $this->print_error('الشجرة محدودة بثلاث مستويات فقط. لا يمكن جعل الأب بنداً من المستوى الثالث.');
+                return;
+            }
+        }
 
         $result = $this->{$this->MODEL_NAME}->edit($this->_postedData('edit'));
 

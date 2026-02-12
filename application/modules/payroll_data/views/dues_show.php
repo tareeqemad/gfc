@@ -69,6 +69,8 @@ echo AntiForgeryToken();
                         .dues-pay-type-tree-wrap .tree li > span.lt-2 { border-right: 4px solid #e74c3c; }
                         .dues-pay-type-tree-wrap .tree li > span.lt-2 .tree-icon { color: #c0392b; }
                         .dues-pay-type-tree-wrap .tree .tree-icon { font-size: 16px; margin-left: 5px; vertical-align: middle; cursor: pointer; }
+                        #excelDropZone.excel-dropzone-disabled { background: #e9ecef !important; cursor: not-allowed !important; opacity: 0.85; pointer-events: none; }
+                        #excelDropZone.excel-dropzone-enabled { pointer-events: auto; }
                     </style>
                     <!-- ===== Summary Panel (always on top) ===== -->
                     <div id="duesSummaryWrap" style="display:none;margin-bottom:10px;">
@@ -117,13 +119,33 @@ echo AntiForgeryToken();
                                 </a>
                             </div>
                             <div class="card-body py-2">
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <div id="excelPayTypeWrap" class="rounded p-3" style="background: #f8f9fa; border: 1px solid #dee2e6;">
+                                            <label class="form-label mb-2 d-block" style="font-size: 1.05rem; font-weight: 600; color: #495057;">
+                                                <i class="fa fa-sitemap me-1 text-primary"></i> نوع البند المراد تسديده (لجميع صفوف الملف)
+                                            </label>
+                                            <div class="input-group input-group-lg">
+                                                <input type="hidden" name="excel_pay_type" id="excel_pay_type" value="">
+                                                <input type="text" id="excel_pay_type_display" class="form-control bg-white form-control-lg" readonly
+                                                       placeholder="اختر نوع البند من الشجرة أولاً..."
+                                                       value="" style="font-size: 1rem;">
+                                                <button type="button" class="btn btn-primary px-4" id="btn_excel_pay_type_tree" title="فتح شجرة البنود للاستيراد" style="font-weight: 600;">
+                                                    <i class="fa fa-sitemap me-1"></i> اختر من الشجرة
+                                                </button>
+                                            </div>
+                                            <small class="d-block mt-2 text-muted">يُطبّق هذا النوع على جميع صفوف ملف Excel.</small>
+                                            <small id="excelPayTypeChangeHint" class="d-none text-success mt-1"><i class="fa fa-info-circle"></i> يمكنك تغيير النوع من الشجرة في أي وقت.</small>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="row">
                                     <div class="col-md-5">
-                                        <div id="excelDropZone" class="border rounded p-3 text-center" style="border-style: dashed !important; border-width: 2px !important; background: #f8fff8; cursor: pointer;">
+                                        <div id="excelDropZone" class="border rounded p-3 text-center excel-dropzone-disabled" style="border-style: dashed !important; border-width: 2px !important; background: #f8fff8; cursor: pointer;">
                                             <input type="file" name="excel_file" id="excel_file" accept=".xlsx,.xls,.csv" class="d-none">
                                             <div id="excelDropZoneContent">
                                                 <i class="fa fa-cloud-upload fa-2x text-muted mb-1"></i>
-                                                <p class="mb-0 small text-muted">اسحب الملف هنا أو <span class="text-primary fw-bold">انقر للاختيار</span></p>
+                                                <p id="excelDropZonePrompt" class="mb-0 small text-muted">اختر <strong>نوع البند</strong> أعلاه أولاً ثم اسحب الملف هنا أو انقر للاختيار</p>
                                                 <p id="excelFileName" class="mb-0 small text-success fw-bold mt-1" style="display:none;"></p>
                                             </div>
                                             <div id="excelUploadProgress" class="d-none">
@@ -148,14 +170,13 @@ echo AntiForgeryToken();
                                                 <tbody>
                                                     <tr><td>A</td><td>رقم الموظف</td><td>12345</td></tr>
                                                     <tr><td>B</td><td>الشهر (YYYYMM)</td><td><?= date('Ym') ?></td></tr>
-                                                    <tr><td>C</td><td>نوع الدفع (كود)</td><td>1</td></tr>
-                                                    <tr><td>D</td><td>المبلغ</td><td>500.00</td></tr>
-                                                    <tr><td>E</td><td>ملاحظات</td><td>-</td></tr>
+                                                    <tr><td>C</td><td>المبلغ</td><td>500.00</td></tr>
+                                                    <tr><td>D</td><td>ملاحظات</td><td>-</td></tr>
                                                 </tbody>
                                             </table>
                                             
                                             <div class="alert alert-info py-2 mb-2" style="font-size:11px;">
-                                                <p class="fw-bold mb-1"><i class="fa fa-info-circle"></i> أنواع الدفع: يتم تحميل قالب Excel مع ورقة أنواع الدفع المتاحة (البنود الفرعية فقط).</p>
+                                                <p class="fw-bold mb-1"><i class="fa fa-info-circle"></i> نوع الدفع يُحدد من الشاشة أعلاه فقط — لا يوجد عمود نوع دفع في الملف.</p>
                                             </div>
                                             
                                             <p class="text-muted mb-0 small">
@@ -346,6 +367,7 @@ $scripts = <<<SCRIPT
     var currentBalance = null;
     var selectedExcelFile = null;
     var lastFormData = null; // لتخزين آخر إدخال
+    var selectPayTypeForExcel = false; // عند فتح الشجرة من قسم الاستيراد نملأ excel_pay_type
     
     function initTooltips(){
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -459,11 +481,18 @@ $scripts = <<<SCRIPT
     }
 
     function selectPayTypeLeaf(id, text) {
-        $('#pay_type').val(id);
-        $('#pay_type_display').val(text);
+        if (selectPayTypeForExcel) {
+            $('#excel_pay_type').val(id);
+            $('#excel_pay_type_display').val(text);
+            selectPayTypeForExcel = false;
+            updateExcelDropZoneState();
+        } else {
+            $('#pay_type').val(id);
+            $('#pay_type_display').val(text);
+            validatePay();
+        }
         var modal = bootstrap.Modal.getInstance(document.getElementById('payTypeTreeModal'));
         if (modal) modal.hide();
-        validatePay();
     }
 
     function validatePay(){
@@ -779,6 +808,16 @@ $scripts = <<<SCRIPT
 
     function doExcelImport(file){
         if (!file) return;
+
+        var excelPayType = ($('#excel_pay_type').val() || '').trim();
+        if (!excelPayType) {
+            if (typeof warning_msg === 'function') {
+                warning_msg('تنبيه', 'يجب اختيار نوع البند المراد تسديده من الشجرة أولاً (قسم الاستيراد من Excel)');
+            } else {
+                alert('يجب اختيار نوع البند المراد تسديده من الشجرة أولاً.');
+            }
+            return;
+        }
         
         // التحقق من نوع الملف
         var fileName = file.name.toLowerCase();
@@ -809,6 +848,7 @@ $scripts = <<<SCRIPT
         
         var fd = new FormData();
         fd.append('excel_file', file);
+        fd.append('excel_pay_type', excelPayType);
 
         var token = $('#excelImportForm').find('input[type=hidden]').first();
         if (token && token.length) fd.append(token.attr('name'), token.val());
@@ -858,6 +898,7 @@ $scripts = <<<SCRIPT
         $('#excel_file').val('');
         $('#excelFileName').hide().text('');
         $('#btnDoImport, #btnClearFile').addClass('d-none');
+        $('#excelPayTypeChangeHint').addClass('d-none');
     }
 
     function onExcelFileSelected(file){
@@ -866,6 +907,20 @@ $scripts = <<<SCRIPT
         $('#excelFileName').text(file.name).show();
         $('#btnDoImport').removeClass('d-none');
         $('#btnClearFile').removeClass('d-none');
+        $('#excelPayTypeChangeHint').removeClass('d-none');
+    }
+
+    function updateExcelDropZoneState(){
+        var hasType = ($('#excel_pay_type').val() || '').trim() !== '';
+        var \$zone = $('#excelDropZone');
+        var \$prompt = $('#excelDropZonePrompt');
+        if (hasType) {
+            \$zone.removeClass('excel-dropzone-disabled').addClass('excel-dropzone-enabled');
+            \$prompt.html('اسحب الملف هنا أو <span class="text-primary fw-bold">انقر للاختيار</span>');
+        } else {
+            \$zone.addClass('excel-dropzone-disabled').removeClass('excel-dropzone-enabled');
+            \$prompt.html('اختر <strong>نوع البند</strong> أعلاه أولاً ثم اسحب الملف هنا أو انقر للاختيار');
+        }
     }
 
     $(function(){
@@ -876,9 +931,20 @@ $scripts = <<<SCRIPT
 
         setSaveEnabled(false);
 
-        // شجرة نوع البند: فتح المودال
+        // شجرة نوع البند: فتح المودال (إدخال يدوي)
         $('#btn_pay_type_tree').on('click', function(e) {
             e.preventDefault();
+            selectPayTypeForExcel = false;
+            loadPayTypeTree();
+            var modalEl = document.getElementById('payTypeTreeModal');
+            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        });
+
+        // شجرة نوع البند: فتح المودال (للاستيراد من Excel)
+        $('#btn_excel_pay_type_tree').on('click', function(e) {
+            e.preventDefault();
+            selectPayTypeForExcel = true;
             loadPayTypeTree();
             var modalEl = document.getElementById('payTypeTreeModal');
             var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -928,12 +994,15 @@ $scripts = <<<SCRIPT
         $('#excelImportSection').on('show.bs.collapse', function () {
             $('#manualInputFields').slideUp(300);
             $('#btnClearForm, #btnSaveBottom').addClass('d-none');
+            updateExcelDropZoneState();
         });
 
         $('#excelImportSection').on('hide.bs.collapse', function () {
             $('#manualInputFields').slideDown(300);
             $('#btnSaveBottom').removeClass('d-none');
         });
+
+        updateExcelDropZoneState();
 
         // Keyboard shortcuts
         $(document).on('keydown', function(e){

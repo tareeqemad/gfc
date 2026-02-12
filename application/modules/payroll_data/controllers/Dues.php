@@ -268,9 +268,17 @@ class Dues extends MY_Controller
             return;
         }
 
-        // upload temp
+        $allowed_ext = array('xlsx', 'xls', 'csv');
+        $client_name = $_FILES['excel_file']['name'];
+        $ext = strtolower(pathinfo($client_name, PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowed_ext, true)) {
+            echo json_encode(['ok' => false, 'msg' => 'نوع الملف غير مسموح. المسموح: xlsx, xls, csv']);
+            return;
+        }
+
+        // upload temp — نستخدم allowed_types = '*' لتجنب رفض الملف بسبب اختلاف MIME (مثلاً الملف منسوخ من القالب)
         $config['upload_path']   = FCPATH . 'uploads/tmp/';
-        $config['allowed_types'] = 'xlsx|xls|csv';
+        $config['allowed_types'] = '*';
         $config['max_size']      = 10240;
         $config['encrypt_name']  = true;
 
@@ -305,12 +313,20 @@ class Dues extends MY_Controller
             return;
         }
 
-        // detect header
+        // نوع البند إلزامي من الفورم — الملف 4 أعمدة فقط: A=موظف، B=شهر، C=مبلغ، D=ملاحظات
+        $excel_pay_type_post = $this->input->post('excel_pay_type');
+        if ($excel_pay_type_post === null || $excel_pay_type_post === '') {
+            echo json_encode(['ok' => false, 'msg' => 'يجب اختيار نوع البند من الشاشة أولاً']);
+            return;
+        }
+
+        // detect header (4 أعمدة: EMP_NO, THE_MONTH, PAY, NOTE)
         $header = $rows[1];
         $hA = strtoupper(trim((string)($header['A'] ?? '')));
+        $hB = strtoupper(trim((string)($header['B'] ?? '')));
         $hC = strtoupper(trim((string)($header['C'] ?? '')));
         $hD = strtoupper(trim((string)($header['D'] ?? '')));
-        $hasHeader = ($hA == 'EMP_NO' && $hC == 'PAY_TYPE' && $hD == 'PAY');
+        $hasHeader = ($hA == 'EMP_NO' && $hB == 'THE_MONTH' && $hC == 'PAY' && $hD == 'NOTE');
 
         // فحص الحد الأقصى للسجلات (2000 سجل)
         $maxRows = 2000;
@@ -335,6 +351,12 @@ class Dues extends MY_Controller
             }
         }
 
+        $useFormPayType = (int) $excel_pay_type_post;
+        if (!isset($validPayTypes[$useFormPayType])) {
+            echo json_encode(['ok' => false, 'msg' => 'نوع البند المحدد من الفورم غير صحيح أو غير مسموح']);
+            return;
+        }
+
         // جلب قائمة الموظفين المتاحين للتحقق
         $this->load->model('hr_attendance/hr_attendance_model');
         $emp_no_cons = $this->hr_attendance_model->get_child($this->user->emp_no, 'hr_admin');
@@ -344,10 +366,9 @@ class Dues extends MY_Controller
         }
 
         // 1) parse + normalize into items
-        $items = [];     // raw parsed rows
+        $items = [];
         $parseErrors = [];
-        $invalidEmps = [];  // الموظفون غير الموجودين
-        $invalidPayTypes = []; // أنواع الدفع غير الصحيحة
+        $invalidEmps = [];
 
         for ($i = $startRow; $i <= count($rows); $i++) {
             $r = $rows[$i];
@@ -355,12 +376,10 @@ class Dues extends MY_Controller
 
             $empNo    = trim((string)($r['A'] ?? ''));
             $theMonth = trim((string)($r['B'] ?? ''));
-            $payType  = trim((string)($r['C'] ?? ''));
-            $pay      = trim((string)($r['D'] ?? ''));
-            $note     = trim((string)($r['E'] ?? ''));
+            $pay      = trim((string)($r['C'] ?? ''));
+            $note     = trim((string)($r['D'] ?? ''));
 
-            // skip empty
-            if ($empNo === '' && $payType === '' && $pay === '') continue;
+            if ($empNo === '' && $pay === '') continue;
 
             // validate basics
             if ($empNo === '') {
@@ -408,24 +427,7 @@ class Dues extends MY_Controller
                 }
             }
 
-            if ($payType === '') {
-                $parseErrors[] = "Row {$i}: نوع الدفع فارغ";
-                continue;
-            }
-
-            if (!ctype_digit($payType) || (int)$payType <= 0) {
-                $parseErrors[] = "Row {$i}: نوع الدفع '{$payType}' غير صحيح (يجب أن يكون رقماً)";
-                continue;
-            }
-
-            $payTypeInt = (int)$payType;
-            if (!isset($validPayTypes[$payTypeInt])) {
-                if (!isset($invalidPayTypes[$payTypeInt])) {
-                    $invalidPayTypes[$payTypeInt] = [];
-                }
-                $invalidPayTypes[$payTypeInt][] = $i;
-                continue;
-            }
+            $payTypeInt = $useFormPayType;
 
             if ($pay === '') {
                 $parseErrors[] = "Row {$i}: المبلغ فارغ";
@@ -448,14 +450,8 @@ class Dues extends MY_Controller
             ];
         }
 
-        // إضافة أخطاء الموظفين غير الموجودين
-        foreach ($invalidEmps as $empNo => $rows) {
-            $parseErrors[] = "الموظف رقم {$empNo} غير موجود في النظام (الصفوف: " . implode(', ', $rows) . ")";
-        }
-
-        // إضافة أخطاء أنواع الدفع غير الصحيحة
-        foreach ($invalidPayTypes as $payType => $rows) {
-            $parseErrors[] = "نوع الدفع رقم '{$payType}' غير موجود في قائمة أنواع الدفع المعتمدة. راجع sheet 'أنواع الدفع' في قالب Excel (الصفوف: " . implode(', ', $rows) . ")";
+        foreach ($invalidEmps as $empNo => $rowNums) {
+            $parseErrors[] = "الموظف رقم {$empNo} غير موجود في النظام (الصفوف: " . implode(', ', $rowNums) . ")";
         }
 
         if (count($items) == 0) {
@@ -620,56 +616,24 @@ class Dues extends MY_Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('استيراد المستحقات');
 
-        $headers = ['EMP_NO', 'THE_MONTH', 'PAY_TYPE', 'PAY', 'NOTE'];
-        $examples = [12345, date('Ym'), 1, 500.00, 'دفعة شهرية'];
+        $headers = ['EMP_NO', 'THE_MONTH', 'PAY', 'NOTE'];
+        $examples = [12345, date('Ym'), 500.00, 'دفعة شهرية'];
 
         $sheet->setCellValue('A1', $headers[0]);
         $sheet->setCellValue('B1', $headers[1]);
         $sheet->setCellValue('C1', $headers[2]);
         $sheet->setCellValue('D1', $headers[3]);
-        $sheet->setCellValue('E1', $headers[4]);
 
         $sheet->setCellValue('A2', $examples[0]);
         $sheet->setCellValue('B2', $examples[1]);
         $sheet->setCellValue('C2', $examples[2]);
         $sheet->setCellValue('D2', $examples[3]);
-        $sheet->setCellValue('E2', $examples[4]);
 
-        $sheet->getStyle('A1:E1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:D1')->getFont()->setBold(true);
         $sheet->getColumnDimension('A')->setAutoSize(true);
         $sheet->getColumnDimension('B')->setAutoSize(true);
         $sheet->getColumnDimension('C')->setAutoSize(true);
         $sheet->getColumnDimension('D')->setAutoSize(true);
-        $sheet->getColumnDimension('E')->setAutoSize(true);
-
-        // Sheet 2: أنواع الدفع
-        $sheet2 = $spreadsheet->createSheet();
-        $sheet2->setTitle('أنواع الدفع');
-        $sheet2->setCellValue('A1', 'الكود');
-        $sheet2->setCellValue('B1', 'نوع الدفع');
-        $sheet2->setCellValue('C1', 'النوع');
-        $sheet2->getStyle('A1:C1')->getFont()->setBold(true);
-        
-        $tree_flat = $this->salary_dues_types_model->getTreeList(1);
-        
-        $row = 2;
-        if (is_array($tree_flat)) {
-            foreach ($tree_flat as $pt) {
-                if (isset($pt['IS_LEAF']) && $pt['IS_LEAF'] == 1) {
-                    $sheet2->setCellValue('A' . $row, $pt['TYPE_ID']);
-                    $sheet2->setCellValue('B' . $row, $pt['TYPE_NAME']);
-                    $sheet2->setCellValue('C' . $row, ($pt['LINE_TYPE'] == 1 ? 'إضافة' : 'خصم'));
-                    $row++;
-                }
-            }
-        }
-        
-        $sheet2->getColumnDimension('A')->setAutoSize(true);
-        $sheet2->getColumnDimension('B')->setAutoSize(true);
-        $sheet2->getColumnDimension('C')->setAutoSize(true);
-        
-        // إرجاع للـ sheet الأول
-        $spreadsheet->setActiveSheetIndex(0);
 
         $filename = 'قالب_استيراد_المستحقات_' . date('Y-m-d') . '.xlsx';
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

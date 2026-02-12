@@ -61,6 +61,42 @@ class Salary_dues_types_model extends MY_Model
     }
 
     /**
+     * مستوى العقدة في الشجرة: 1 = جذر، 2 = ابن، 3 = حفيد. أكثر من 3 ممنوع.
+     * يرجع 0 إذا type_id فارغ أو العقدة غير موجودة.
+     */
+    public function get_node_depth($type_id)
+    {
+        if ($type_id === null || $type_id === '') {
+            return 0;
+        }
+        $flat = $this->getTreeList(1);
+        if (!is_array($flat)) {
+            return 0;
+        }
+        $by_id = array();
+        foreach ($flat as $row) {
+            $id = isset($row['TYPE_ID']) ? $row['TYPE_ID'] : null;
+            if ($id !== null && $id !== '') {
+                $by_id[$id] = $row;
+            }
+        }
+        $depth = 0;
+        $current_id = $type_id;
+        while ($current_id !== null && $current_id !== '') {
+            if (!isset($by_id[$current_id])) {
+                return 0;
+            }
+            $depth++;
+            $parent = isset($by_id[$current_id]['PARENT_ID']) ? $by_id[$current_id]['PARENT_ID'] : null;
+            if ($parent === '' || $parent === '0') {
+                $parent = null;
+            }
+            $current_id = $parent;
+        }
+        return $depth;
+    }
+
+    /**
      * Delete (deactivate) type
      */
     function delete($type_id)
