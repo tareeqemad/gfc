@@ -98,14 +98,15 @@ class Salary_dues_types_model extends MY_Model
 
     /**
      * Delete (deactivate) type
+     * البروسيجر: TYPE_ID_IN IN NUMBER, MSG_OUT OUT VARCHAR2
      */
     function delete($type_id)
     {
         $params = array(
-            array('name' => ':TYPE_ID_IN', 'value' => $type_id, 'type' => '', 'length' => -1),
-            array('name' => ':MSG_OUT',    'value' => 'MSG_OUT','type' => SQLT_CHR, 'length' => -1),
+            array('name' => ':TYPE_ID_IN', 'value' => (int)$type_id, 'type' => '', 'length' => -1),
+            array('name' => ':MSG_OUT',    'value' => 'MSG_OUT',       'type' => SQLT_CHR, 'length' => 500),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'SALARY_DUES_TYPES_TB_DELETE', $params);
-        return $result['MSG_OUT'];
+        return isset($result['MSG_OUT']) ? $result['MSG_OUT'] : $result;
     }
 }
