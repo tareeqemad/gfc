@@ -11,36 +11,39 @@ class Entitl_deduct extends MY_Controller
 {
     var $page_url = 'salary/Entitl_deduct/get_page';
     var $financial_query_url = 'salary/Entitl_deduct/financial_query';
-	
-	var $hrAdmins = [
-			1008 => 'hesahm',
-			705 => 'akram',
-			976 => 'fady',
-			674 => 'moh_ashi',
-			1022 => 'moh_zan',
-			997 => 'tareq_dal',
-			1015 => 'basam_mous',
-			994 => 'morsed',
-			708 => 'neveen_non',
-			1500 => 'khaled_has',
-			743 => 'khaled_shamia',
-			1492 => 'Mahmoud Badawi',
-			1362 => 'MK',
-		];
-	var $hrBranch = [ 
-			1009 => 'Mohammed Najjar',
-			1029 => 'Mahmoud Zaiter',
-			1014 => 'Rami Shaaer',
-			765 => 'Zaher Kafarna',
-			960 => 'ibrahem shamia',
-		];
+
+    var $hrAdmins = [
+        1008 => 'hesahm',
+        705 => 'akram',
+        976 => 'fady',
+        674 => 'moh_ashi',
+        1022 => 'moh_zan',
+        997 => 'tareq_dal',
+        1015 => 'basam_mous',
+        994 => 'morsed',
+        708 => 'neveen_non',
+        1500 => 'khaled_has',
+        743 => 'khaled_shamia',
+        1492 => 'Mahmoud Badawi',
+        1362 => 'MK',
+        1393 => 'Thabet Hassan',
+        1314 => 'abdghali'
+
+    ];
+    var $hrBranch = [
+        1009 => 'Mohammed Najjar',
+        1029 => 'Mahmoud Zaiter',
+        1014 => 'Rami Shaaer',
+        765 => 'Zaher Kafarna',
+        960 => 'ibrahem shamia',
+    ];
 
     function __construct()
     {
         parent::__construct();
 
         $this->load->model('root/rmodel');
-		$this->load->model('data_admin_model');
+        $this->load->model('data_admin_model');
         $this->rmodel->package = 'SALARYFORM';
 
     }
@@ -59,9 +62,9 @@ class Entitl_deduct extends MY_Controller
         $this->load->library('pagination');
         $where_sql = '';
         $where_sql .= isset($this->p_emp_no) && $this->p_emp_no != null ? " AND  M.EMP_NO = '{$this->p_emp_no}' " : "";
-		$where_sql .= " AND M.MONTH BETWEEN '{$this->p_from_month}' AND '{$this->p_to_month}' ";
+        $where_sql .= " AND M.MONTH BETWEEN '{$this->p_from_month}' AND '{$this->p_to_month}' ";
         //$where_sql .= isset($this->p_branch_id) && $this->p_branch_id != null ? " AND TRANSACTION_PKG.DATA_EMPLOYEES_BRAN(M.EMP_NO) IN ( SELECT BRANCH_NO  FROM DATA.BRANCH gg WHERE gg.BRANCH_NO  = '{$this->p_branch_id}' ) " : '';
-		//echo $where_sql;
+        //echo $where_sql;
         $config['base_url'] = base_url($this->page_url);
         $count_rs = /*$this->get_table_count(" DATA.ADD_AND_DED M  WHERE 1 = 1  {$where_sql}");*/ 0;
         $config['use_page_numbers'] = TRUE;
@@ -81,26 +84,53 @@ class Entitl_deduct extends MY_Controller
         $data["page_rows"] = $this->rmodel->getList('SALARY_LIST', $where_sql, $offset, $row);
         $data['offset'] = $offset + 1;
         $data['page'] = $page;
+        // ملخص المسدد من المستحقات (48) يظهر فقط عندما تكون النتائج لموظف واحد فقط
+        $data['dues48_summary'] = null;
+        $data['dues48_movements'] = array();
+        $data['dues48_multi_emp'] = false;
+        $emp_nos = [];
+        if (is_array($data['page_rows'])) {
+            foreach ($data['page_rows'] as $r) {
+                $eno = isset($r['EMP_NO']) ? $r['EMP_NO'] : null;
+                if ($eno !== null && $eno !== '') {
+                    $emp_nos[$eno] = true;
+                }
+            }
+        }
+        if (count($emp_nos) === 1) {
+            $single_emp_no = (int) key($emp_nos);
+            try {
+                $this->load->model('Entitl_deduct_model', 'entitl_deduct_model');
+                $data['dues48_summary'] = $this->entitl_deduct_model->get_dues48_summary($single_emp_no);
+                $from_month = isset($this->p_from_month) && $this->p_from_month !== '' ? $this->p_from_month : null;
+                $to_month   = isset($this->p_to_month)   && $this->p_to_month !== ''   ? $this->p_to_month   : null;
+                $data['dues48_movements'] = $this->entitl_deduct_model->get_dues48_movements($single_emp_no, $from_month, $to_month);
+            } catch (Throwable $e) {
+                log_message('error', 'Entitl_deduct get_dues48_summary: ' . $e->getMessage());
+            }
+        } elseif (count($emp_nos) > 1) {
+            $data['dues48_multi_emp'] = true;
+        }
         $this->load->view('Entitl_deduct_page', $data);
 
     }
 
     function get($emp_no, $month, $page_act = -1)
     {
-        $result = $this->data_admin_model->get($emp_no, $month); 
+        $result = $this->data_admin_model->get($emp_no, $month);
         if (!(count($result) == 1))
             die('get');
-		
-		if(!in_array($this->user->emp_no, array_keys($this->hrAdmins))){
-			// اذا حاول الموظف الدخول لبيانات موظف اخر
-			if($emp_no!= $this->user->emp_no ){
-				die('Error emp_no');
-			}
-		}
+
+        if(!in_array($this->user->emp_no, array_keys($this->hrAdmins))){
+            // اذا حاول الموظف الدخول لبيانات موظف اخر
+            if($emp_no!= $this->user->emp_no ){
+                die('Error emp_no');
+            }
+        }
 
         // منع عرض بيانات الراتب الا بعد اعتماده باستثناء صلاحية كل المقرات
         if($page_act!='hr_admin' and $result[0]['MONTH'] > $result[0]['LAST_SALARY_MONTH'] ){
-           // die('Error last_salary_month');
+            // die('Error last_salary_month');
         }
 
         $additions= $this->data_admin_model->get_salary($emp_no, $month, 1);
@@ -123,7 +153,7 @@ class Entitl_deduct extends MY_Controller
     {
         //$data['data_cons'] = $this->rmodel->getData('CONSTANT_DATA_GET_ALL');
         $this->load->model('settings/gcc_branches_model');
-        $this->load->model('hr_attendance/hr_attendance_model'); 
+        $this->load->model('hr_attendance/hr_attendance_model');
         $this->load->model('constants_sal_model');
 
         $data['status_cons'] = $this->constants_sal_model->get_list(1);
@@ -139,18 +169,18 @@ class Entitl_deduct extends MY_Controller
 
         $data['sal_con_cons'] = $this->constants_sal_model->get_list(25);
 
-		
-		
 
-		$role = in_array($this->user->emp_no, array_keys($this->hrAdmins)) ? 'hr_admin' : (in_array($this->user->emp_no, array_keys($this->hrBranch)) ? 'hr_branch' : 'manager');
 
-		$data['emp_no_cons'] = $this->hr_attendance_model->get_child($this->user->emp_no, $role);
-		if(in_array($this->user->emp_no, array_keys($hrAdmins))){
-			$data['branches'] = $this->gcc_branches_model->get_all();
-		}else{
-			$data['branches'] = $this->gcc_branches_model->user_branch($this->user->id);
-		}
-        
+
+        $role = in_array($this->user->emp_no, array_keys($this->hrAdmins)) ? 'hr_admin' : (in_array($this->user->emp_no, array_keys($this->hrBranch)) ? 'hr_branch' : 'manager');
+
+        $data['emp_no_cons'] = $this->hr_attendance_model->get_child($this->user->emp_no, $role);
+        if(in_array($this->user->emp_no, array_keys($hrAdmins))){
+            $data['branches'] = $this->gcc_branches_model->get_all();
+        }else{
+            $data['branches'] = $this->gcc_branches_model->user_branch($this->user->id);
+        }
+
 
     }
 
