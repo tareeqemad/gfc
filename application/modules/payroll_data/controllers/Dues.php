@@ -31,6 +31,7 @@ class Dues extends MY_Controller
         $this->pay_type  = $this->input->post('pay_type');
         $this->pay       = $this->input->post('pay');
         $this->note      = $this->input->post('note');
+        $this->the_date  = $this->input->post('the_date');
 
         // فلتر
         $this->branch_no = $this->input->post('branch_no');
@@ -205,6 +206,20 @@ class Dues extends MY_Controller
         // لو الشهر فاضي: الشهر الحالي YYYYMM
         $the_month_val = ($this->p_the_month != '' ? $this->p_the_month : date('Ym'));
 
+        $the_date_val = trim((string)($this->p_the_date ?? $this->the_date ?? ''));
+        if ($the_date_val === '') {
+            $the_date_val = null;
+        } elseif (strpos($the_date_val, '/') !== false) {
+            // تحويل من dd/mm/yyyy إلى DD-MON-YYYY لتفادي ORA-01861
+            $ts = char_to_time($the_date_val);
+            if ($ts !== false) {
+                $mon = array(1 => 'JAN', 2 => 'FEB', 3 => 'MAR', 4 => 'APR', 5 => 'MAY', 6 => 'JUN',
+                    7 => 'JUL', 8 => 'AUG', 9 => 'SEP', 10 => 'OCT', 11 => 'NOV', 12 => 'DEC');
+                $n = (int)date('n', $ts);
+                $the_date_val = date('d', $ts) . '-' . ($mon[$n] ?? 'JAN') . '-' . date('Y', $ts);
+            }
+        }
+
         $result = array(
             array('name' => 'SERIAL',    'value' => $this->p_serial,   'type' => '', 'length' => -1),
             array('name' => 'EMP_NO',    'value' => $this->p_emp_no,   'type' => '', 'length' => -1),
@@ -212,6 +227,7 @@ class Dues extends MY_Controller
             array('name' => 'PAY_TYPE',  'value' => $this->p_pay_type, 'type' => '', 'length' => -1),
             array('name' => 'PAY',       'value' => $this->p_pay,      'type' => '', 'length' => -1),
             array('name' => 'NOTE',      'value' => $this->p_note,     'type' => '', 'length' => -1),
+            array('name' => 'THE_DATE',  'value' => $the_date_val,    'type' => '', 'length' => -1),
         );
 
         if ($typ == 'create') {
@@ -602,6 +618,7 @@ class Dues extends MY_Controller
             array('name' => 'PAY_TYPE',  'value' => $row['PAY_TYPE'],  'type' => '', 'length' => -1),
             array('name' => 'PAY',       'value' => $row['PAY'],       'type' => '', 'length' => -1),
             array('name' => 'NOTE',      'value' => $row['NOTE'] ?? '', 'type' => '', 'length' => -1),
+            array('name' => 'THE_DATE',  'value' => null, 'type' => '', 'length' => -1),
         );
     }
 

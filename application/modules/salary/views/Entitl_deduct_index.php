@@ -11,22 +11,22 @@ $get_excel_url = base_url("$MODULE_NAME/$TB_NAME/excel_report");
 $get_url =base_url("$MODULE_NAME/$TB_NAME/get");
 
 $hrAdmins = [
-    1008 => 'hesahm',
-    705 => 'akram',
-    976 => 'fady',
-    674 => 'moh_ashi',
-    1022 => 'moh_zan',
-    997 => 'tareq_dal',
-    1015 => 'basam_mous',
-    994 => 'morsed',
-    708 => 'neveen_non',
-    1500 => 'khaled_has',
-    743 => 'khaled_shamia',
+        1008 => 'hesahm',
+        705 => 'akram',
+        976 => 'fady',
+        674 => 'moh_ashi',
+        1022 => 'moh_zan',
+        997 => 'tareq_dal',
+        1015 => 'basam_mous',
+        994 => 'morsed',
+        708 => 'neveen_non',
+        1500 => 'khaled_has',
+        743 => 'khaled_shamia',
 ];
 
-$role = in_array($this->user->emp_no, array_keys($hrAdmins)) 
-    ? 'hr_admin' 
-    : 'manager';
+$role = in_array($this->user->emp_no, array_keys($hrAdmins))
+        ? 'hr_admin'
+        : 'manager';
 ?>
 <!-- PAGE-HEADER -->
 <div class="page-header">
@@ -63,8 +63,8 @@ $role = in_array($this->user->emp_no, array_keys($hrAdmins))
                                 <?php endforeach; ?>
                             </select>
                         </div>
-						
-						<div class="form-group col-md-2">
+
+                        <div class="form-group col-md-2">
                             <label> من شهر</label>
                             <input type="text" placeholder=" من شهر" name="from_month" id="txt_from_month"
                                    class="form-control" value="<?php   echo('202404'); ?>">
@@ -81,7 +81,7 @@ $role = in_array($this->user->emp_no, array_keys($hrAdmins))
 
                     <div class="flex-shrink-0">
                         <button type="button" onclick="javascript:searchs();" class="btn btn-primary"><i
-                                class="fa fa-search"></i> إستعلام
+                                    class="fa fa-search"></i> إستعلام
                         </button>
                         <button type="button" onclick="javascript:clear_form();" class="btn btn-cyan-light">
                             <i class="fa fa-eraser"></i>

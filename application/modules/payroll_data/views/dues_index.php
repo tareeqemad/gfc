@@ -141,17 +141,11 @@ echo AntiForgeryToken();
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title mb-0">
-                    <i class="fa fa-list text-primary"></i> النتائج
-                </h3>
-            </div>
-            <div class="card-body" id="container">
-                <div class="text-center text-muted py-5">
-                    <i class="fa fa-spinner fa-spin fa-2x mb-3"></i>
-                    <p>جاري التحميل...</p>
-                </div>
+        <hr class="my-4 border-2 border-secondary opacity-25">
+        <div id="container" class="rounded p-3" style="background: #f1f5f9; min-height: 120px;">
+            <div class="text-center text-muted py-5">
+                <i class="fa fa-spinner fa-spin fa-2x mb-3"></i>
+                <p>جاري التحميل...</p>
             </div>
         </div>
 

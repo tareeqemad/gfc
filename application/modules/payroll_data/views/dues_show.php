@@ -15,6 +15,15 @@ $template_url  = base_url("$MODULE_NAME/$TB_NAME/download_template");
 $HaveRs = isset($master_tb_data) && is_array($master_tb_data) && count($master_tb_data) > 0;
 $rs     = $HaveRs ? $master_tb_data[0] : [];
 
+$date_attr = " data-type='date' data-date-format='DD/MM/YYYY' data-val='true' data-val-regex-pattern='" . date_format_exp() . "' data-val-regex='Error' ";
+$the_date_display = date('d/m/Y');
+if (!$isCreate && $HaveRs && !empty($rs['THE_DATE'])) {
+    $the_date_ts = @strtotime(str_replace('/', '-', $rs['THE_DATE']));
+    if ($the_date_ts) {
+        $the_date_display = date('d/m/Y', $the_date_ts);
+    }
+}
+
 echo AntiForgeryToken();
 ?>
 
@@ -58,7 +67,7 @@ echo AntiForgeryToken();
 
                 <div class="card-body">
                     <style>
-                        /* تنسيق شجرة نوع البند داخل المودال - نفس شجرة أنواع المستحقات */
+                        /* تنسيق شجرة نوع البند داخل المودال */
                         .dues-pay-type-tree-wrap { min-height: 200px; max-height: 70vh; overflow-y: auto; padding: 8px; background: #fafbfc; border: 1px solid #e9ecef; border-radius: 8px; }
                         .dues-pay-type-tree-wrap .tree li { margin: 2px 0; }
                         .dues-pay-type-tree-wrap .tree li > span.tree-node { padding: 7px 14px; border-radius: 6px; cursor: pointer; display: inline-block; margin: 3px 0; transition: all 0.2s ease; font-size: 14px; font-weight: 500; color: #333; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
@@ -71,35 +80,79 @@ echo AntiForgeryToken();
                         .dues-pay-type-tree-wrap .tree .tree-icon { font-size: 16px; margin-left: 5px; vertical-align: middle; cursor: pointer; }
                         #excelDropZone.excel-dropzone-disabled { background: #e9ecef !important; cursor: not-allowed !important; opacity: 0.85; pointer-events: none; }
                         #excelDropZone.excel-dropzone-enabled { pointer-events: auto; }
+                        /* استيراد Excel - إعادة تصميم */
+                        .excel-import-card { border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,.06); overflow: hidden; }
+                        .excel-import-card .card-header { background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border-bottom: 1px solid #bbf7d0; padding: 0.85rem 1.25rem; }
+                        .excel-import-step { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 1rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 1rem; }
+                        .excel-import-step-num { width: 28px; height: 28px; border-radius: 50%; background: #0d6efd; color: #fff; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                        .excel-import-dropzone { border: 2px dashed #94a3b8; border-radius: 12px; padding: 2rem 1.5rem; text-align: center; transition: border-color .2s, background .2s; }
+                        .excel-import-dropzone:hover { border-color: #64748b; background: #f8fafc; }
+                        #excelDropZone.excel-dropzone-enabled .excel-import-dropzone { border-color: #22c55e; background: #f0fdf4; }
+                        .excel-import-format-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; }
+                        .excel-import-format-card .table { font-size: 0.875rem; margin-bottom: 0; }
+                        .excel-import-format-card .table th, .excel-import-format-card .table td { padding: 0.4rem 0.6rem; }
+                        /* بيانات التسديد — لمسة فنية */
+                        .dues-form-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 0; margin-bottom: 1.25rem; overflow: hidden; box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06); }
+                        .dues-form-section-title { font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0; padding: 1rem 1.5rem; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 0.75rem; }
+                        .dues-form-section-title .title-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1rem; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35); }
+                        .dues-form-section .form-body { padding: 1.5rem 1.75rem; }
+                        .dues-form-section .form-group { margin-bottom: 0; }
+                        .dues-form-section .form-group label { font-weight: 600; color: #334155; font-size: 0.8125rem; margin-bottom: 0.4rem; letter-spacing: 0.01em; }
+                        .dues-form-section .form-control { border-radius: 10px; border: 1px solid #e2e8f0; padding: 0.55rem 0.85rem; transition: border-color .2s, box-shadow .2s; }
+                        .dues-form-section .form-control:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12); }
+                        .dues-form-section .form-control:hover { border-color: #cbd5e1; }
+                        .dues-form-section .input-group .form-control { border-radius: 10px 0 0 10px; }
+                        .dues-form-section .input-group .btn { border-radius: 0 10px 10px 0; font-weight: 600; }
+                        .dues-form-section .pay-row { background: linear-gradient(135deg, #fffbeb 0%, #fefce8 100%); border: 1px solid #fef08a; border-radius: 12px; padding: 1rem; margin-bottom: 0.5rem; }
+                        .dues-form-section .pay-row .form-control { background: #fff; }
+                        .dues-form-section .note-row .form-control { border-radius: 10px; background: #f8fafc; }
+                        .dues-form-actions { background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); border-top: 1px solid #e2e8f0; border-radius: 0 0 16px 16px; padding: 1.25rem 1.75rem; margin-top: 0; display: flex; justify-content: flex-end; gap: 0.75rem; flex-wrap: wrap; }
+                        .dues-form-actions .btn { min-width: 110px; font-weight: 600; border-radius: 10px; padding: 0.5rem 1rem; }
+                        .dues-form-actions .btn-primary { box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3); }
+                        /* ملخص المستحقات - نفس فكرة Entitl_deduct_page */
+                        .card.dues-summary-card { border-radius: 10px; border: none; box-shadow: 0 2px 12px rgba(0,0,0,.08); overflow: hidden; }
+                        .card.dues-summary-card .card-header { font-weight: 700; font-size: 1rem; padding: 0.65rem 1rem; border-bottom: 1px solid rgba(0,0,0,.06); background: #f8fafc !important; }
+                        .dues-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; padding: 1rem; }
+                        .dues-summary-item { text-align: center; padding: 0.85rem 0.5rem; border-radius: 8px; background: #f8f9fa; }
+                        .dues-summary-item .dues-summary-label { font-size: 0.8rem; color: #5a6c7d; margin-bottom: 0.35rem; }
+                        .dues-summary-item .dues-summary-value { font-size: 1.15rem; font-weight: 700; }
+                        .dues-summary-item.due-total { background: #e8f4fd; } .dues-summary-item.due-total .dues-summary-value { color: #0d6efd; }
+                        .dues-summary-item.add { background: #e8f5e9; } .dues-summary-item.add .dues-summary-value { color: #198754; }
+                        .dues-summary-item.ded { background: #ffebee; } .dues-summary-item.ded .dues-summary-value { color: #dc3545; }
+                        .dues-summary-item.remain { background: #e3f2fd; } .dues-summary-item.remain .dues-summary-value { color: #0d6efd; font-size: 1.25rem; }
+                        .dues-summary-item.pct { background: #f3e5f5; } .dues-summary-item.pct .dues-summary-value { color: #6f42c1; }
+                        .dues-summary-item.pct .progress { height: 6px; border-radius: 6px; margin-top: 0.35rem; }
                     </style>
-                    <!-- ===== Summary Panel (always on top) ===== -->
-                    <div id="duesSummaryWrap" style="display:none;margin-bottom:10px;">
-                        <div class="alert alert-light py-2" style="border:1px solid #eee; margin-bottom:0;">
-                            <div class="row g-2 align-items-center">
-                                <div class="col-md-2">
-                                    <small class="text-muted d-block mb-1"><i class="fa fa-file-invoice text-info"></i> المستحقات الأساسية</small>
-                                    <b class="text-info" id="sumTotalDue">0.00</b>
+                    <!-- ===== Summary Panel (نفس فكرة Entitl_deduct_page) ===== -->
+                    <div id="duesSummaryWrap" class="mb-4" style="display:none;">
+                        <div class="card dues-summary-card">
+                            <div class="card-header bg-light d-flex align-items-center">
+                                <i class="fa fa-pie-chart text-primary me-2"></i>
+                                <span>ملخص المستحقات والمسدد</span>
+                            </div>
+                            <div class="dues-summary-grid">
+                                <div class="dues-summary-item due-total">
+                                    <div class="dues-summary-label">المستحقات الأساسية</div>
+                                    <div class="dues-summary-value" id="sumTotalDue">0.00</div>
                                 </div>
-                                <div class="col-md-2">
-                                    <small class="text-muted d-block mb-1"><i class="fa fa-plus-circle text-success"></i> إجمالي الإضافات</small>
-                                    <b class="text-success" id="sumTotalAdd">0.00</b>
+                                <div class="dues-summary-item add">
+                                    <div class="dues-summary-label">إجمالي الإضافات</div>
+                                    <div class="dues-summary-value" id="sumTotalAdd">0.00</div>
                                 </div>
-                                <div class="col-md-2">
-                                    <small class="text-muted d-block mb-1"><i class="fa fa-minus-circle text-danger"></i> إجمالي الخصومات</small>
-                                    <b class="text-danger" id="sumTotalDed">0.00</b>
+                                <div class="dues-summary-item ded">
+                                    <div class="dues-summary-label">إجمالي الخصومات</div>
+                                    <div class="dues-summary-value" id="sumTotalDed">0.00</div>
                                 </div>
-                                <div class="col-md-2">
-                                    <small class="text-muted d-block mb-1"><i class="fa fa-wallet text-warning"></i> المتبقي</small>
-                                    <b class="text-warning" id="sumBalance">0.00</b>
-                                    <div id="zeroBalanceMsg" style="display:none;margin-top:4px;">
-                                        <small class="text-danger">لا يوجد رصيد متبقّي</small>
-                                    </div>
+                                <div class="dues-summary-item remain">
+                                    <div class="dues-summary-label">المتبقي</div>
+                                    <div class="dues-summary-value" id="sumBalance">0.00</div>
+                                    <div id="zeroBalanceMsg" class="small text-danger mt-1" style="display:none;">لا يوجد رصيد متبقّي</div>
                                 </div>
-                                <div class="col-md-2">
-                                    <small class="text-muted d-block mb-1">نسبة التسديد</small>
-                                    <b id="paidPct">0%</b>
-                                    <div class="progress mt-1" style="height:6px;">
-                                        <div id="paidProgress" class="progress-bar" role="progressbar" style="width:0%"></div>
+                                <div class="dues-summary-item pct">
+                                    <div class="dues-summary-label">نسبة التسديد</div>
+                                    <div class="dues-summary-value" id="paidPct">0%</div>
+                                    <div class="progress">
+                                        <div id="paidProgress" class="progress-bar" role="progressbar" style="width:0%;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -107,63 +160,67 @@ echo AntiForgeryToken();
                     </div>
                     <!-- ===== End Summary Panel ===== -->
 
-                    <!-- ===== Excel Import Section ===== -->
-                    <div class="collapse mb-3" id="excelImportSection">
-                        <div class="card border-success">
-                            <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0 text-success">
-                                    <i class="fa fa-file-excel-o"></i> استيراد دفعات من ملف Excel
+                    <!-- ===== Excel Import Section (إعادة تصميم) ===== -->
+                    <div class="collapse mb-4" id="excelImportSection">
+                        <div class="card excel-import-card">
+                            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                <h6 class="mb-0 d-flex align-items-center gap-2">
+                                    <i class="fa fa-file-excel-o text-success"></i>
+                                    <span>استيراد دفعات من ملف Excel</span>
                                 </h6>
-                                <a href="<?= $template_url ?>" class="btn btn-sm btn-outline-success" target="_blank">
-                                    <i class="fa fa-download"></i> تحميل القالب
+                                <a href="<?= $template_url ?>" class="btn btn-success btn-sm" target="_blank">
+                                    <i class="fa fa-download me-1"></i> تحميل القالب
                                 </a>
                             </div>
-                            <div class="card-body py-2">
-                                <div class="row mb-3">
-                                    <div class="col-12">
-                                        <div id="excelPayTypeWrap" class="rounded p-3" style="background: #f8f9fa; border: 1px solid #dee2e6;">
-                                            <label class="form-label mb-2 d-block" style="font-size: 1.05rem; font-weight: 600; color: #495057;">
-                                                <i class="fa fa-sitemap me-1 text-primary"></i> نوع البند المراد تسديده (لجميع صفوف الملف)
-                                            </label>
-                                            <div class="input-group input-group-lg">
-                                                <input type="hidden" name="excel_pay_type" id="excel_pay_type" value="">
-                                                <input type="text" id="excel_pay_type_display" class="form-control bg-white form-control-lg" readonly
-                                                       placeholder="اختر نوع البند من الشجرة أولاً..."
-                                                       value="" style="font-size: 1rem;">
-                                                <button type="button" class="btn btn-primary px-4" id="btn_excel_pay_type_tree" title="فتح شجرة البنود للاستيراد" style="font-weight: 600;">
-                                                    <i class="fa fa-sitemap me-1"></i> اختر من الشجرة
-                                                </button>
-                                            </div>
-                                            <small class="d-block mt-2 text-muted">يُطبّق هذا النوع على جميع صفوف ملف Excel.</small>
-                                            <small id="excelPayTypeChangeHint" class="d-none text-success mt-1"><i class="fa fa-info-circle"></i> يمكنك تغيير النوع من الشجرة في أي وقت.</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-5">
-                                        <div id="excelDropZone" class="border rounded p-3 text-center excel-dropzone-disabled" style="border-style: dashed !important; border-width: 2px !important; background: #f8fff8; cursor: pointer;">
-                                            <input type="file" name="excel_file" id="excel_file" accept=".xlsx,.xls,.csv" class="d-none">
-                                            <div id="excelDropZoneContent">
-                                                <i class="fa fa-cloud-upload fa-2x text-muted mb-1"></i>
-                                                <p id="excelDropZonePrompt" class="mb-0 small text-muted">اختر <strong>نوع البند</strong> أعلاه أولاً ثم اسحب الملف هنا أو انقر للاختيار</p>
-                                                <p id="excelFileName" class="mb-0 small text-success fw-bold mt-1" style="display:none;"></p>
-                                            </div>
-                                            <div id="excelUploadProgress" class="d-none">
-                                                <div class="spinner-border spinner-border-sm text-success mb-1" role="status"></div>
-                                                <p class="mb-0 small">جاري المعالجة...</p>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-lg-7">
+                                        <div class="excel-import-step">
+                                            <span class="excel-import-step-num">1</span>
+                                            <div class="flex-grow-1">
+                                                <label class="form-label mb-1 fw-600 small text-muted">نوع البند (يُطبّق على كل الصفوف)</label>
+                                                <div class="input-group">
+                                                    <input type="hidden" name="excel_pay_type" id="excel_pay_type" value="">
+                                                    <input type="text" id="excel_pay_type_display" class="form-control bg-white" readonly placeholder="اختر من الشجرة أولاً..."
+                                                           value="">
+                                                    <button type="button" class="btn btn-primary" id="btn_excel_pay_type_tree" title="فتح شجرة البنود">
+                                                        <i class="fa fa-sitemap me-1"></i> اختر من الشجرة
+                                                    </button>
+                                                </div>
+                                                <small id="excelPayTypeChangeHint" class="d-none text-success mt-1"><i class="fa fa-info-circle"></i> يمكنك تغيير النوع في أي وقت.</small>
                                             </div>
                                         </div>
-                                        <button type="button" id="btnDoImport" class="btn btn-success btn-sm w-100 mt-2 d-none">
-                                            <i class="fa fa-upload"></i> بدء الاستيراد
-                                        </button>
-                                        <button type="button" id="btnClearFile" class="btn btn-outline-secondary btn-sm w-100 mt-1 d-none">
-                                            إلغاء
-                                        </button>
+                                        <div class="excel-import-step">
+                                            <span class="excel-import-step-num">2</span>
+                                            <div class="flex-grow-1 w-100">
+                                                <label class="form-label mb-1 fw-600 small text-muted">رفع الملف</label>
+                                                <div id="excelDropZone" class="excel-dropzone-disabled" style="cursor: pointer;">
+                                                    <input type="file" name="excel_file" id="excel_file" accept=".xlsx,.xls,.csv" class="d-none">
+                                                    <div class="excel-import-dropzone" id="excelDropZoneContent">
+                                                        <i class="fa fa-cloud-upload fa-3x text-muted mb-2 d-block" style="opacity: 0.8;"></i>
+                                                        <p id="excelDropZonePrompt" class="mb-0 text-muted">اختر نوع البند أولاً ثم اسحب الملف هنا أو انقر للاختيار</p>
+                                                        <p id="excelFileName" class="mb-0 small text-success fw-bold mt-2" style="display:none;"></p>
+                                                    </div>
+                                                    <div id="excelUploadProgress" class="d-none text-center py-3">
+                                                        <div class="spinner-border text-success mb-2" role="status"></div>
+                                                        <p class="mb-0 small text-muted">جاري المعالجة...</p>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex gap-2 mt-2">
+                                                    <button type="button" id="btnDoImport" class="btn btn-success d-none flex-grow-1">
+                                                        <i class="fa fa-upload me-1"></i> بدء الاستيراد
+                                                    </button>
+                                                    <button type="button" id="btnClearFile" class="btn btn-outline-secondary d-none">
+                                                        إلغاء
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="col-md-7">
-                                        <div class="small">
-                                            <p class="fw-bold mb-1">صيغة الملف:</p>
-                                            <table class="table table-sm table-bordered mb-2">
+                                    <div class="col-lg-5">
+                                        <div class="excel-import-format-card h-100">
+                                            <p class="fw-600 small text-muted mb-2"><i class="fa fa-table me-1"></i> صيغة الملف</p>
+                                            <table class="table table-sm table-bordered">
                                                 <thead class="table-light">
                                                     <tr><th>العمود</th><th>الوصف</th><th>مثال</th></tr>
                                                 </thead>
@@ -171,17 +228,11 @@ echo AntiForgeryToken();
                                                     <tr><td>A</td><td>رقم الموظف</td><td>12345</td></tr>
                                                     <tr><td>B</td><td>الشهر (YYYYMM)</td><td><?= date('Ym') ?></td></tr>
                                                     <tr><td>C</td><td>المبلغ</td><td>500.00</td></tr>
-                                                    <tr><td>D</td><td>ملاحظات</td><td>-</td></tr>
+                                                    <tr><td>D</td><td>ملاحظات</td><td>—</td></tr>
                                                 </tbody>
                                             </table>
-                                            
-                                            <div class="alert alert-info py-2 mb-2" style="font-size:11px;">
-                                                <p class="fw-bold mb-1"><i class="fa fa-info-circle"></i> نوع الدفع يُحدد من الشاشة أعلاه فقط — لا يوجد عمود نوع دفع في الملف.</p>
-                                            </div>
-                                            
-                                            <p class="text-muted mb-0 small">
-                                                <i class="fa fa-info-circle"></i> السطر الأول قد يكون عنواناً. المجموع المسدد لا يتجاوز المتبقي. الحد الأقصى: 2000 سجل.
-                                            </p>
+                                            <p class="small text-muted mb-1"><i class="fa fa-info-circle me-1"></i> نوع الدفع من الشاشة فقط (لا عمود في الملف).</p>
+                                            <p class="small text-muted mb-0">السطر الأول قد يكون عنواناً. حد أقصى 2000 سجل.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -197,83 +248,83 @@ echo AntiForgeryToken();
                             <input type="hidden" name="serial" id="serial" value="<?= $rs['SERIAL'] ?>">
                         <?php endif; ?>
 
-                        <div class="row g-3" id="manualInputFields">
-
-                            <div class="form-group col-md-2">
-                                <label>
-                                    الموظف
-                                    <i class="fa fa-question-circle text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="اختر الموظف من القائمة. يمكنك البحث بالاسم أو الرقم"></i>
-                                </label>
-                                <select name="emp_no" id="emp_no" class="form-control sel2">
-                                    <option value="">_________</option>
-                                    <?php foreach ($emp_no_cons as $row) : ?>
-                                        <?php $sel = (!$isCreate && $HaveRs && ($rs['EMP_NO'] == $row['EMP_NO'])) ? 'selected' : ''; ?>
-                                        <option <?= $sel ?> value="<?= $row['EMP_NO'] ?>"><?= $row['EMP_NO'] . ': ' . $row['EMP_NAME'] ?></option>
-                                    <?php endforeach; ?>
-                                </select>
+                        <div class="dues-form-section" id="manualInputFields">
+                            <div class="dues-form-section-title">
+                                <span class="title-icon"><i class="fa fa-edit"></i></span>
+                                <span>بيانات التسديد</span>
                             </div>
-
-                            <div class="form-group col-md-2">
-                                <label>
-                                    الشهر
-                                    <i class="fa fa-question-circle text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="صيغة الشهر: YYYYMM (مثال: 202412 لشهر ديسمبر 2024)"></i>
-                                </label>
-                                <input type="text"
-                                       name="the_month"
-                                       id="the_month"
-                                       class="form-control"
-                                       placeholder="YYYYMM"
-                                       value="<?= (!$isCreate && $HaveRs) ? ($rs['THE_MONTH'] ?? '') : date('Ym') ?>">
-                            </div>
-
-                            <div class="form-group col-md-3">
-                                <label>
-                                    نوع البند المراد تسديده
-                                    <i class="fa fa-question-circle text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="حدد نوع البند الذي تريد تسديده من الشجرة (إضافة أو خصم). يُختار البند الفرعي فقط"></i>
-                                </label>
-                                <div class="input-group">
-                                    <input type="hidden" name="pay_type" id="pay_type" value="<?= (!$isCreate && $HaveRs) ? ($rs['PAY_TYPE'] ?? '') : '' ?>">
-                                    <input type="text" id="pay_type_display" class="form-control bg-white" readonly
-                                           placeholder="اختر من الشجرة..."
-                                           value="<?= (!$isCreate && $HaveRs) ? (isset($rs['PAY_TYPE_NAME']) ? $rs['PAY_TYPE_NAME'] : '') : '' ?>">
-                                    <button type="button" class="btn btn-outline-primary" id="btn_pay_type_tree" title="فتح شجرة البنود">
-                                        <i class="fa fa-sitemap"></i> اختر من الشجرة
-                                    </button>
+                            <div class="form-body">
+                                <div class="row g-3">
+                                    <div class="form-group col-sm-12 col-md-6 col-lg-3">
+                                        <label for="emp_no">
+                                            <i class="fa fa-user text-primary me-1" style="font-size:0.75em;"></i> الموظف
+                                            <i class="fa fa-question-circle text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="اختر الموظف من القائمة. يمكنك البحث بالاسم أو الرقم"></i>
+                                        </label>
+                                        <select name="emp_no" id="emp_no" class="form-control sel2">
+                                            <option value="">_________</option>
+                                            <?php foreach ($emp_no_cons as $row) : ?>
+                                                <?php $sel = (!$isCreate && $HaveRs && ($rs['EMP_NO'] == $row['EMP_NO'])) ? 'selected' : ''; ?>
+                                                <option <?= $sel ?> value="<?= $row['EMP_NO'] ?>"><?= $row['EMP_NO'] . ': ' . $row['EMP_NAME'] ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-sm-6 col-md-4 col-lg-2">
+                                        <label for="the_month">
+                                            <i class="fa fa-calendar text-primary me-1" style="font-size:0.75em;"></i> الشهر
+                                            <i class="fa fa-question-circle text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="صيغة الشهر: YYYYMM (مثال: 202412)"></i>
+                                        </label>
+                                        <input type="text" name="the_month" id="the_month" class="form-control" placeholder="YYYYMM"
+                                               value="<?= (!$isCreate && $HaveRs) ? ($rs['THE_MONTH'] ?? '') : date('Ym') ?>">
+                                    </div>
+                                    <div class="form-group col-sm-12 col-md-6 col-lg-4">
+                                        <label>
+                                            <i class="fa fa-sitemap text-primary me-1" style="font-size:0.75em;"></i> نوع البند
+                                            <i class="fa fa-question-circle text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="حدد نوع البند من الشجرة (إضافة أو خصم)"></i>
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="hidden" name="pay_type" id="pay_type" value="<?= (!$isCreate && $HaveRs) ? ($rs['PAY_TYPE'] ?? '') : '' ?>">
+                                            <input type="text" id="pay_type_display" class="form-control bg-white" readonly placeholder="اختر من الشجرة..."
+                                                   value="<?= (!$isCreate && $HaveRs) ? (isset($rs['PAY_TYPE_NAME']) ? $rs['PAY_TYPE_NAME'] : '') : '' ?>">
+                                            <button type="button" class="btn btn-outline-primary" id="btn_pay_type_tree" title="فتح شجرة البنود">
+                                                <i class="fa fa-sitemap"></i> اختر
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="form-group col-sm-6 col-md-4 col-lg-2">
+                                        <label for="the_date">
+                                            <i class="fa fa-calendar-check-o text-primary me-1" style="font-size:0.75em;"></i> تاريخ الحركة
+                                        </label>
+                                        <input type="text" <?= $date_attr ?> name="the_date" id="the_date" class="form-control"
+                                               value="<?= $the_date_display ?>"
+                                               title="تاريخ الحركة (dd/mm/yyyy)">
+                                    </div>
+                                    <div class="form-group col-sm-12 col-md-6 col-lg-4 pay-row">
+                                        <label for="pay">
+                                            <i class="fa fa-money text-primary me-1" style="font-size:0.75em;"></i> المبلغ
+                                            <span class="text-muted fw-normal small ms-1" id="balanceHintWrapper">(متبقي: <span id="balanceHint" class="fw-bold text-warning">-</span>)</span>
+                                            <i class="fa fa-question-circle text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="أدخل المبلغ. يجب ألا يتجاوز المتبقي"></i>
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="number" step="0.01" name="pay" id="pay" class="form-control" placeholder="0.00"
+                                                   value="<?= (!$isCreate && $HaveRs) ? ($rs['PAY'] ?? '') : '' ?>">
+                                            <button type="button" id="btnFillBalance" class="btn btn-outline-warning" data-bs-toggle="tooltip" title="ملء المبلغ بالمتبقي">
+                                                <i class="fa fa-fill"></i> المتبقي
+                                            </button>
+                                        </div>
+                                        <div id="payWarn" class="small text-danger mt-1" style="display:none;">
+                                            <i class="fa fa-exclamation-triangle"></i> المبلغ أكبر من المتبقي.
+                                        </div>
+                                    </div>
+                                    <div class="form-group col-12 note-row">
+                                        <label for="note">
+                                            <i class="fa fa-sticky-note-o text-primary me-1" style="font-size:0.75em;"></i> ملاحظات
+                                        </label>
+                                        <input type="text" name="note" id="note" class="form-control" placeholder="اختياري..."
+                                               value="<?= (!$isCreate && $HaveRs) ? ($rs['NOTE'] ?? '') : '' ?>">
+                                    </div>
                                 </div>
                             </div>
-
-                            <div class="form-group col-md-2">
-                                <label>
-                                    المبلغ
-                                    <i class="fa fa-question-circle text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="أدخل المبلغ المراد دفعه. يجب ألا يتجاوز المتبقي"></i>
-                                    <span style="font-size:12px;opacity:.8;" id="balanceHintWrapper">
-                                        (<i class="fa fa-wallet text-warning"></i> متبقي: <span id="balanceHint" class="fw-bold text-warning">-</span>)
-                                    </span>
-                                </label>
-
-                                <div class="d-flex gap-2">
-                                    <input type="number" step="0.01" name="pay" id="pay" class="form-control"
-                                           placeholder="0.00"
-                                           value="<?= (!$isCreate && $HaveRs) ? ($rs['PAY'] ?? '') : '' ?>">
-                                    <button type="button" id="btnFillBalance" class="btn btn-outline-warning" style="white-space:nowrap; font-size:13px; padding:6px 15px; min-width:100px;" data-bs-toggle="tooltip" title="ملء المبلغ بالمتبقي تلقائياً">
-                                        <i class="fa fa-fill"></i> المتبقي
-                                    </button>
-                                </div>
-
-                                <div id="payWarn" style="display:none;color:#dc3545;font-size:12px;margin-top:6px;">
-                                    <i class="fa fa-exclamation-triangle"></i> المبلغ أكبر من المتبقي.
-                                </div>
-                            </div>
-
-                            <div class="form-group col-md-3">
-                                <label>ملاحظات</label>
-                                <input type="text" name="note" id="note" class="form-control"
-                                       value="<?= (!$isCreate && $HaveRs) ? ($rs['NOTE'] ?? '') : '' ?>">
-                            </div>
-                        </div>
-
-                        <div class="row mt-4">
-                            <div class="col-12 d-flex justify-content-end gap-2">
+                            <div class="dues-form-actions">
                                 <a class="btn btn-light" href="<?= $back_url ?>">
                                     <i class="fa fa-times"></i> إلغاء
                                 </a>
@@ -655,7 +706,8 @@ $scripts = <<<SCRIPT
                     the_month: $('#the_month').val(),
                     pay_type: $('#pay_type').val(),
                     pay: $('#pay').val(),
-                    note: $('#note').val()
+                    note: $('#note').val(),
+                    the_date: $('#the_date').val()
                 };
                 
                 if (typeof success_msg === 'function') success_msg('رسالة', 'تم الحفظ بنجاح');
