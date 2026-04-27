@@ -5,8 +5,7 @@ $TB_NAME     = 'payment_accounts';
 $get_page_url     = base_url("$MODULE_NAME/$TB_NAME/get_page");
 $export_excel_url = base_url("$MODULE_NAME/$TB_NAME/export_excel");
 $providers_url    = base_url("$MODULE_NAME/$TB_NAME/providers");
-$branches_url     = base_url("$MODULE_NAME/$TB_NAME/branches");
-$is_admin         = ($this->user->branch == 1) ? 'true' : 'false';
+$validation_url   = base_url("$MODULE_NAME/$TB_NAME/validation");
 
 echo AntiForgeryToken();
 ?>
@@ -36,9 +35,9 @@ echo AntiForgeryToken();
                                 <i class="fa fa-bank"></i> المزودون
                             </a>
                         <?php endif; ?>
-                        <?php if (HaveAccess($branches_url)): ?>
-                            <a class="btn btn-dark btn-sm" href="<?= $branches_url ?>">
-                                <i class="fa fa-building"></i> الفروع
+                        <?php if (HaveAccess($validation_url)): ?>
+                            <a class="btn btn-warning btn-sm" href="<?= $validation_url ?>">
+                                <i class="fa fa-stethoscope"></i> تحقّق التوزيع
                             </a>
                         <?php endif; ?>
                     </div>
@@ -76,6 +75,8 @@ echo AntiForgeryToken();
                                     <option value="">— الكل —</option>
                                     <option value="1" selected>فعّال</option>
                                     <option value="0">متقاعد</option>
+                                    <option value="2">متوفى</option>
+                                    <option value="4">حسابه مغلق من البنك</option>
                                 </select>
                             </div>
 
@@ -83,8 +84,8 @@ echo AntiForgeryToken();
                                 <label>الحسابات</label>
                                 <select name="has_acc" id="dp_has_acc" class="form-control">
                                     <option value="">— الكل —</option>
-                                    <option value="1">عنده حسابات</option>
-                                    <option value="0">بدون حسابات</option>
+                                    <option value="1" selected>عنده حساب نشط</option>
+                                    <option value="0">بدون حساب نشط</option>
                                 </select>
                             </div>
                         </div>
@@ -175,20 +176,7 @@ $scripts = <<<SCRIPT
         return values;
     }
 
-    function _hasAnyFilter(){
-        var v = values_search(0);
-        if (v.emp_no) return true;
-        if (v.is_active !== '') return true;
-        if (v.has_acc   !== '') return true;
-        if (v.branch_no && {$is_admin}) return true;
-        return false;
-    }
-
     function search(){
-        if(!_hasAnyFilter()){
-            warning_msg('تنبيه', 'اختر محدد بحث واحد على الأقل قبل الاستعلام');
-            return;
-        }
         var values = values_search(1);
         get_data('{$get_page_url}', values, function(data){
             $('#container').html(data);
@@ -198,7 +186,6 @@ $scripts = <<<SCRIPT
     }
 
     function loadData(){
-        if(!_hasAnyFilter()){ return; }
         var values = values_search(1);
         get_data('{$get_page_url}', values, function(data){
             $('#container').html(data);
@@ -211,16 +198,12 @@ $scripts = <<<SCRIPT
         clearForm($('#{$TB_NAME}_form'));
         $('.sel2').select2('val', '');
         $('#dp_is_active').val('1');
-        $('#dp_has_acc').val('');
+        $('#dp_has_acc').val('1');
         $('#paSummary').hide();
         $('#container').html('<div class="alert alert-light text-center text-muted py-4" id="paInitMsg"><i class="fa fa-search fa-2x d-block mb-2" style="opacity:.4"></i>اضغط <b>استعلام</b> لعرض النتائج</div>');
     }
 
     function exportExcel(){
-        if(!_hasAnyFilter()){
-            warning_msg('تنبيه', 'اختر محدد بحث واحد على الأقل قبل التصدير');
-            return;
-        }
         var values = values_search(0);
         var token = $('input[name="__AntiForgeryToken"]').val() || '';
         var form = document.createElement('form');

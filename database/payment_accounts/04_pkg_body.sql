@@ -1128,7 +1128,9 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
                COUNT(*)                                                            AS ACC_COUNT,
                SUM(CASE WHEN A.IS_ACTIVE = 1 THEN 1 ELSE 0 END)                    AS ACTIVE_COUNT,
                SUM(CASE WHEN A.IS_ACTIVE = 1 AND PP.PROVIDER_TYPE = 1 THEN 1 ELSE 0 END) AS BANK_COUNT,
-               SUM(CASE WHEN A.IS_ACTIVE = 1 AND PP.PROVIDER_TYPE = 2 THEN 1 ELSE 0 END) AS WALLET_COUNT
+               SUM(CASE WHEN A.IS_ACTIVE = 1 AND PP.PROVIDER_TYPE = 2 THEN 1 ELSE 0 END) AS WALLET_COUNT,
+               MAX(CASE WHEN A.INACTIVE_REASON = 2 THEN 1 ELSE 0 END)              AS HAS_DECEASED,
+               MAX(CASE WHEN A.INACTIVE_REASON = 4 THEN 1 ELSE 0 END)              AS HAS_FROZEN
           FROM GFC.PAYMENT_ACCOUNTS_TB A
           LEFT JOIN GFC.PAYMENT_PROVIDERS_TB PP ON PP.PROVIDER_ID = A.PROVIDER_ID
          WHERE A.STATUS = 1
@@ -1172,10 +1174,19 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
           LEFT JOIN ACC_AGG AC ON AC.EMP_NO = E.NO
          WHERE (P_EMP_NO    IS NULL OR E.NO = P_EMP_NO)
            AND (P_BRANCH_NO IS NULL OR EMP_PKG.GET_EMP_BRANCH(E.NO) = P_BRANCH_NO)
-           AND (P_IS_ACTIVE IS NULL OR NVL(E.IS_ACTIVE, 0) = P_IS_ACTIVE)
+           -- P_IS_ACTIVE: 1=فعّال، 0=متقاعد، 2=متوفى، 4=حسابه مغلق من البنك، NULL=الكل
+           AND (P_IS_ACTIVE IS NULL
+                OR (P_IS_ACTIVE = 1 AND NVL(E.IS_ACTIVE, 0) = 1
+                                     AND NVL(AC.HAS_DECEASED, 0) = 0
+                                     AND NVL(AC.HAS_FROZEN, 0)   = 0)
+                OR (P_IS_ACTIVE = 0 AND NVL(E.IS_ACTIVE, 0) = 0
+                                     AND NVL(AC.HAS_DECEASED, 0) = 0
+                                     AND NVL(AC.HAS_FROZEN, 0)   = 0)
+                OR (P_IS_ACTIVE = 2 AND NVL(AC.HAS_DECEASED, 0) = 1)
+                OR (P_IS_ACTIVE = 4 AND NVL(AC.HAS_FROZEN, 0)   = 1))
            AND (P_HAS_ACC   IS NULL
-                OR (P_HAS_ACC = 1 AND NVL(AC.ACC_COUNT, 0) > 0)
-                OR (P_HAS_ACC = 0 AND NVL(AC.ACC_COUNT, 0) = 0))
+                OR (P_HAS_ACC = 1 AND NVL(AC.ACTIVE_COUNT, 0) > 0)
+                OR (P_HAS_ACC = 0 AND NVL(AC.ACTIVE_COUNT, 0) = 0))
       )
       SELECT P.EMP_NO,
              P.EMP_NAME,
@@ -1187,6 +1198,8 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
              NVL(AC.BANK_COUNT, 0)              AS BANK_COUNT,
              NVL(AC.WALLET_COUNT, 0)            AS WALLET_COUNT,
              NVL(BN.BENEF_COUNT, 0)             AS BENEF_COUNT,
+             NVL(AC.HAS_DECEASED, 0)            AS HAS_DECEASED,
+             NVL(AC.HAS_FROZEN, 0)              AS HAS_FROZEN,
              D.PROVIDER_NAME                    AS DEF_PROVIDER_NAME,
              D.PROVIDER_TYPE                    AS DEF_PROVIDER_TYPE,
              NVL(D.ACCOUNT_NO, D.WALLET_NUMBER) AS DEF_ACCOUNT_NO,
@@ -1214,17 +1227,29 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
     SELECT COUNT(*) INTO P_CNT_OUT
       FROM DATA.EMPLOYEES E
       LEFT JOIN (
-          SELECT EMP_NO, COUNT(*) AS ACC_COUNT
+          SELECT EMP_NO,
+                 COUNT(*)                                              AS ACC_COUNT,
+                 SUM(CASE WHEN IS_ACTIVE = 1 THEN 1 ELSE 0 END)        AS ACTIVE_COUNT,
+                 MAX(CASE WHEN INACTIVE_REASON = 2 THEN 1 ELSE 0 END)  AS HAS_DECEASED,
+                 MAX(CASE WHEN INACTIVE_REASON = 4 THEN 1 ELSE 0 END)  AS HAS_FROZEN
             FROM GFC.PAYMENT_ACCOUNTS_TB
            WHERE STATUS = 1
            GROUP BY EMP_NO
       ) AC ON AC.EMP_NO = E.NO
      WHERE (P_EMP_NO    IS NULL OR E.NO = P_EMP_NO)
        AND (P_BRANCH_NO IS NULL OR EMP_PKG.GET_EMP_BRANCH(E.NO) = P_BRANCH_NO)
-       AND (P_IS_ACTIVE IS NULL OR NVL(E.IS_ACTIVE, 0) = P_IS_ACTIVE)
+       AND (P_IS_ACTIVE IS NULL
+            OR (P_IS_ACTIVE = 1 AND NVL(E.IS_ACTIVE, 0) = 1
+                                 AND NVL(AC.HAS_DECEASED, 0) = 0
+                                 AND NVL(AC.HAS_FROZEN, 0)   = 0)
+            OR (P_IS_ACTIVE = 0 AND NVL(E.IS_ACTIVE, 0) = 0
+                                 AND NVL(AC.HAS_DECEASED, 0) = 0
+                                 AND NVL(AC.HAS_FROZEN, 0)   = 0)
+            OR (P_IS_ACTIVE = 2 AND NVL(AC.HAS_DECEASED, 0) = 1)
+            OR (P_IS_ACTIVE = 4 AND NVL(AC.HAS_FROZEN, 0)   = 1))
        AND (P_HAS_ACC   IS NULL
-            OR (P_HAS_ACC = 1 AND NVL(AC.ACC_COUNT, 0) > 0)
-            OR (P_HAS_ACC = 0 AND NVL(AC.ACC_COUNT, 0) = 0));
+            OR (P_HAS_ACC = 1 AND NVL(AC.ACTIVE_COUNT, 0) > 0)
+            OR (P_HAS_ACC = 0 AND NVL(AC.ACTIVE_COUNT, 0) = 0));
     P_MSG_OUT := '1';
   EXCEPTION WHEN OTHERS THEN
     P_CNT_OUT := 0;
@@ -1246,8 +1271,11 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
     WITH ACC_AGG AS (
       SELECT A.EMP_NO,
              COUNT(*) AS ACC_COUNT,
+             SUM(CASE WHEN A.IS_ACTIVE = 1 THEN 1 ELSE 0 END) AS ACTIVE_COUNT,
              SUM(CASE WHEN A.IS_ACTIVE = 1 AND PP.PROVIDER_TYPE = 1 THEN 1 ELSE 0 END) AS BANK_CNT,
-             SUM(CASE WHEN A.IS_ACTIVE = 1 AND PP.PROVIDER_TYPE = 2 THEN 1 ELSE 0 END) AS WLT_CNT
+             SUM(CASE WHEN A.IS_ACTIVE = 1 AND PP.PROVIDER_TYPE = 2 THEN 1 ELSE 0 END) AS WLT_CNT,
+             MAX(CASE WHEN A.INACTIVE_REASON = 2 THEN 1 ELSE 0 END) AS HAS_DECEASED,
+             MAX(CASE WHEN A.INACTIVE_REASON = 4 THEN 1 ELSE 0 END) AS HAS_FROZEN
         FROM GFC.PAYMENT_ACCOUNTS_TB A
         LEFT JOIN GFC.PAYMENT_PROVIDERS_TB PP ON PP.PROVIDER_ID = A.PROVIDER_ID
        WHERE A.STATUS = 1
@@ -1269,10 +1297,18 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
       LEFT JOIN BNF_AGG BN ON BN.EMP_NO = E.NO
      WHERE (P_EMP_NO    IS NULL OR E.NO = P_EMP_NO)
        AND (P_BRANCH_NO IS NULL OR EMP_PKG.GET_EMP_BRANCH(E.NO) = P_BRANCH_NO)
-       AND (P_IS_ACTIVE IS NULL OR NVL(E.IS_ACTIVE, 0) = P_IS_ACTIVE)
+       AND (P_IS_ACTIVE IS NULL
+            OR (P_IS_ACTIVE = 1 AND NVL(E.IS_ACTIVE, 0) = 1
+                                 AND NVL(AC.HAS_DECEASED, 0) = 0
+                                 AND NVL(AC.HAS_FROZEN, 0)   = 0)
+            OR (P_IS_ACTIVE = 0 AND NVL(E.IS_ACTIVE, 0) = 0
+                                 AND NVL(AC.HAS_DECEASED, 0) = 0
+                                 AND NVL(AC.HAS_FROZEN, 0)   = 0)
+            OR (P_IS_ACTIVE = 2 AND NVL(AC.HAS_DECEASED, 0) = 1)
+            OR (P_IS_ACTIVE = 4 AND NVL(AC.HAS_FROZEN, 0)   = 1))
        AND (P_HAS_ACC   IS NULL
-            OR (P_HAS_ACC = 1 AND NVL(AC.ACC_COUNT, 0) > 0)
-            OR (P_HAS_ACC = 0 AND NVL(AC.ACC_COUNT, 0) = 0));
+            OR (P_HAS_ACC = 1 AND NVL(AC.ACTIVE_COUNT, 0) > 0)
+            OR (P_HAS_ACC = 0 AND NVL(AC.ACTIVE_COUNT, 0) = 0));
     P_MSG_OUT := '1';
   EXCEPTION WHEN OTHERS THEN
     P_TOTAL_OUT := 0; P_BANK_OUT := 0; P_WALLET_OUT := 0; P_BENEF_OUT := 0;

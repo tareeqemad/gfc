@@ -138,8 +138,8 @@ class Payment_accounts extends MY_Controller
         $sheet->setTitle('حسابات الصرف');
         $sheet->setRightToLeft(true);
 
-        $headers = ['م', 'رقم الموظف', 'اسم الموظف', 'المقر', 'التوظيف', 'النوع', 'البنك / المحفظة', 'رقم الحساب', 'IBAN', 'صاحب الحساب', 'حسابات إضافية', 'مستفيدون'];
-        $lastCol = chr(64 + count($headers)); // L
+        $headers = ['م', 'رقم الموظف', 'اسم الموظف', 'رقم الهوية', 'المقر', 'الحالة', 'النوع', 'البنك / المحفظة', 'رقم الحساب', 'IBAN', 'صاحب الحساب', 'حسابات إضافية', 'مستفيدون'];
+        $lastCol = chr(64 + count($headers)); // M
         $col = 'A';
         foreach ($headers as $h) { $sheet->setCellValue($col . '1', $h); $col++; }
 
@@ -155,8 +155,11 @@ class Payment_accounts extends MY_Controller
         foreach ($rows as $row) {
             $emp_no_v   = $row['EMP_NO'] ?? '';
             $emp_name   = $row['EMP_NAME'] ?? '';
+            $id_no_v    = $row['ID_NO'] ?? '';
             $branch     = $row['BRANCH_NAME'] ?? '';
             $is_act     = (int)($row['IS_ACTIVE'] ?? 0);
+            $has_dead   = (int)($row['HAS_DECEASED'] ?? 0);
+            $has_frozen = (int)($row['HAS_FROZEN'] ?? 0);
             $active_cnt = (int)($row['ACTIVE_COUNT'] ?? 0);
             $benef_cnt  = (int)($row['BENEF_COUNT'] ?? 0);
             $def_prov   = $row['DEF_PROVIDER_NAME'] ?? '';
@@ -177,27 +180,43 @@ class Payment_accounts extends MY_Controller
                 $prov_label = $def_prov;
             }
 
+            // الحالة: متوفى > حساب مغلق > فعّال/متقاعد
+            if ($has_dead) {
+                $status_label = 'متوفى';
+            } elseif ($has_frozen) {
+                $status_label = 'حساب مغلق';
+            } else {
+                $status_label = $is_act == 1 ? 'فعّال' : 'متقاعد';
+            }
+
             $sheet->setCellValue('A' . $rowNum, $count);
             $sheet->setCellValue('B' . $rowNum, $emp_no_v);
             $sheet->setCellValue('C' . $rowNum, $emp_name);
-            $sheet->setCellValue('D' . $rowNum, $branch);
-            $sheet->setCellValue('E' . $rowNum, $is_act == 1 ? 'فعّال' : 'متقاعد');
-            $sheet->setCellValue('F' . $rowNum, $type_label);
-            $sheet->setCellValue('G' . $rowNum, $prov_label);
-            $sheet->setCellValueExplicit('H' . $rowNum, (string)$def_acc, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit('I' . $rowNum, (string)($def_type == 1 ? $def_iban : ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $sheet->setCellValue('J' . $rowNum, ($def_owner && $def_owner != $emp_name) ? $def_owner : '');
-            $sheet->setCellValue('K' . $rowNum, $more_cnt > 0 ? $more_cnt : '');
-            $sheet->setCellValue('L' . $rowNum, $benef_cnt > 0 ? $benef_cnt : '');
+            $sheet->setCellValueExplicit('D' . $rowNum, (string)$id_no_v, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('E' . $rowNum, $branch);
+            $sheet->setCellValue('F' . $rowNum, $status_label);
+            $sheet->setCellValue('G' . $rowNum, $type_label);
+            $sheet->setCellValue('H' . $rowNum, $prov_label);
+            $sheet->setCellValueExplicit('I' . $rowNum, (string)$def_acc, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit('J' . $rowNum, (string)($def_type == 1 ? $def_iban : ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('K' . $rowNum, ($def_owner && $def_owner != $emp_name) ? $def_owner : '');
+            $sheet->setCellValue('L' . $rowNum, $more_cnt > 0 ? $more_cnt : '');
+            $sheet->setCellValue('M' . $rowNum, $benef_cnt > 0 ? $benef_cnt : '');
 
-            if ($is_act != 1) {
+            if ($has_dead) {
+                $sheet->getStyle("A{$rowNum}:{$lastCol}{$rowNum}")->getFont()->getColor()->setRGB('991b1b');
+            } elseif ($has_frozen) {
+                $sheet->getStyle("A{$rowNum}:{$lastCol}{$rowNum}")->getFont()->getColor()->setRGB('92400e');
+            } elseif ($is_act != 1) {
                 $sheet->getStyle("A{$rowNum}:{$lastCol}{$rowNum}")->getFont()->getColor()->setRGB('64748b');
             }
             $count++; $rowNum++;
         }
 
-        // IBAN / Account No بمحاذاة LTR
-        $sheet->getStyle('H2:I' . ($rowNum - 1))->getAlignment()
+        // رقم الهوية / رقم الحساب / IBAN بمحاذاة LTR
+        $sheet->getStyle('D2:D' . ($rowNum - 1))->getAlignment()
+            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+        $sheet->getStyle('I2:J' . ($rowNum - 1))->getAlignment()
             ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
 
         foreach (range('A', $lastCol) as $c) { $sheet->getColumnDimension($c)->setAutoSize(true); }
@@ -221,13 +240,25 @@ class Payment_accounts extends MY_Controller
         $emp_data = $this->{$this->MODEL_NAME}->get_employee($emp_no);
         if (!$emp_data) { show_404(); return; }
 
-        $data['title']          = 'حسابات الصرف — ' . ($emp_data['EMP_NAME'] ?? $emp_no);
-        $data['emp_no']         = $emp_no;
-        $data['emp_data']       = $emp_data;
-        $data['accounts']       = $this->{$this->MODEL_NAME}->accounts_list($emp_no);
-        $data['beneficiaries']  = $this->{$this->MODEL_NAME}->benef_list($emp_no);
-        $data['providers']      = $this->{$this->MODEL_NAME}->providers_list();
-        $data['content']        = 'payment_accounts_emp';
+        $beneficiaries = $this->{$this->MODEL_NAME}->benef_list($emp_no);
+
+        // إضافة عدد المرفقات لكل مستفيد (CATEGORY = 'payment_benef')
+        if (is_array($beneficiaries)) {
+            $this->load->model('attachments/attachment_model');
+            foreach ($beneficiaries as &$b) {
+                $atts = $this->attachment_model->get_list($b['BENEFICIARY_ID'] ?? 0, 'payment_benef', 0);
+                $b['ATTACH_COUNT'] = is_array($atts) ? count($atts) : 0;
+            }
+            unset($b);
+        }
+
+        $data['title']         = 'حسابات الصرف — ' . ($emp_data['EMP_NAME'] ?? $emp_no);
+        $data['emp_no']        = $emp_no;
+        $data['emp_data']      = $emp_data;
+        $data['accounts']      = $this->{$this->MODEL_NAME}->accounts_list($emp_no);
+        $data['beneficiaries'] = $beneficiaries;
+        $data['providers']     = $this->{$this->MODEL_NAME}->providers_list();
+        $data['content']       = 'payment_accounts_emp';
 
         $this->load->view('template/template1', $data);
     }
@@ -235,9 +266,26 @@ class Payment_accounts extends MY_Controller
     // ==================== ACCOUNT ENDPOINTS (AJAX) ====================
     function account_save()
     {
+        $beneficiary_id = $this->input->post('beneficiary_id') ?: null;
+
+        // Validation: لا يُسمح بربط حساب بمستفيد بدون مرفقات (مستندات إثبات)
+        if ($beneficiary_id) {
+            $this->load->model('attachments/attachment_model');
+            $atts = $this->attachment_model->get_list($beneficiary_id, 'payment_benef', 0);
+            $cnt  = is_array($atts) ? count($atts) : 0;
+            if ($cnt === 0) {
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'ok'  => false,
+                    'msg' => 'لا يمكن ربط حساب بهذا المستفيد قبل إرفاق المستندات اللازمة (على الأقل مستند واحد).'
+                ]);
+                return;
+            }
+        }
+
         $data = [
             'emp_no'         => $this->input->post('emp_no'),
-            'beneficiary_id' => $this->input->post('beneficiary_id') ?: null,
+            'beneficiary_id' => $beneficiary_id,
             'provider_id'    => $this->input->post('provider_id'),
             'branch_id'      => $this->input->post('branch_id') ?: null,
             'account_no'     => $this->input->post('account_no'),
@@ -299,6 +347,178 @@ class Payment_accounts extends MY_Controller
         $res = $this->{$this->MODEL_NAME}->account_set_default($acc_id);
         header('Content-Type: application/json');
         echo json_encode(['ok' => $res == '1', 'msg' => $res == '1' ? 'تم التعيين كافتراضي' : $res]);
+    }
+
+    // ==================== VALIDATION DASHBOARD ====================
+    /**
+     * لوحة تحقّق: تستعرض الموظفين الذين عندهم مشاكل في إعداد التوزيع.
+     * يجمع كل الحسابات النشطة + يحسب المشاكل في PHP (لتجنّب SP جديدة).
+     */
+    function validation()
+    {
+        $branch_no = $this->user->branch != 1 ? $this->user->branch : null;
+        $issues = $this->_collect_split_issues($branch_no);
+
+        $data['title']    = 'تحقّق إعداد التوزيع';
+        $data['content']  = 'payment_accounts_validation';
+        $data['issues']   = $issues;
+        $this->load->view('template/template1', $data);
+    }
+
+    function _collect_split_issues($branch_no = null)
+    {
+        // نأخذ كل الموظفين الذين عندهم حسابات نشطة (limit عريض)
+        $filters = ['branch_no' => $branch_no, 'has_acc' => 1, 'is_active' => null];
+        $rows = $this->{$this->MODEL_NAME}->employees_list($filters, 0, 9999);
+
+        $issues = [];
+        if (!is_array($rows)) return $issues;
+
+        foreach ($rows as $r) {
+            $emp_no = (int)($r['EMP_NO'] ?? 0);
+            if (!$emp_no) continue;
+            $accounts = $this->{$this->MODEL_NAME}->accounts_list($emp_no, 1); // active only
+            if (!is_array($accounts) || count($accounts) === 0) continue;
+
+            $sum_pct        = 0;
+            $has_remainder  = false;
+            $has_default    = false;
+            $missing_iban   = 0;
+            $bank_count     = 0;
+            foreach ($accounts as $a) {
+                $st = (int)($a['SPLIT_TYPE']    ?? 3);
+                $sv = (float)($a['SPLIT_VALUE'] ?? 0);
+                $pt = (int)($a['PROVIDER_TYPE'] ?? 1);
+                if ($st == 1) $sum_pct += $sv;
+                if ($st == 3) $has_remainder = true;
+                if ((int)($a['IS_DEFAULT'] ?? 0) === 1) $has_default = true;
+                if ($pt == 1) {
+                    $bank_count++;
+                    if (empty(trim($a['IBAN'] ?? ''))) $missing_iban++;
+                }
+            }
+            $cnt = count($accounts);
+            $errs = [];
+
+            if ($cnt > 1 && !$has_remainder) {
+                $errs[] = ['code' => 'NO_REMAINDER', 'label' => 'لا يوجد حساب "كامل الباقي"'];
+            }
+            if ($sum_pct > 100.01) {
+                $errs[] = ['code' => 'PCT_OVER',    'label' => 'مجموع النسب يتجاوز 100% (' . number_format($sum_pct, 1) . '%)'];
+            }
+            if ($cnt > 1 && !$has_default) {
+                $errs[] = ['code' => 'NO_DEFAULT',  'label' => 'لا يوجد حساب افتراضي'];
+            }
+            if ($missing_iban > 0) {
+                $errs[] = ['code' => 'NO_IBAN',     'label' => "$missing_iban حساب بنكي بدون IBAN"];
+            }
+            // تحذير ناعم: نسب < 100 ولا يوجد "باقي"
+            if ($cnt > 1 && $has_remainder === false && $sum_pct < 100 && $sum_pct > 0) {
+                // already covered by NO_REMAINDER
+            }
+
+            if (count($errs) > 0) {
+                $issues[] = [
+                    'EMP_NO'    => $emp_no,
+                    'EMP_NAME'  => $r['EMP_NAME']   ?? '',
+                    'ID_NO'     => $r['ID_NO']      ?? '',
+                    'BRANCH'    => $r['BRANCH_NAME'] ?? '',
+                    'ACC_CNT'   => $cnt,
+                    'SUM_PCT'   => $sum_pct,
+                    'ERRORS'    => $errs,
+                ];
+            }
+        }
+        return $issues;
+    }
+
+    /**
+     * إصلاح تلقائي للتوزيع لموظف محدّد:
+     * - يضمن وجود حساب واحد على الأقل بـ SPLIT_TYPE=3 (كامل الباقي)
+     * - يضمن وجود حساب افتراضي واحد (IS_DEFAULT=1)
+     * - يعيد ترتيب SPLIT_ORDER (1, 2, 3, ...)
+     */
+    function auto_fix_splits()
+    {
+        $emp_no   = $this->input->post('emp_no');
+        $accounts = $this->{$this->MODEL_NAME}->accounts_list($emp_no, 1); // active only
+
+        if (!is_array($accounts) || count($accounts) === 0) {
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'msg' => 'لا يوجد حسابات نشطة لإصلاحها']);
+            return;
+        }
+
+        $has_default   = false;
+        $has_remainder = false;
+        foreach ($accounts as $a) {
+            if ((int)($a['IS_DEFAULT'] ?? 0) === 1) $has_default   = true;
+            if ((int)($a['SPLIT_TYPE'] ?? 0) === 3) $has_remainder = true;
+        }
+
+        $fixed_count = 0;
+        $changes_log = [];
+        $i = 0;
+        foreach ($accounts as $a) {
+            $i++;
+            $changes = [];
+
+            $newDefault = (int)($a['IS_DEFAULT'] ?? 0);
+            $newSplit   = (int)($a['SPLIT_TYPE'] ?? 3);
+            $newOrder   = $i;
+
+            // 1) إذا لا يوجد افتراضي — اجعل الأول افتراضياً
+            if (!$has_default && $i === 1) {
+                $newDefault = 1;
+                $has_default = true;
+                $changes[] = 'افتراضي';
+            }
+
+            // 2) إذا لا يوجد "كامل الباقي" — اجعل الأول/الافتراضي يأخذها
+            if (!$has_remainder && (($newDefault === 1) || ($i === 1 && !$has_default))) {
+                $newSplit = 3;
+                $has_remainder = true;
+                $changes[] = 'كامل الباقي';
+            }
+
+            // 3) إعادة ترتيب SPLIT_ORDER دائماً
+            if ((int)($a['SPLIT_ORDER'] ?? 0) !== $newOrder) {
+                $changes[] = 'ترتيب=' . $newOrder;
+            }
+
+            if (empty($changes)) continue;
+
+            $upd = [
+                'acc_id'        => $a['ACC_ID'],
+                'branch_id'     => $a['BRANCH_ID']     ?? null,
+                'account_no'    => $a['ACCOUNT_NO']    ?? null,
+                'iban'          => $a['IBAN']          ?? null,
+                'wallet_number' => $a['WALLET_NUMBER'] ?? null,
+                'owner_id_no'   => $a['OWNER_ID_NO']   ?? null,
+                'owner_name'    => $a['OWNER_NAME']    ?? null,
+                'owner_phone'   => $a['OWNER_PHONE']   ?? null,
+                'is_default'    => $newDefault,
+                'split_type'    => $newSplit,
+                'split_value'   => $a['SPLIT_VALUE']   ?? null,
+                'split_order'   => $newOrder,
+                'notes'         => $a['NOTES']         ?? null,
+            ];
+            $this->{$this->MODEL_NAME}->account_update($upd);
+            $fixed_count++;
+            $changes_log[] = ($a['PROVIDER_NAME'] ?? ('#'.$a['ACC_ID'])) . ': ' . implode('، ', $changes);
+        }
+
+        header('Content-Type: application/json');
+        if ($fixed_count === 0) {
+            echo json_encode(['ok' => true, 'msg' => 'التوزيع سليم — لا حاجة لإصلاح', 'fixed' => 0]);
+        } else {
+            echo json_encode([
+                'ok'      => true,
+                'msg'     => "تم إصلاح $fixed_count حساب",
+                'fixed'   => $fixed_count,
+                'details' => $changes_log,
+            ]);
+        }
     }
 
     function accounts_list_json()
@@ -364,6 +584,86 @@ class Payment_accounts extends MY_Controller
         $data['is_active'] = $is_active;
         $data['search']    = $search;
         $this->load->view('template/template1', $data);
+    }
+
+    function providers_export_excel()
+    {
+        $type      = $this->check_vars(-1, 'type');
+        $is_active = $this->check_vars(-1, 'is_active');
+        $q         = $this->check_vars(-1, 'q');
+
+        $filters = [
+            'type'      => ($type      !== null && $type      !== '') ? intval($type)      : null,
+            'is_active' => ($is_active !== null && $is_active !== '') ? intval($is_active) : null,
+            'search'    => ($q         !== null && $q         !== '') ? $q                 : null,
+        ];
+
+        $rows = $this->{$this->MODEL_NAME}->providers_list_paginated($filters, 0, 999999);
+
+        if (!is_array($rows) || count($rows) === 0) {
+            echo '<script>alert("لا توجد بيانات للتصدير"); history.back();</script>'; return;
+        }
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('مزودو الصرف');
+        $sheet->setRightToLeft(true);
+
+        $headers = ['م', 'المزود', 'الرمز', 'النوع', 'رقم الحساب', 'IBAN', 'الموظفون', 'الفروع', 'الحالة'];
+        $lastCol = chr(64 + count($headers)); // I
+        $col = 'A';
+        foreach ($headers as $h) { $sheet->setCellValue($col . '1', $h); $col++; }
+
+        $sheet->getStyle("A1:{$lastCol}1")->getFont()->setBold(true);
+        $sheet->getStyle("A1:{$lastCol}1")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('1e293b');
+        $sheet->getStyle("A1:{$lastCol}1")->getFont()->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle("A1:{$lastCol}1")->getAlignment()
+            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        $rowNum = 2; $count = 1;
+        foreach ($rows as $row) {
+            $name      = $row['PROVIDER_NAME']     ?? '';
+            $code      = $row['PROVIDER_CODE']     ?? '';
+            $type_v    = (int)($row['PROVIDER_TYPE']  ?? 1);
+            $acc_no    = $row['COMPANY_ACCOUNT_NO'] ?? '';
+            $iban      = $row['COMPANY_IBAN']       ?? '';
+            $is_active = (int)($row['IS_ACTIVE']    ?? 1);
+            $br_cnt    = (int)($row['BRANCH_COUNT']  ?? 0);
+            $acc_cnt   = (int)($row['ACCOUNT_COUNT'] ?? 0);
+
+            $sheet->setCellValue('A' . $rowNum, $count);
+            $sheet->setCellValue('B' . $rowNum, $name);
+            $sheet->setCellValue('C' . $rowNum, $code);
+            $sheet->setCellValue('D' . $rowNum, $type_v == 1 ? 'بنك' : 'محفظة');
+            $sheet->setCellValueExplicit('E' . $rowNum, (string)$acc_no, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit('F' . $rowNum, (string)($type_v == 1 ? $iban : ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('G' . $rowNum, $acc_cnt);
+            $sheet->setCellValue('H' . $rowNum, $type_v == 1 ? $br_cnt : '');
+            $sheet->setCellValue('I' . $rowNum, $is_active == 1 ? 'نشط' : 'موقوف');
+
+            if (!$is_active) {
+                $sheet->getStyle("A{$rowNum}:{$lastCol}{$rowNum}")->getFont()->getColor()->setRGB('64748b');
+            }
+            $count++; $rowNum++;
+        }
+
+        // محاذاة LTR لرقم الحساب و IBAN
+        $sheet->getStyle('E2:F' . ($rowNum - 1))->getAlignment()
+            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+
+        foreach (range('A', $lastCol) as $c) { $sheet->getColumnDimension($c)->setAutoSize(true); }
+        $sheet->getStyle("A1:{$lastCol}" . ($rowNum - 1))->getBorders()->getAllBorders()
+            ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+        $filename = 'مزودو_الصرف_' . date('Ymd_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 
     function providers_get_page($page = 1, $type = -1, $is_active = -1, $q = -1)
@@ -499,14 +799,6 @@ class Payment_accounts extends MY_Controller
     }
 
     // ==================== BRANCH ENDPOINTS ====================
-    function branches()
-    {
-        $data['title']    = 'فروع البنوك';
-        $data['content']  = 'payment_accounts_branches';
-        $data['branches'] = $this->{$this->MODEL_NAME}->branches_list();
-        $this->load->view('template/template1', $data);
-    }
-
     function branch_save()
     {
         $data = [

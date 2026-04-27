@@ -7,8 +7,13 @@ $get_page_url       = base_url("$MODULE_NAME/$TB_NAME/providers_get_page");
 $save_url           = base_url("$MODULE_NAME/$TB_NAME/provider_save");
 $delete_url         = base_url("$MODULE_NAME/$TB_NAME/provider_delete");
 $toggle_url         = base_url("$MODULE_NAME/$TB_NAME/provider_toggle_active");
+$export_url         = base_url("$MODULE_NAME/$TB_NAME/providers_export_excel");
 $accounts_json_url  = base_url("$MODULE_NAME/$TB_NAME/provider_accounts_json");
 $branches_json_url  = base_url("$MODULE_NAME/$TB_NAME/provider_branches_json");
+$branches_all_url   = base_url("$MODULE_NAME/$TB_NAME/branches_list_json");
+$providers_json_url = base_url("$MODULE_NAME/$TB_NAME/providers_list_json");
+$branch_save_url    = base_url("$MODULE_NAME/$TB_NAME/branch_save");
+$branch_link_url    = base_url("$MODULE_NAME/$TB_NAME/branch_link_provider");
 $bulk_url           = base_url("$MODULE_NAME/$TB_NAME/providers_bulk_action");
 
 echo AntiForgeryToken();
@@ -73,6 +78,9 @@ echo AntiForgeryToken();
                             <button type="button" onclick="javascript:clear_form();" class="btn btn-cyan-light">
                                 <i class="fa fa-eraser"></i> تفريغ الحقول
                             </button>
+                            <button type="button" onclick="javascript:exportProvidersExcel();" class="btn btn-success">
+                                <i class="fa fa-file-excel-o"></i> تصدير Excel
+                            </button>
                         </div>
                         <hr>
 
@@ -82,6 +90,16 @@ echo AntiForgeryToken();
                             <div class="prov-stat c-bank"><div class="ps-lbl"><i class="fa fa-bank"></i> بنوك</div><div class="ps-val" id="psBanks">—</div></div>
                             <div class="prov-stat c-wallet"><div class="ps-lbl"><i class="fa fa-mobile"></i> محافظ</div><div class="ps-val" id="psWallets">—</div></div>
                             <div class="prov-stat c-off"><div class="ps-lbl"><i class="fa fa-ban"></i> موقوفة</div><div class="ps-val" id="psInactive">—</div></div>
+                        </div>
+
+                        <!-- بنر الفروع غير المرتبطة -->
+                        <div id="unlinkedBanner" class="d-none alert mb-3 py-2" style="background:#fee2e2;border:1px solid #fca5a5;font-size:.85rem">
+                            <i class="fa fa-exclamation-triangle text-danger"></i>
+                            <b style="color:#991b1b"><span id="unlinkedCount">0</span></b>
+                            فرع غير مرتبط ببنك رئيسي
+                            <a href="javascript:void(0)" onclick="showUnlinkedBranches()" class="ms-2 alert-link">
+                                <i class="fa fa-link"></i> عرض / ربط
+                            </a>
                         </div>
 
                         <!-- شريط Bulk -->
@@ -231,6 +249,98 @@ echo AntiForgeryToken();
         </div>
     </div>
 
+    <!-- ══════════ Modal: إضافة/تعديل فرع ══════════ -->
+    <div class="modal fade" id="branchEditModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="border:0;border-radius:12px;overflow:hidden">
+                <div class="modal-header py-2" style="background:#1e293b">
+                    <h6 class="modal-title text-white fw-bold"><i class="fa fa-building me-1"></i> <span id="brEditModalTitle">فرع جديد</span></h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="branchEditForm" onsubmit="return false;">
+                        <input type="hidden" id="br_id" name="branch_id">
+                        <input type="hidden" id="br_provider_id" name="provider_id">
+
+                        <div class="row g-2">
+                            <div class="form-group col-md-12">
+                                <label class="fw-bold" style="font-size:.78rem">البنك الرئيسي</label>
+                                <input type="text" id="br_provider_name" class="form-control" readonly style="background:#f1f5f9;font-weight:700">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mt-1">
+                            <div class="form-group col-md-8">
+                                <label class="fw-bold" style="font-size:.78rem">اسم الفرع <span class="text-danger">*</span></label>
+                                <input type="text" id="br_name" name="name" class="form-control" placeholder="بنك فلسطين - فرع الرمال">
+                            </div>
+                            <div class="form-group col-md-4">
+                                <label class="fw-bold" style="font-size:.78rem">رقم الطباعة</label>
+                                <input type="number" id="br_print_no" name="print_no" class="form-control" style="direction:ltr">
+                            </div>
+                        </div>
+
+                        <hr class="my-2">
+                        <h6 class="fw-bold" style="font-size:.82rem;color:#64748b">بيانات تواصل (اختيارية)</h6>
+
+                        <div class="row g-2">
+                            <div class="form-group col-md-12">
+                                <label class="fw-bold" style="font-size:.78rem">العنوان</label>
+                                <input type="text" id="br_address" name="address" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mt-1">
+                            <div class="form-group col-md-4">
+                                <label class="fw-bold" style="font-size:.78rem">هاتف 1</label>
+                                <input type="text" id="br_phone1" name="phone1" class="form-control" style="direction:ltr">
+                            </div>
+                            <div class="form-group col-md-4">
+                                <label class="fw-bold" style="font-size:.78rem">هاتف 2</label>
+                                <input type="text" id="br_phone2" name="phone2" class="form-control" style="direction:ltr">
+                            </div>
+                            <div class="form-group col-md-4">
+                                <label class="fw-bold" style="font-size:.78rem">فاكس</label>
+                                <input type="text" id="br_fax" name="fax" class="form-control" style="direction:ltr">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mt-1" id="br_active_grp" style="display:none">
+                            <div class="form-group col-md-4">
+                                <label class="fw-bold" style="font-size:.78rem">الحالة</label>
+                                <select id="br_is_active" name="is_active" class="form-control">
+                                    <option value="1">نشط</option>
+                                    <option value="0">موقوف</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal"><i class="fa fa-times"></i> إلغاء</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="javascript:saveBranch();"><i class="fa fa-save me-1"></i> حفظ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════ Modal: الفروع غير المرتبطة ══════════ -->
+    <div class="modal fade" id="unlinkedBranchesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content" style="border:0;border-radius:12px;overflow:hidden">
+                <div class="modal-header py-2" style="background:#991b1b">
+                    <h6 class="modal-title text-white fw-bold">
+                        <i class="fa fa-unlink me-1"></i> فروع غير مرتبطة ببنك رئيسي
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="unlinkedBranchesBody">
+                    <div class="text-center py-4 text-muted"><i class="fa fa-spinner fa-spin"></i> جاري التحميل...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <style>
         .prov-stats { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.5rem; }
         .prov-stat { flex:1; min-width:140px; text-align:center; padding:.6rem .5rem; border-radius:10px; border:1px solid #e2e8f0; background:#fff; }
@@ -259,12 +369,20 @@ $scripts = <<<SCRIPT
     console.log('[PROVIDERS] JS file loaded');
 
     var provGetPageUrl  = "{$get_page_url}";
+    var provExportUrl   = "{$export_url}";
     var provSaveUrl     = "{$save_url}";
     var provDeleteUrl   = "{$delete_url}";
     var provToggleUrl   = "{$toggle_url}";
     var provAccountsUrl = "{$accounts_json_url}";
     var provBranchesUrl = "{$branches_json_url}";
+    var branchesAllUrl  = "{$branches_all_url}";
+    var providersJsonUrl= "{$providers_json_url}";
+    var branchSaveUrl   = "{$branch_save_url}";
+    var branchLinkUrl   = "{$branch_link_url}";
     var provBulkUrl     = "{$bulk_url}";
+
+    // سياق صفحة الفروع المفتوحة حالياً
+    var _curBranchProv = { id: null, name: '' };
 
     function reBind(){
         if(typeof initFunctions == 'function') initFunctions();
@@ -284,6 +402,7 @@ $scripts = <<<SCRIPT
 
     $(function(){
         initTooltips();
+        loadUnlinkedCount();
         $('#{$TB_NAME}_prov_form').on('keydown', function(e){
             if(e.keyCode === 13){ e.preventDefault(); search(); }
         });
@@ -332,6 +451,30 @@ $scripts = <<<SCRIPT
     }
 
     function loadData(){ search(); }
+
+    function exportProvidersExcel(){
+        var values = values_search(0);
+        var token = $('input[name="__AntiForgeryToken"]').val() || '';
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = provExportUrl;
+        form.style.display = 'none';
+        if(token){
+            var ti = document.createElement('input');
+            ti.type = 'hidden'; ti.name = '__AntiForgeryToken'; ti.value = token;
+            form.appendChild(ti);
+        }
+        for(var k in values){
+            if(values[k] !== '' && values[k] !== null && values[k] !== undefined){
+                var input = document.createElement('input');
+                input.type = 'hidden'; input.name = k; input.value = values[k];
+                form.appendChild(input);
+            }
+        }
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    }
 
     function clear_form(){
         clearForm($('#{$TB_NAME}_prov_form'));
@@ -460,30 +603,198 @@ $scripts = <<<SCRIPT
     }
 
     function showBranches(provId, provName){
+        _curBranchProv = { id: provId, name: provName };
         $('#provListIcon').attr('class', 'fa fa-building me-1');
         $('#provListTitle').text('الفروع — ' + provName);
-        $('#provListBody').html('<div class="text-center py-4 text-muted"><i class="fa fa-spinner fa-spin"></i> جاري التحميل...</div>');
+        renderBranchesList();
         bootstrap.Modal.getOrCreateInstance(document.getElementById('provListModal')).show();
-        get_data(provBranchesUrl, { provider_id: provId }, function(resp){
+    }
+
+    function renderBranchesList(){
+        if(!_curBranchProv.id) return;
+        $('#provListBody').html('<div class="text-center py-4 text-muted"><i class="fa fa-spinner fa-spin"></i> جاري التحميل...</div>');
+        get_data(provBranchesUrl, { provider_id: _curBranchProv.id }, function(resp){
             var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
             var rows = (j && j.data) ? j.data : [];
-            if (rows.length === 0) { $('#provListBody').html('<div class="alert alert-light text-center py-3">لا توجد فروع</div>'); return; }
-            var html = '<table class="table table-bordered table-sm" style="font-size:.78rem"><thead class="table-light"><tr>';
-            html += '<th>#</th><th>اسم الفرع</th><th>رقم الطباعة</th><th>العنوان</th><th>الهاتف</th><th>الحالة</th>';
+            var addBtn = '<div class="d-flex justify-content-end mb-2">' +
+                '<button class="btn btn-primary btn-sm" onclick="openBranchAdd()"><i class="fa fa-plus"></i> فرع جديد</button>' +
+                '</div>';
+            if (rows.length === 0) {
+                $('#provListBody').html(addBtn + '<div class="alert alert-light text-center py-3">لا توجد فروع لهذا البنك</div>');
+                return;
+            }
+            var html = addBtn;
+            html += '<table class="table table-bordered table-sm" style="font-size:.78rem"><thead class="table-light"><tr>';
+            html += '<th style="width:35px">#</th><th>اسم الفرع</th><th style="width:90px">رقم الطباعة</th><th>العنوان</th><th style="width:110px">الهاتف</th><th style="width:75px">الحالة</th><th style="width:95px">إجراءات</th>';
             html += '</tr></thead><tbody>';
             for (var i = 0; i < rows.length; i++) {
                 var r = rows[i];
+                var brJson = JSON.stringify(r).replace(/"/g, '&quot;');
+                var isActive = parseInt(r.IS_ACTIVE) === 1;
                 html += '<tr>';
                 html += '<td>' + (i+1) + '</td>';
                 html += '<td><b>' + (r.BRANCH_NAME||'') + '</b></td>';
                 html += '<td>' + (r.PRINT_NO||'—') + '</td>';
                 html += '<td>' + (r.ADDRESS||'—') + '</td>';
                 html += '<td style="direction:ltr">' + (r.PHONE1||'—') + '</td>';
-                html += '<td>' + (parseInt(r.IS_ACTIVE) ? '<span class="req-badge ok">نشط</span>' : '<span class="req-badge none">موقوف</span>') + '</td>';
+                html += '<td>' + (isActive ? '<span class="req-badge ok">نشط</span>' : '<span class="req-badge none">موقوف</span>') + '</td>';
+                html += '<td class="text-center">';
+                html += '<button class="btn btn-sm btn-outline-primary" title="تعديل" onclick="editBranchModalFromAttr(this)" data-branch="' + brJson + '"><i class="fa fa-pencil"></i></button> ';
+                html += '<button class="btn btn-sm ' + (isActive ? 'btn-outline-warning' : 'btn-outline-success') + '" title="' + (isActive ? 'إيقاف' : 'تفعيل') + '" onclick="toggleBranchActiveFromAttr(this)" data-branch="' + brJson + '"><i class="fa ' + (isActive ? 'fa-pause' : 'fa-play') + '"></i></button>';
+                html += '</td>';
                 html += '</tr>';
             }
             html += '</tbody></table>';
             $('#provListBody').html(html);
+        }, 'json');
+    }
+
+    function editBranchModalFromAttr(btn){
+        try { editBranchModal(JSON.parse(btn.getAttribute('data-branch'))); }
+        catch(e){ danger_msg('خطأ', 'فشل قراءة بيانات الفرع'); }
+    }
+    function toggleBranchActiveFromAttr(btn){
+        try { toggleBranchActive(JSON.parse(btn.getAttribute('data-branch'))); }
+        catch(e){ danger_msg('خطأ', 'فشل قراءة بيانات الفرع'); }
+    }
+
+    // ══════════ Branch CRUD ══════════
+    function openBranchAdd(){
+        if(!_curBranchProv.id){ danger_msg('تنبيه', 'اختر بنكاً أولاً'); return; }
+        $('#brEditModalTitle').text('فرع جديد — ' + _curBranchProv.name);
+        $('#branchEditForm')[0].reset();
+        $('#br_id').val('');
+        $('#br_provider_id').val(_curBranchProv.id);
+        $('#br_provider_name').val(_curBranchProv.name);
+        $('#br_active_grp').hide();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('branchEditModal')).show();
+    }
+
+    function editBranchModal(b){
+        $('#brEditModalTitle').text('تعديل: ' + (b.BRANCH_NAME || ''));
+        $('#br_id').val(b.BRANCH_ID || '');
+        $('#br_provider_id').val(b.PROVIDER_ID || _curBranchProv.id || '');
+        $('#br_provider_name').val(b.PROVIDER_NAME || _curBranchProv.name || '');
+        $('#br_name').val(b.BRANCH_NAME || '');
+        $('#br_print_no').val(b.PRINT_NO || '');
+        $('#br_address').val(b.ADDRESS || '');
+        $('#br_phone1').val(b.PHONE1 || '');
+        $('#br_phone2').val(b.PHONE2 || '');
+        $('#br_fax').val(b.FAX || '');
+        $('#br_is_active').val(b.IS_ACTIVE != null ? b.IS_ACTIVE : 1);
+        $('#br_active_grp').show();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('branchEditModal')).show();
+    }
+
+    function saveBranch(){
+        if(!$('#br_name').val().trim()){ warning_msg('تنبيه', 'اسم الفرع مطلوب'); return; }
+        if(!$('#br_provider_id').val()){ warning_msg('تنبيه', 'البنك الرئيسي مفقود'); return; }
+        var f = $('#branchEditForm').serialize();
+        get_data(branchSaveUrl, f, function(resp){
+            var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+            if(j.ok){
+                success_msg('تم', j.msg);
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('branchEditModal')).hide();
+                renderBranchesList();
+                loadUnlinkedCount();
+            } else { danger_msg('خطأ', j.msg); }
+        }, 'json');
+    }
+
+    function toggleBranchActive(b){
+        var newActive = parseInt(b.IS_ACTIVE) === 1 ? 0 : 1;
+        var verb = newActive ? 'تفعيل' : 'إيقاف';
+        if(!confirm(verb + ' الفرع: ' + (b.BRANCH_NAME || ''))) return;
+        var data = {
+            branch_id:   b.BRANCH_ID,
+            provider_id: b.PROVIDER_ID || _curBranchProv.id || '',
+            name:        b.BRANCH_NAME || '',
+            print_no:    b.PRINT_NO || '',
+            address:     b.ADDRESS || '',
+            phone1:      b.PHONE1 || '',
+            phone2:      b.PHONE2 || '',
+            fax:         b.FAX || '',
+            is_active:   newActive
+        };
+        get_data(branchSaveUrl, data, function(resp){
+            var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+            if(j.ok){ success_msg('تم', verb + ' الفرع'); renderBranchesList(); }
+            else    { danger_msg('خطأ', j.msg); }
+        }, 'json');
+    }
+
+    // ══════════ Unlinked Branches ══════════
+    function loadUnlinkedCount(){
+        get_data(branchesAllUrl, {}, function(resp){
+            var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+            var rows = (j && j.data) ? j.data : [];
+            var unlinked = rows.filter(function(r){ return !r.PROVIDER_ID; });
+            if(unlinked.length > 0){
+                $('#unlinkedCount').text(unlinked.length);
+                $('#unlinkedBanner').removeClass('d-none');
+            } else {
+                $('#unlinkedBanner').addClass('d-none');
+            }
+        }, 'json');
+    }
+
+    function showUnlinkedBranches(){
+        $('#unlinkedBranchesBody').html('<div class="text-center py-4 text-muted"><i class="fa fa-spinner fa-spin"></i> جاري التحميل...</div>');
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('unlinkedBranchesModal')).show();
+        // نحضّر قائمة البنوك للربط من جديد لضمان أحدث بيانات
+        get_data(branchesAllUrl, {}, function(resp){
+            var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+            var rows = (j && j.data) ? j.data : [];
+            var unlinked = rows.filter(function(r){ return !r.PROVIDER_ID; });
+            if(unlinked.length === 0){
+                $('#unlinkedBranchesBody').html('<div class="alert alert-success text-center py-3"><i class="fa fa-check-circle"></i> ممتاز — لا توجد فروع غير مرتبطة</div>');
+                loadUnlinkedCount();
+                return;
+            }
+            var optsHtml = '<option value="">— اختر البنك —</option>';
+            _fetchActiveBanks(function(banks){
+                banks.forEach(function(p){
+                    optsHtml += '<option value="'+p.PROVIDER_ID+'">'+ (p.PROVIDER_NAME||'') +'</option>';
+                });
+                var html = '<table class="table table-bordered table-sm" style="font-size:.8rem"><thead class="table-light"><tr>';
+                html += '<th style="width:35px">#</th><th>اسم الفرع</th><th style="width:90px">رقم قديم</th><th>اربط بـ:</th><th style="width:90px">إجراء</th>';
+                html += '</tr></thead><tbody>';
+                for (var i = 0; i < unlinked.length; i++) {
+                    var r = unlinked[i];
+                    html += '<tr data-bid="' + r.BRANCH_ID + '">';
+                    html += '<td>' + (i+1) + '</td>';
+                    html += '<td><b>' + (r.BRANCH_NAME||'') + '</b></td>';
+                    html += '<td>' + (r.LEGACY_BANK_NO||'—') + '</td>';
+                    html += '<td><select class="form-select form-select-sm unlinked-select">' + optsHtml + '</select></td>';
+                    html += '<td><button class="btn btn-sm btn-success" onclick="linkUnlinkedRow(this,' + r.BRANCH_ID + ')"><i class="fa fa-link"></i> ربط</button></td>';
+                    html += '</tr>';
+                }
+                html += '</tbody></table>';
+                $('#unlinkedBranchesBody').html(html);
+            });
+        }, 'json');
+    }
+
+    var _activeBanksCache = null;
+    function _fetchActiveBanks(cb){
+        if(_activeBanksCache){ cb(_activeBanksCache); return; }
+        get_data(providersJsonUrl, {type: 1}, function(resp){
+            var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+            _activeBanksCache = (j && j.data) ? j.data : [];
+            cb(_activeBanksCache);
+        }, 'json');
+    }
+
+    function linkUnlinkedRow(btn, bid){
+        var tr = $(btn).closest('tr');
+        var pid = tr.find('.unlinked-select').val();
+        if(!pid){ warning_msg('تنبيه', 'اختر البنك'); return; }
+        get_data(branchLinkUrl, { branch_id: bid, provider_id: pid }, function(resp){
+            var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+            if(j.ok){
+                success_msg('تم', j.msg);
+                tr.fadeOut(200, function(){ $(this).remove(); showUnlinkedBranches(); });
+            } else { danger_msg('خطأ', j.msg); }
         }, 'json');
     }
 

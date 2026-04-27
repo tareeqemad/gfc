@@ -3,7 +3,7 @@ $MODULE_NAME = 'payment_accounts';
 $TB_NAME     = 'payment_accounts';
 $count       = $offset;
 $emp_url     = base_url("$MODULE_NAME/$TB_NAME/emp");
-$colspan     = 9;
+$colspan     = 10;
 $tot         = $totals ?? ['total'=>0,'bank'=>0,'wallet'=>0,'benef'=>0];
 ?>
 
@@ -17,18 +17,22 @@ $tot         = $totals ?? ['total'=>0,'bank'=>0,'wallet'=>0,'benef'=>0];
 <style>
     .pa-tbl td, .pa-tbl th { vertical-align: middle; font-size:.82rem }
     .pa-tbl .emp-cell { min-width: 200px }
+    .pa-tbl .id-cell  { min-width: 120px }
     .pa-tbl .prov-cell { min-width: 140px }
     .pa-tbl .acc-no-cell { min-width: 130px }
     .pa-tbl .iban-cell { min-width: 240px }
+    .pa-tbl .id-cell .id-no { font-family:monospace; direction:ltr; display:inline-block; font-size:.82rem; color:#1e293b; font-weight:600 }
     .b-acc { display:inline-block;padding:1px 7px;border-radius:5px;font-size:.68rem;font-weight:600;margin-left:2px }
     .b-acc.bank   { background:#dbeafe;color:#1e40af }
     .b-acc.wallet { background:#f5f3ff;color:#6d28d9 }
     .b-acc.benef  { background:#fef3c7;color:#92400e }
     .b-acc.more   { background:#fef3c7;color:#92400e }
     .b-acc.none   { background:#fee2e2;color:#991b1b }
-    .b-status { font-weight:600;font-size:.7rem;padding:.2em .55em;border-radius:5px }
-    .s-active  { background:#d1fae5;color:#065f46 }
-    .s-retired { background:#f1f5f9;color:#64748b }
+    .b-status { font-weight:600;font-size:.7rem;padding:.2em .55em;border-radius:5px;white-space:nowrap }
+    .s-active   { background:#d1fae5;color:#065f46 }
+    .s-retired  { background:#f1f5f9;color:#64748b }
+    .s-deceased { background:#1f2937;color:#fff }
+    .s-frozen   { background:#fef3c7;color:#92400e;border:1px solid #fcd34d }
     .prov-name { font-weight:700;font-size:.82rem }
     .prov-name.pv-bank   { color:#1e40af }
     .prov-name.pv-wallet { color:#6d28d9 }
@@ -36,7 +40,6 @@ $tot         = $totals ?? ['total'=>0,'bank'=>0,'wallet'=>0,'benef'=>0];
     .acc-no   { font-family:monospace;font-size:.85rem;color:#1e293b;direction:ltr;text-align:left;font-weight:600 }
     .acc-iban { font-family:monospace;font-size:.78rem;color:#475569;direction:ltr;text-align:left;letter-spacing:.5px }
     .acc-owner{ font-size:.7rem;color:#94a3b8;display:block;margin-top:.15rem }
-    tr.emp-row { cursor:pointer }
     tr.emp-row:hover td { background:#f8fafc }
 </style>
 
@@ -57,8 +60,9 @@ $tot         = $totals ?? ['total'=>0,'bank'=>0,'wallet'=>0,'benef'=>0];
             <tr>
                 <th style="width:40px">#</th>
                 <th class="emp-cell">الموظف</th>
+                <th class="id-cell">رقم الهوية</th>
                 <th>المقر</th>
-                <th class="text-center" style="width:90px">التوظيف</th>
+                <th class="text-center" style="width:100px">الحالة</th>
                 <th class="prov-cell">البنك / المحفظة</th>
                 <th class="acc-no-cell">رقم الحساب</th>
                 <th class="iban-cell">IBAN</th>
@@ -73,8 +77,11 @@ $tot         = $totals ?? ['total'=>0,'bank'=>0,'wallet'=>0,'benef'=>0];
             <?php foreach ($page_rows as $row):
                 $emp_no     = $row['EMP_NO'] ?? '';
                 $emp_name   = $row['EMP_NAME'] ?? '';
+                $id_no      = $row['ID_NO'] ?? '';
                 $branch     = $row['BRANCH_NAME'] ?? '';
                 $is_active  = (int)($row['IS_ACTIVE'] ?? 0);
+                $has_dead   = (int)($row['HAS_DECEASED'] ?? 0);
+                $has_frozen = (int)($row['HAS_FROZEN'] ?? 0);
                 $acc_cnt    = (int)($row['ACC_COUNT'] ?? 0);
                 $active_cnt = (int)($row['ACTIVE_COUNT'] ?? 0);
                 $benef_cnt  = (int)($row['BENEF_COUNT'] ?? 0);
@@ -86,17 +93,26 @@ $tot         = $totals ?? ['total'=>0,'bank'=>0,'wallet'=>0,'benef'=>0];
                 $more_cnt   = max(0, $active_cnt - 1);
                 $count++;
             ?>
-            <tr class="emp-row"
-                data-emp-no="<?= $emp_no ?>"
-                ondblclick="javascript:get_to_link('<?= $emp_url ?>/<?= $emp_no ?>')">
+            <tr class="emp-row" data-emp-no="<?= $emp_no ?>">
                 <td class="text-center text-muted"><?= $count ?></td>
                 <td class="emp-cell">
                     <span class="fw-bold"><?= $emp_no ?></span>
                     <span class="text-muted d-block" style="font-size:.78rem"><?= $emp_name ?></span>
                 </td>
+                <td class="id-cell">
+                    <?php if ($id_no): ?>
+                        <span class="id-no"><?= htmlspecialchars($id_no) ?></span>
+                    <?php else: ?>
+                        <span class="text-muted" style="font-size:.75rem">—</span>
+                    <?php endif; ?>
+                </td>
                 <td><?= $branch ?></td>
                 <td class="text-center">
-                    <?php if ($is_active == 1): ?>
+                    <?php if ($has_dead): ?>
+                        <span class="b-status s-deceased" title="عنده حساب بسبب وفاة">⚰ متوفى</span>
+                    <?php elseif ($has_frozen): ?>
+                        <span class="b-status s-frozen" title="حسابه البنكي مغلق/مجمد">🔒 حساب مغلق</span>
+                    <?php elseif ($is_active == 1): ?>
                         <span class="b-status s-active">فعّال</span>
                     <?php else: ?>
                         <span class="b-status s-retired">متقاعد</span>

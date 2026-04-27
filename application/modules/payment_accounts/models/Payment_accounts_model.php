@@ -449,13 +449,16 @@ class Payment_accounts_model extends MY_Model
     // قائمة الموظفين + pagination + فلاتر
     function employees_list($filters = [], $offset = 0, $limit = 50)
     {
+        // ملاحظة: لا تستخدم SQLT_INT للـ OFFSET/LIMIT لأن DBConn::bind_params
+        // يخزّن بـ array key = value، فلو القيمة 0 تتشارك مع is_active/has_acc
+        // ويحدث type confusion. نستخدم نفس النوع الافتراضي ('').
         $params = array(
             array('name' => ':P_EMP_NO',      'value' => $filters['emp_no']    ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_BRANCH_NO',   'value' => $filters['branch_no'] ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_IS_ACTIVE',   'value' => $filters['is_active'] ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_HAS_ACC',     'value' => $filters['has_acc']   ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_OFFSET',      'value' => $offset,                       'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_LIMIT',       'value' => $limit,                        'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_OFFSET',      'value' => $offset,                       'type' => '', 'length' => -1),
+            array('name' => ':P_LIMIT',       'value' => $limit,                        'type' => '', 'length' => -1),
             array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor',                      'type' => OCI_B_CURSOR),
             array('name' => ':P_MSG_OUT',     'value' => 'MSG',                         'type' => SQLT_CHR, 'length' => -1),
         );

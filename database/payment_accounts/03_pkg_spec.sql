@@ -350,8 +350,10 @@ CREATE OR REPLACE PACKAGE GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
   PROCEDURE EMPLOYEES_LIST_PAGINATED (
       P_EMP_NO      NUMBER DEFAULT NULL,   -- فلتر: موظف محدد
       P_BRANCH_NO   NUMBER DEFAULT NULL,   -- فلتر: مقر
-      P_IS_ACTIVE   NUMBER DEFAULT NULL,   -- فلتر: 1=فعّال / 0=متقاعد
-      P_HAS_ACC     NUMBER DEFAULT NULL,   -- فلتر: 1=عنده حسابات / 0=بدون
+      P_IS_ACTIVE   NUMBER DEFAULT NULL,   -- فلتر حالة التوظيف:
+                                           --   1=فعّال، 0=متقاعد، 2=متوفى، 4=حسابه مغلق من البنك
+                                           --   (متوفى/مغلق مشتقّان من PAYMENT_ACCOUNTS_TB.INACTIVE_REASON)
+      P_HAS_ACC     NUMBER DEFAULT NULL,   -- فلتر: 1=عنده حساب نشط / 0=بدون حساب نشط
       P_OFFSET      NUMBER DEFAULT 0,
       P_LIMIT       NUMBER DEFAULT 50,
       P_REF_CUR_OUT OUT SYS_REFCURSOR,
@@ -362,8 +364,8 @@ CREATE OR REPLACE PACKAGE GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
   PROCEDURE EMPLOYEES_COUNT (
       P_EMP_NO      NUMBER DEFAULT NULL,
       P_BRANCH_NO   NUMBER DEFAULT NULL,
-      P_IS_ACTIVE   NUMBER DEFAULT NULL,
-      P_HAS_ACC     NUMBER DEFAULT NULL,
+      P_IS_ACTIVE   NUMBER DEFAULT NULL,   -- 1=فعّال، 0=متقاعد، 2=متوفى، 4=حسابه مغلق من البنك
+      P_HAS_ACC     NUMBER DEFAULT NULL,   -- 1=عنده حساب نشط / 0=بدون حساب نشط
       P_CNT_OUT     OUT NUMBER,
       P_MSG_OUT     OUT VARCHAR2
   );
@@ -372,8 +374,8 @@ CREATE OR REPLACE PACKAGE GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
   PROCEDURE EMPLOYEES_TOTALS (
       P_EMP_NO       NUMBER DEFAULT NULL,
       P_BRANCH_NO    NUMBER DEFAULT NULL,
-      P_IS_ACTIVE    NUMBER DEFAULT NULL,
-      P_HAS_ACC      NUMBER DEFAULT NULL,
+      P_IS_ACTIVE    NUMBER DEFAULT NULL,   -- 1=فعّال، 0=متقاعد، 2=متوفى، 4=حسابه مغلق من البنك
+      P_HAS_ACC      NUMBER DEFAULT NULL,   -- 1=عنده حساب نشط / 0=بدون حساب نشط
       P_TOTAL_OUT        OUT NUMBER,
       P_BANK_OUT         OUT NUMBER,
       P_WALLET_OUT       OUT NUMBER,
