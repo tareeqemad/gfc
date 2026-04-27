@@ -1,0 +1,5 @@
+- [تجهيز الصرف](project_payment_batch.md) — شاشة جديدة لتجميع الطلبات المعتمدة وتجهيزها للبنك
+- [إدارة حسابات الصرف](project_payment_accounts.md) — مزودون + فروع + حسابات موظفين + مستفيدون (موديول جديد)
+- [نمط JS في المشروع](feedback_js_style.md) — إجباري: get_data + success_msg + heredoc/sec_scripts، لا fetch/$.ajax مباشر
+- [نمط شاشة الـ index والفلاتر](feedback_index_filters_pattern.md) — مرجع payment_req_index.php — IDs/HTML/JS/controller موحّدة
+- [PHP/Oracle Gotchas](feedback_php_oracle_gotchas.md) — pitfalls: excuteProcedures keys + GRANT SELECT TO PUBLIC + form scope chain + heredoc escape

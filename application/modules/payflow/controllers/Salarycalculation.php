@@ -125,8 +125,15 @@ class Salarycalculation extends MY_Controller
 
         $result = $this->{$this->MODEL_NAME}->executeProcedure('SALARYFORM', $procedure, $params);
 
+        // ✅ العدد الصحيح من EMPLOYEES_MONTH (نفس فلتر الاحتساب بالضبط)
+        $actual_total = $this->{$this->MODEL_NAME}->executeFunction('SALARYFORM', 'COUNT_EMPLOYEES', [
+            ['name' => ':P_NO_FROM',   'value' => min($emp_no_list), 'type' => SQLT_INT, 'length' => -1],
+            ['name' => ':P_NO_TO',     'value' => max($emp_no_list), 'type' => SQLT_INT, 'length' => -1],
+            ['name' => ':P_MY_MONTH',  'value' => $from_month,       'type' => SQLT_INT, 'length' => -1]
+        ]);
+
         echo json_encode($result !== false
-            ? ['status' => 'success', 'message' => '✅ تم بدء احتساب الرواتب!', 'total' => count($emp_no_list)]
+            ? ['status' => 'success', 'message' => '✅ تم بدء احتساب الرواتب!', 'total' => intval($actual_total)]
             : ['status' => 'error', 'message' => "⚠️ فشل احتساب الرواتب للموظفين من رقم " . min($emp_no_list) . " إلى " . max($emp_no_list)]
         );
     }
@@ -143,7 +150,7 @@ class Salarycalculation extends MY_Controller
             $month = intval($this->input->post('month'));
 
             $processedEmployees = $this->{$this->MODEL_NAME}->executeFunction('SALARYFORM', 'COUNT_PROCESSED_EMPLOYEES', [
-                ['name' => ':MONTH', 'value' => $month, 'type' => SQLT_INT, 'length' => -1]
+                ['name' => ':P_THE_MONTH', 'value' => $month, 'type' => SQLT_INT, 'length' => -1]
             ]);
 
             echo json_encode([
@@ -191,7 +198,7 @@ class Salarycalculation extends MY_Controller
             }
         }
         $config['base_url'] = base_url($this->PAGE_URL);
-        $count_rs = $this->get_table_count(' DATA.ADMIN_TEST M ' . $where_sql);
+        $count_rs = $this->get_table_count(' DATA.ADMIN M ' . $where_sql);
         $config['use_page_numbers'] = TRUE;
         $config['total_rows'] = is_array($count_rs) && count($count_rs) > 0 ? $count_rs[0]['NUM_ROWS'] : 0;
         $config['per_page'] = $this->page_size;
@@ -245,7 +252,7 @@ class Salarycalculation extends MY_Controller
             }
         }
 
-        $count_rs = $this->get_table_count(' DATA.ADMIN_TEST M ' . $where_sql);
+        $count_rs = $this->get_table_count(' DATA.ADMIN M ' . $where_sql);
         $count_rs = $count_rs[0]['NUM_ROWS'];
 
         $excelData = $this->rmodel->getList('DATA_ADMIN_LIST', $where_sql, 0, $count_rs);
@@ -439,6 +446,8 @@ class Salarycalculation extends MY_Controller
     }
 
 
+
+
     public function confirm_salaries()
     {
         $from_month = $this->input->post('from_month');
@@ -463,6 +472,99 @@ class Salarycalculation extends MY_Controller
         }
     }
 
+
+
+    /**
+     * ✅ ترحيل الرواتب إلى طلبات صرف (بدلاً من الاستمارة)
+     * يقرأ من ADMIN_TEST/SALARY_TEST → ينشئ PAYMENT_REQ_TB لكل موظف + ينسخ SALARY
+     */
+    public function confirm_salaries_to_payment_req()
+    {
+        $from_month = $this->input->post('from_month');
+        $msg_out = '';
+
+        if (!$from_month || !is_numeric($from_month)) {
+            echo json_encode(['status' => 'error', 'message' => '⚠️ يجب إدخال شهر صالح.']);
+            return;
+        }
+
+        $params = [
+            ['name' => ':THE_MONTH_IN', 'value' => intval($from_month), 'type' => SQLT_INT, 'length' => -1],
+            ['name' => ':MSG_OUT', 'value' => &$msg_out, 'type' => SQLT_CHR, 'length' => 500]
+        ];
+
+        $result = $this->{$this->MODEL_NAME}->executeProcedure('SALARYFORM', 'TRANS_SALARY_TO_PAYMENT_REQ', $params);
+
+        if ($result !== false && $msg_out == '1') {
+            echo json_encode([
+                'status' => 'success',
+                'message' => '✅ تم ترحيل الرواتب إلى طلبات صرف بنجاح!'
+            ]);
+        } else {
+            $error_msg = ($msg_out && $msg_out != '0')
+                ? $msg_out
+                : '⚠️ فشل ترحيل الرواتب إلى طلبات الصرف!';
+
+            echo json_encode([
+                'status' => 'error',
+                'message' => $error_msg
+            ]);
+        }
+    }
+
+
+    /**
+     * ✅ التراجع عن ترحيل الرواتب لطلبات صرف
+     * يعكس: PAYMENT_REQ_TB (STATUS=9) + SALARY (حذف) + SALARY_DUES_TB (إلغاء)
+     */
+    public function rollback_salary_payment_req()
+    {
+        $from_month = $this->input->post('from_month');
+        $msg_out = '';
+
+        if (!$from_month || !is_numeric($from_month)) {
+            echo json_encode(['status' => 'error', 'message' => '⚠️ يجب إدخال شهر صالح.']);
+            return;
+        }
+
+        $params = [
+            ['name' => ':THE_MONTH_IN', 'value' => intval($from_month), 'type' => SQLT_INT, 'length' => -1],
+            ['name' => ':MSG_OUT', 'value' => &$msg_out, 'type' => SQLT_CHR, 'length' => 500]
+        ];
+
+        $result = $this->{$this->MODEL_NAME}->executeProcedure('SALARYFORM', 'ROLLBACK_SALARY_PAYMENT_REQ', $params);
+
+        if ($result !== false && strpos($msg_out, '1|') === 0) {
+            // تفكيك النتيجة: 1|عدد_الطلبات|عدد_المدفوعة|عدد_سجلات_الدفع
+            $parts = explode('|', $msg_out);
+            $cancelled_req = isset($parts[1]) ? $parts[1] : 0;
+            $had_paid      = isset($parts[2]) ? $parts[2] : 0;
+            $cancelled_due = isset($parts[3]) ? $parts[3] : 0;
+
+            $msg = "✅ تم التراجع بنجاح عن شهر $from_month:";
+            $msg .= "\n• $cancelled_req طلب صرف تم إلغاؤه";
+            if ($had_paid > 0) {
+                $msg .= "\n• $had_paid طلب كان مدفوعاً — تم عكس $cancelled_due سجل دفع";
+            }
+
+            echo json_encode([
+                'status'        => 'success',
+                'message'       => $msg,
+                'cancelled_req' => intval($cancelled_req),
+                'had_paid'      => intval($had_paid),
+                'cancelled_due' => intval($cancelled_due)
+            ]);
+        } else {
+            $error_msg = ($msg_out && strpos($msg_out, '0|') === 0)
+                ? substr($msg_out, 2)
+                : ($msg_out ?: '⚠️ فشل التراجع عن ترحيل الرواتب!');
+
+            echo json_encode([
+                'status'  => 'error',
+                'message' => $error_msg
+            ]);
+        }
+    }
 
 
     function _look_ups(&$data)

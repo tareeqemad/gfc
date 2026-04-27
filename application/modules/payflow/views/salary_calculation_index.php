@@ -8,6 +8,7 @@ $get_page_calculated_url = base_url("$MODULE_NAME/$TB_NAME/review_salary_calcula
 $get_excel_url = base_url("$MODULE_NAME/$TB_NAME/excel_salary_calculation");
 $get_url = base_url("$MODULE_NAME/$TB_NAME/get/");
 $confirm_salaries_url = base_url("$MODULE_NAME/$TB_NAME/confirm_salaries");
+$confirm_to_payment_req_url = base_url("$MODULE_NAME/$TB_NAME/confirm_salaries_to_payment_req");
 ?>
 <!-- PAGE-HEADER -->
 <div class="page-header">
@@ -89,6 +90,11 @@ $confirm_salaries_url = base_url("$MODULE_NAME/$TB_NAME/confirm_salaries");
                         <?php if (HaveAccess($confirm_salaries_url)) { ?>
                         <button type="button" class="btn btn-primary" onclick="confirm_salaries();">
                             <i class="fa fa-check"></i> ترحيل الرواتب (اعتماد)
+                        </button>
+                        <?php } ?>
+                        <?php if (HaveAccess($confirm_to_payment_req_url)) { ?>
+                        <button type="button" class="btn btn-danger" onclick="confirm_salaries_to_payment_req();">
+                            <i class="fa fa-exchange"></i> ترحيل لطلبات صرف
                         </button>
                         <?php } ?>
                     </div>
@@ -578,6 +584,31 @@ function confirm_salaries() {
             review_salary_calculations();
         } else {
             showErrorMsg(response.message || "⚠️ فشل ترحيل الرواتب!");
+        }
+    });
+}
+
+function confirm_salaries_to_payment_req() {
+    let from_month = $('#txt_from_month').val();
+
+    if (!from_month || !/^\d{6}$/.test(from_month)) {
+        showErrorMsg('⚠️ يرجى إدخال الشهر بالصيغة الصحيحة (YYYYMM).');
+        return;
+    }
+
+    if (!confirm("⚠️ هل أنت متأكد من ترحيل رواتب شهر " + from_month + " إلى طلبات صرف؟\\n\\nسيتم إنشاء طلب صرف منفرد لكل موظف محتسب.")) {
+        return;
+    }
+
+    let url = "$confirm_to_payment_req_url";
+    let requestData = { from_month: from_month };
+
+    get_datan(url, requestData, function (response) {
+        if (response.status === 'success') {
+            showSuccessMsg(response.message || '✅ تم ترحيل الرواتب إلى طلبات صرف بنجاح!');
+            review_salary_calculations();
+        } else {
+            showErrorMsg(response.message || "⚠️ فشل ترحيل الرواتب إلى طلبات الصرف!");
         }
     });
 }

@@ -26,11 +26,9 @@ $delete_request_url = base_url("$MODULE_NAME/$TB_NAME/delete_request");
                 <div class="card-header">
                     <h3 class="card-title"> طلبات خلو الطرف للموظفين</h3>
                     <div class="card-options">
-                        <?php /*if( HaveAccess($delay_sum_url)): */ ?>
-                        <a class="btn btn-secondary" href="<? /*= $delay_sum_url*/ ?>"><i class="fa fa-plus"></i>
+                        <a class="btn btn-secondary" href="<?= base_url("$MODULE_NAME/$TB_NAME") ?>"><i class="fa fa-plus"></i>
                             جديد
                         </a>
-                        <?php /*endif;*/ ?>
                     </div>
                 </div>
                 <div class="card-body">

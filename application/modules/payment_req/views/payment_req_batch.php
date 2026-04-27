@@ -1,420 +1,1028 @@
 <?php
-/**
- * Payment Request — Batch Create (Multi-Group, Server-Side)
- */
 $MODULE_NAME = 'payment_req';
 $TB_NAME     = 'payment_req';
 
-$back_url    = base_url("$MODULE_NAME/$TB_NAME");
-$batch_url   = base_url("$MODULE_NAME/$TB_NAME/batch_execute");
+$get_page_url     = base_url("$MODULE_NAME/$TB_NAME/get_page");
+$batch_data_url    = base_url("$MODULE_NAME/$TB_NAME/batch_data");
+$batch_confirm_url = base_url("$MODULE_NAME/$TB_NAME/batch_confirm_action");
+$batch_pay_url     = base_url("$MODULE_NAME/$TB_NAME/batch_pay_action");
+$batch_csv_url     = base_url("$MODULE_NAME/$TB_NAME/batch_export_csv");
+$index_url        = base_url("$MODULE_NAME/$TB_NAME");
+$pay_url          = base_url("$MODULE_NAME/$TB_NAME/do_pay");
+
+$can_pay = HaveAccess($pay_url);
 
 echo AntiForgeryToken();
-
-$JS_CONSTANTS = json_encode([
-    'REQ_FULL_SALARY' => 1, 'REQ_PART_SALARY' => 2, 'REQ_LUMP_SUM' => 3,
-    'WALLET_SALARY' => 1, 'WALLET_DUES' => 2, 'WALLET_BOTH' => 3,
-    'CALC_PERCENT' => 1, 'CALC_FIXED' => 2,
-]);
-
-if (!isset($req_type_cons))    $req_type_cons    = [];
-if (!isset($wallet_type_cons)) $wallet_type_cons = [];
-if (!isset($calc_method_cons)) $calc_method_cons = [];
-if (!isset($emp_no_cons))      $emp_no_cons      = [];
-
-$grp_tpl_req = '<option value="">— اختر —</option>';
-foreach ($req_type_cons as $row) $grp_tpl_req .= '<option value="'.$row['CON_NO'].'">'.$row['CON_NAME'].'</option>';
-$grp_tpl_wallet = '<option value="">— اختر —</option>';
-foreach ($wallet_type_cons as $row) $grp_tpl_wallet .= '<option value="'.$row['CON_NO'].'">'.$row['CON_NAME'].'</option>';
-$grp_tpl_calc = '<option value="">— اختر —</option>';
-foreach ($calc_method_cons as $row) $grp_tpl_calc .= '<option value="'.$row['CON_NO'].'">'.$row['CON_NAME'].'</option>';
-$grp_tpl_emp = '';
-foreach ($emp_no_cons as $row) $grp_tpl_emp .= '<option value="'.$row['EMP_NO'].'">'.$row['EMP_NO'].' - '.$row['EMP_NAME'].'</option>';
 ?>
 
+<!-- PAGE-HEADER -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><?= $title ?></h1>
+    </div>
+    <div class="ms-auto pageheader-btn">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="<?= $index_url ?>">صرف الرواتب والمستحقات</a></li>
+            <li class="breadcrumb-item active" aria-current="page"><?= $title ?></li>
+        </ol>
+    </div>
+</div>
+<!-- PAGE-HEADER END -->
+
 <style>
-:root{--c-blue:#2563eb;--c-purple:#7c3aed;--c-green:#059669;--c-red:#dc2626;--c-amber:#d97706;--c-slate:#64748b;--r:14px;--sh:0 4px 24px rgba(15,23,42,.07)}
-.pr2-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-top:1.25rem;margin-bottom:1.25rem}
-.pr2-head h1{font-size:1.3rem;font-weight:800;color:#1e293b;margin:0;display:flex;align-items:center;gap:.6rem}
-.pr2-head .hico{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--c-green),#10b981);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.95rem}
-.pr2-head .actions{display:flex;gap:.5rem;flex-wrap:wrap}
-.pr2-head .actions .btn{border-radius:10px;font-weight:700;font-size:.82rem;padding:.4rem 1rem}
-.pr-panel{background:#fff;border:1px solid #e2e8f0;border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;margin-bottom:1.25rem}
-.pr-panel-hd{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;background:linear-gradient(135deg,#1e293b,#334155);color:#fff}
-.pr-panel-hd .t{font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:.4rem}
-.pr-panel-bd{padding:1rem 1.25rem}
-.pr-panel-bd label{font-weight:600;font-size:.75rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.3rem}
-.pr-panel-bd .form-control,.pr-panel-bd .form-select{border-radius:10px;border:1px solid #e2e8f0}
-.grp-panel{border:2px solid #e2e8f0;border-radius:var(--r);margin-bottom:1rem;overflow:hidden}
-.grp-panel-hd{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0}
-.grp-panel-hd .grp-title{font-weight:700;font-size:.85rem;color:#1e293b;display:flex;align-items:center;gap:.4rem}
-.grp-panel-hd .grp-badge{display:inline-flex;align-items:center;gap:.25rem;font-size:.72rem;font-weight:700;padding:.15rem .5rem;border-radius:12px;background:var(--c-blue);color:#fff}
-.grp-panel-bd{padding:1rem}
-.grp-panel-bd label{font-weight:600;font-size:.75rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.3rem}
-.grp-panel-bd .form-control,.grp-panel-bd .form-select{border-radius:10px;border:1px solid #e2e8f0}
-.grp-remove{border:none;background:none;color:var(--c-red);font-size:.9rem;cursor:pointer;padding:.2rem .4rem;border-radius:6px}
-.grp-remove:hover{background:#fee2e2}
-.res-ok{color:var(--c-green);font-weight:700}.res-fail{color:var(--c-red);font-weight:700}
-.res-partial{color:var(--c-amber);font-weight:700}
-.tree-node{padding:.5rem .75rem;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;font-size:.85rem;font-weight:500;color:#334155;transition:.15s;margin:.15rem 0}
-.tree-node:hover{background:#f1f5f9}
-.pay-type-parent{color:#1e293b;font-weight:700;background:#f8fafc;border:1px solid #e2e8f0}
-.pay-type-leaf{color:#334155;background:#fff;border:1px solid #e2e8f0}
-.pay-type-leaf:hover{background:#dbeafe;color:#1e40af;border-color:#93c5fd}
-.pay-type-leaf.leaf-disabled{opacity:.45;cursor:not-allowed;background:#f8fafc;color:#94a3b8}
-.pay-type-leaf.leaf-disabled:hover{background:#f8fafc;color:#94a3b8;border-color:#e2e8f0}
-.lt-1{border-right:3px solid var(--c-green)}.lt-2{border-right:3px solid var(--c-red)}
-#pay_type_tree ul{margin-top:.3rem;padding-right:.75rem;border-right:2px solid #e2e8f0}
-.tree-search-wrap{position:relative;margin-bottom:.75rem}
-.tree-search-wrap input{border-radius:10px;border:1px solid #e2e8f0;padding:.5rem 1rem .5rem 2.2rem;font-size:.85rem;width:100%}
-.tree-search-wrap .search-ico{position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:#94a3b8}
-.select2-container--default .select2-selection--multiple{border-radius:10px!important;border:1px solid #e2e8f0!important;min-height:38px!important}
-.select2-dropdown{border-radius:10px!important;box-shadow:0 8px 40px rgba(15,23,42,.12)!important}
-.select2-results__option--highlighted{background:var(--c-blue)!important}
+.pr-row{display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap}
+.pr-card{flex:1;min-width:120px;text-align:center;padding:.6rem .5rem;border-radius:10px;border:1px solid #e2e8f0;background:#fff}
+.pr-card .c-label{font-size:.65rem;color:#64748b;margin-bottom:.15rem}
+.pr-card .c-val{font-size:1rem;font-weight:800;direction:ltr;display:inline-block}
+.pr-card.c-total{background:#1e293b;border-color:#1e293b}.pr-card.c-total .c-val,.pr-card.c-total .c-label{color:#fff}
+.pr-card.c-active{background:#dbeafe;border-color:#93c5fd}
+.b-status{font-weight:600;font-size:0.72rem;padding:0.25em 0.55em;border-radius:5px}
+.amt{font-weight:700;color:#1e293b}
+.bank-section{margin-bottom:1rem;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
+.bank-header{background:#f8fafc;padding:.6rem 1rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:.85rem}
+.bank-header:hover{background:#f1f5f9}
+.bank-body{padding:0}
+.bank-body table{margin:0;font-size:.8rem}
+.bank-body table th{background:#f8fafc;position:sticky;top:0;font-size:.72rem;color:#64748b}
+tr.selected-row{background:#eff6ff !important}
+.chk-all-wrap{padding:.3rem .6rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:.78rem}
 </style>
 
-<div class="pr2-head">
-    <h1><span class="hico"><i class="fa fa-users"></i></span> <?= $title ?></h1>
-    <div class="actions">
-        <button type="button" id="btnExecuteAll" onclick="javascript:executeAll(this);" class="btn btn-primary" disabled><i class="fa fa-rocket"></i> تنفيذ الكل</button>
-        <a class="btn btn-secondary" href="<?= $back_url ?>"><i class="fa fa-backward"></i> رجوع</a>
-    </div>
-</div>
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fa fa-calculator me-2"></i><?= $title ?></h3>
+                <div class="ms-auto d-flex gap-1 flex-wrap align-items-center">
+                    <a class="btn btn-dark btn-sm" href="<?= base_url("$MODULE_NAME/$TB_NAME/batch_history") ?>">
+                        <i class="fa fa-history"></i> سجل الدفعات
+                    </a>
+                    <a class="btn btn-light btn-sm" href="<?= base_url("$MODULE_NAME/$TB_NAME") ?>">
+                        <i class="fa fa-arrow-right"></i> رجوع
+                    </a>
+                    <div class="d-flex gap-1 flex-wrap align-items-center" id="batchActions" style="display:none!important">
+                        <div class="vr mx-1"></div>
+                        <button class="btn btn-sm btn-primary" onclick="batchPrintReport()" id="btnPrint" style="display:none">
+                            <i class="fa fa-print"></i> تقرير للطباعة
+                        </button>
+                        <button class="btn btn-sm btn-info text-white" onclick="batchExport()" id="btnExport" style="display:none">
+                            <i class="fa fa-file-excel-o"></i> تصدير CSV
+                        </button>
+                        <?php if ($can_pay): ?>
+                        <button class="btn btn-sm btn-indigo text-white" onclick="batchConfirm()" id="btnConfirm" style="display:none">
+                            <i class="fa fa-check-circle"></i> اعتماد الاحتساب
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="batchPay()" id="btnPay" style="display:none">
+                            <i class="fa fa-money"></i> تنفيذ الصرف
+                        </button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
 
-<div class="pr-panel">
-    <div class="pr-panel-hd">
-        <span class="t"><i class="fa fa-calendar"></i> الشهر المشترك</span>
-        <button type="button" onclick="javascript:addGroup();" class="btn btn-sm" style="background:var(--c-green);color:#fff;border-radius:8px;font-weight:700;font-size:.78rem"><i class="fa fa-plus"></i> إضافة مجموعة</button>
-    </div>
-    <div class="pr-panel-bd">
-        <div class="row g-3">
-            <div class="form-group col-md-2">
-                <label><i class="fa fa-calendar text-success me-1"></i> الشهر</label>
-                <input type="text" id="bt_the_month" class="form-control" placeholder="YYYYMM" maxlength="6" value="<?= date('Ym') ?>">
+                <!-- FILTERS -->
+                <form id="batch_form" onsubmit="return false;">
+                    <div class="row">
+                        <?php if ($this->user->branch == 1) { ?>
+                        <div class="form-group col-md-2">
+                            <label>المقر</label>
+                            <select name="branch_no" id="dp_branch_no" class="form-control">
+                                <option value="">— الكل —</option>
+                                <?php foreach ($branches as $row): ?>
+                                    <option value="<?= $row['NO'] ?>"><?= $row['NAME'] ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <?php } else { ?>
+                            <input type="hidden" name="branch_no" id="dp_branch_no" value="<?= $this->user->branch ?>">
+                        <?php } ?>
+
+                        <div class="form-group col-md-2">
+                            <label>الشهر</label>
+                            <input type="text" class="form-control" id="txt_the_month" placeholder="YYYYMM">
+                        </div>
+
+                        <div class="form-group col-md-2">
+                            <label>النوع</label>
+                            <select id="dp_req_type" class="form-control">
+                                <option value="">— الكل —</option>
+                                <?php foreach ($req_type_cons as $row): ?>
+                                    <option value="<?= $row['NO'] ?>"><?= $row['NAME'] ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12">
+                            <button type="button" class="btn btn-primary" onclick="loadRequests()">
+                                <i class="fa fa-search"></i> استعلام
+                            </button>
+                            <button type="button" class="btn btn-cyan-light" onclick="clearFilters()">
+                                <i class="fa fa-eraser"></i> تفريغ الحقول
+                            </button>
+                        </div>
+                    </div>
+                    <hr>
+                </form>
+
+                <!-- REQUESTS LIST -->
+                <div id="requests_section">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold mb-0" style="font-size:.85rem"><i class="fa fa-list-alt me-1"></i> الطلبات المعتمدة</h6>
+                        <div class="d-flex gap-1 align-items-center">
+                            <span class="text-muted" style="font-size:.75rem" id="selectedCount"></span>
+                            <button class="btn btn-sm btn-success" onclick="loadPreview()" id="btnPreview" style="display:none">
+                                <i class="fa fa-calculator"></i> احتساب المحدد
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chk-all-wrap" id="chkAllWrap" style="display:none">
+                        <label><input type="checkbox" id="chkAll" onchange="toggleAll(this)"> تحديد الكل</label>
+                    </div>
+                    <div id="requests_container">
+                        <div class="alert alert-light text-center text-muted py-4">
+                            <i class="fa fa-hand-pointer-o fa-2x d-block mb-2" style="opacity:.4"></i>
+                            اختر الفلاتر واضغط بحث لعرض الطلبات المعتمدة
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-3" id="previewDivider" style="display:none">
+
+                <!-- PREVIEW SECTION -->
+                <div id="preview_section" style="display:none">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0" style="font-size:.85rem"><i class="fa fa-bank me-1"></i> معاينة الاحتساب حسب البنك</h6>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-info btn-sm text-white" onclick="exportBankExcel()"><i class="fa fa-file-excel-o me-1"></i> تصدير Excel</button>
+                            <button class="btn btn-light btn-sm" onclick="backToRequests()"><i class="fa fa-arrow-right me-1"></i> رجوع للطلبات</button>
+                        </div>
+                    </div>
+                    <div id="batchSummary" class="mb-2"></div>
+                    <div id="batchBanks"></div>
+                </div>
+
+                <!-- LOADING -->
+                <div id="batchLoading" style="display:none" class="text-center py-5">
+                    <div style="display:inline-block;padding:2rem 3rem;background:#f8fafc;border-radius:16px;border:1px solid #e2e8f0">
+                        <div class="mb-3"><i class="fa fa-calculator fa-3x" style="color:#2563eb;animation:pulse 1.5s infinite"></i></div>
+                        <div class="fw-bold mb-1" style="font-size:1rem;color:#1e293b" id="loadingTitle">جاري احتساب الصرف...</div>
+                        <div class="text-muted" style="font-size:.82rem" id="loadingDetail">تجميع بيانات الموظفين والبنوك</div>
+                        <div class="mt-3">
+                            <div class="progress" style="height:4px;width:200px;margin:0 auto;border-radius:4px;background:#e2e8f0">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%;background:#2563eb"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}</style>
+                </div>
+
             </div>
         </div>
     </div>
 </div>
 
-<div id="groupsContainer"></div>
-
-<div class="pr-panel" id="summaryPanel" style="display:none;">
-    <div class="pr-panel-hd"><span class="t"><i class="fa fa-list-alt"></i> ملخص المجموعات</span></div>
-    <div class="pr-panel-bd">
-        <div class="table-responsive">
-            <table class="table mb-0" style="font-size:.82rem">
-                <thead><tr style="background:#f8fafc">
-                    <th style="font-size:.72rem;color:var(--c-slate);font-weight:700">#</th>
-                    <th style="font-size:.72rem;color:var(--c-slate);font-weight:700">نوع الطلب</th>
-                    <th style="font-size:.72rem;color:var(--c-slate);font-weight:700">المحفظة</th>
-                    <th style="font-size:.72rem;color:var(--c-slate);font-weight:700">الموظفين</th>
-                    <th style="font-size:.72rem;color:var(--c-slate);font-weight:700">الحالة</th>
-                </tr></thead>
-                <tbody id="summaryRows"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div class="pr-panel" id="resultsPanel" style="display:none;">
-    <div class="pr-panel-hd"><span class="t"><i class="fa fa-check-square"></i> نتائج التنفيذ</span></div>
-    <div class="pr-panel-bd" id="resultsContent"></div>
-</div>
-
-<div class="modal fade" id="payTypeTreeModal" tabindex="-1" data-bs-backdrop="static">
+<!-- مودال تفاصيل الموظف -->
+<div class="modal fade" id="empDetailModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;box-shadow:0 25px 60px rgba(15,23,42,.18)">
-            <div class="modal-header py-3 px-4" style="background:linear-gradient(135deg,#1e293b,#334155);border:none">
-                <h5 class="modal-title text-white" style="font-size:.95rem;font-weight:700"><i class="fa fa-sitemap me-2"></i>اختر بند المستحقات</h5>
+        <div class="modal-content" style="border:0;border-radius:14px;overflow:hidden">
+            <div class="modal-header py-2" style="background:linear-gradient(135deg,#1e293b,#334155)">
+                <h6 class="modal-title text-white fw-bold"><i class="fa fa-user me-2"></i> <span id="edm_title"></span></h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
-                <div id="pay_type_tree_loading" class="text-center py-5 text-muted">
-                    <i class="fa fa-spinner fa-spin fa-2x"></i><p class="mt-3 mb-0">جاري تحميل البنود...</p>
-                </div>
-                <div id="pay_type_tree_wrap" style="display:none;">
-                    <div class="tree-search-wrap">
-                        <i class="fa fa-search search-ico"></i>
-                        <input type="text" id="pay_type_tree_search" placeholder="ابحث عن بند...">
-                    </div>
-                    <div class="overflow-auto p-3" style="max-height:55vh;background:#fafbfc;border-radius:12px;border:1px solid #e2e8f0">
-                        <ul id="pay_type_tree" class="tree list-unstyled mb-0"></ul>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer py-2 px-4" style="background:#f8fafc;border-top:1px solid #e2e8f0">
-                <button type="button" class="btn btn-secondary btn-sm" style="border-radius:8px" data-bs-dismiss="modal"><i class="fa fa-times me-1"></i>إغلاق</button>
+            <div class="modal-body">
+                <!-- بيانات الموظف -->
+                <div class="row g-2 mb-3" id="edm_info"></div>
+                <!-- جدول الطلبات -->
+                <h6 class="fw-bold mb-2" style="font-size:.8rem"><i class="fa fa-list-alt me-1"></i> الطلبات</h6>
+                <table class="table table-bordered table-sm mb-0" style="font-size:.82rem">
+                    <thead class="table-light">
+                        <tr><th style="width:30px">#</th><th>رقم الطلب</th><th>نوع الطلب</th><th>الشهر</th><th class="text-end">المبلغ</th></tr>
+                    </thead>
+                    <tbody id="edm_body"></tbody>
+                    <tfoot>
+                        <tr style="background:#1e293b;color:#fff;font-weight:800">
+                            <td colspan="4" class="text-end">إجمالي الصرف</td>
+                            <td class="text-end" id="edm_total"></td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
-<?php ob_start(); ?>
+<?php
+$batch_history_url  = base_url("$MODULE_NAME/$TB_NAME/batch_history_data");
+$batch_cancel_url_b = base_url("$MODULE_NAME/$TB_NAME/batch_cancel_action");
+$batch_reverse_url_b = base_url("$MODULE_NAME/$TB_NAME/batch_reverse_pay_action");
+$_vars_js = '<script type="text/javascript">'
+    . 'var getPageUrl="' . $get_page_url . '";'
+    . 'var batchDataUrl="' . $batch_data_url . '";'
+    . 'var batchConfirmUrl="' . $batch_confirm_url . '";'
+    . 'var batchPayUrl="' . $batch_pay_url . '";'
+    . 'var batchCsvUrl="' . $batch_csv_url . '";'
+    . 'var batchHistoryDataUrl="' . $batch_history_url . '";'
+    . 'var batchCancelUrlB="' . $batch_cancel_url_b . '";'
+    . 'var batchReverseUrlB="' . $batch_reverse_url_b . '";'
+    . 'var canPay=' . ($can_pay ? 'true' : 'false') . ';'
+    . 'var batchHistoryJsonUrl="' . base_url("$MODULE_NAME/$TB_NAME/batch_history_json") . '";'
+    . 'var bankFileUrl="' . base_url("$MODULE_NAME/$TB_NAME/export_bank_file") . '";'
+    . 'var bankListUrl="' . base_url("$MODULE_NAME/$TB_NAME/export_bank_list") . '";'
+    . '</script>';
+
+$scripts = $_vars_js . <<<'SCRIPT'
 <script type="text/javascript">
-    var batchUrl       = <?= json_encode($batch_url) ?>;
-    var backUrl        = <?= json_encode($back_url) ?>;
-    var payTypeTreeUrl = <?= isset($pay_type_tree_url) ? json_encode($pay_type_tree_url) : '""' ?>;
-    var _C = <?= $JS_CONSTANTS ?>;
-    var C_REQ_FULL_SALARY = String(_C.REQ_FULL_SALARY);
-    var C_REQ_PART_SALARY = String(_C.REQ_PART_SALARY);
-    var C_REQ_LUMP_SUM    = String(_C.REQ_LUMP_SUM);
-    var C_WALLET_SALARY   = String(_C.WALLET_SALARY);
-    var C_WALLET_DUES     = String(_C.WALLET_DUES);
-    var C_WALLET_BOTH     = String(_C.WALLET_BOTH);
-    var C_CALC_PERCENT    = String(_C.CALC_PERCENT);
-    var C_CALC_FIXED      = String(_C.CALC_FIXED);
-    var tplReqOpts    = <?= json_encode($grp_tpl_req, JSON_UNESCAPED_UNICODE) ?>;
-    var tplWalletOpts = <?= json_encode($grp_tpl_wallet, JSON_UNESCAPED_UNICODE) ?>;
-    var tplCalcOpts   = <?= json_encode($grp_tpl_calc, JSON_UNESCAPED_UNICODE) ?>;
-    var tplEmpOpts    = <?= json_encode($grp_tpl_emp, JSON_UNESCAPED_UNICODE) ?>;
-    var grpCounter    = 0;
-    var activeTreeGrp = null;
+var _selectedReqIds = [];
+var _previewData    = [];
+var _previewReqIds  = '';
+var _batchId        = 0;
+var _actionInProgress = false;
 
-    jQuery('#bt_the_month').datetimepicker({ format: 'YYYYMM', minViewMode: 'months', pickTime: false });
+// ===================== INIT =====================
+$(function(){
+    $('#txt_the_month').datetimepicker({format:'YYYYMM', minViewMode:'months', pickTime:false});
+    $('#batch_form').on('keydown', function(e){ if(e.keyCode===13){e.preventDefault();loadRequests();} });
+    // منع gs-loading من حجب الصفحة
+    $(document).ajaxStart(function(){ $('.gs-loading').css({'pointer-events':'none','opacity':'0'}); });
+    $(document).ajaxStop(function(){ $('.gs-loading').css({'pointer-events':'none','opacity':'0'}); });
+});
 
-    function grpEl(idx){ return jQuery('.grp-panel[data-grp="' + idx + '"]'); }
+// ===================== LOAD REQUESTS =====================
+function loadRequests(){
+    var params = {
+        page: 1,
+        branch_no: $('#dp_branch_no').val() || '',
+        the_month: $('#txt_the_month').val() || '',
+        req_type:  $('#dp_req_type').val() || '',
+        status:    '1,3',
+        view_mode: 'master'
+    };
 
-    function buildGroupHtml(idx){
-        var h = '';
-        h += '<div class="grp-panel" data-grp="' + idx + '">';
-        h += '<div class="grp-panel-hd"><span class="grp-title"><i class="fa fa-layer-group"></i> المجموعة <b>' + idx + '</b></span>';
-        h += '<div style="display:flex;align-items:center;gap:.5rem"><span class="grp-badge" style="display:none"><i class="fa fa-user"></i> <span class="grp-emp-cnt">0</span></span>';
-        h += '<button type="button" class="grp-remove" onclick="javascript:removeGroup(' + idx + ');"><i class="fa fa-trash"></i></button></div></div>';
-        h += '<div class="grp-panel-bd"><div class="row g-3">';
-        h += '<div class="form-group col-md-3"><label><i class="fa fa-list text-info me-1"></i> نوع الطلب</label><select class="form-select grp-req-type" onchange="grpRules(' + idx + ')">' + tplReqOpts + '</select></div>';
-        h += '<div class="form-group col-md-2"><label><i class="fa fa-briefcase text-warning me-1"></i> المحفظة</label><select class="form-select grp-wallet-type" onchange="grpRules(' + idx + ')">' + tplWalletOpts + '</select></div>';
-        h += '<div class="form-group col-md-2 grp-f-calc" style="display:none;"><label><i class="fa fa-calculator me-1" style="color:var(--c-purple)"></i> الاحتساب</label><select class="form-select grp-calc-method" onchange="grpRules(' + idx + ')">' + tplCalcOpts + '</select></div>';
-        h += '<div class="form-group col-md-2 grp-f-percent" style="display:none;"><label><i class="fa fa-percent text-success me-1"></i> النسبة</label><div class="input-group"><input type="number" step="0.01" min="0" max="100" class="form-control grp-percent"><span class="input-group-text" style="border-radius:0 10px 10px 0">%</span></div></div>';
-        h += '<div class="form-group col-md-2 grp-f-amount" style="display:none;"><label><i class="fa fa-money text-primary me-1"></i> المبلغ</label><input type="number" step="0.01" min="0" class="form-control grp-fixed-amount" placeholder="0.00"></div>';
-        h += '<div class="form-group col-md-4 grp-f-paytype" style="display:none;"><label><i class="fa fa-sitemap text-info me-1"></i> بند المستحقات</label><div class="input-group"><input type="hidden" class="grp-pay-type"><input type="text" class="form-control bg-white grp-pay-type-display" readonly placeholder="اختر..."><button type="button" class="btn btn-outline-primary" onclick="javascript:openTree(' + idx + ');" style="border-radius:0 10px 10px 0"><i class="fa fa-sitemap"></i></button></div></div>';
-        h += '<div class="form-group col-md-3"><label><i class="fa fa-sticky-note-o text-muted me-1"></i> ملاحظات</label><input type="text" class="form-control grp-note" placeholder="اختياري..."></div>';
-        h += '</div><div class="row g-3" style="margin-top:.5rem"><div class="form-group col-md-12"><label><i class="fa fa-users text-primary me-1"></i> الموظفين</label>';
-        h += '<select class="form-control grp-employees sel2init" multiple>' + tplEmpOpts + '</select>';
-        h += '<div style="margin-top:.5rem;display:flex;gap:.4rem"><button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;font-size:.75rem" onclick="javascript:grpSelectAll(' + idx + ')"><i class="fa fa-check-square-o"></i> تحديد الكل</button>';
-        h += '<button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;font-size:.75rem" onclick="javascript:grpDeselectAll(' + idx + ')"><i class="fa fa-square-o"></i> إلغاء</button></div>';
-        h += '</div></div></div></div>';
-        return h;
+    // Hide preview
+    $('#preview_section, #previewDivider, #btnExport, #btnPay').hide();
+    $('#batchActions').css('display','none');
+    _selectedReqIds = [];
+    updateSelectedCount();
+
+    get_data(getPageUrl, params, function(html){
+        $('#requests_container').html(html);
+        injectCheckboxes();
+        $('#chkAllWrap').show();
+        $('#chkAll').prop('checked', false);
+    }, 'html');
+}
+
+// ===================== INJECT CHECKBOXES =====================
+function injectCheckboxes(){
+    // Add checkbox column to header
+    var $thead = $('#requests_container').find('table thead tr');
+    if($thead.length) {
+        $thead.prepend('<th style="width:36px;text-align:center"><i class="fa fa-check-square-o"></i></th>');
     }
 
-    function addGroup(){
-        grpCounter++;
-        var idx = grpCounter;
-        jQuery('#groupsContainer').append(buildGroupHtml(idx));
-        grpEl(idx).find('.sel2init').select2();
-        grpEl(idx).find('.sel2init').on('change', function(){ grpEmpChanged(idx); });
-        updateSummary();
-    }
-
-    function removeGroup(idx){
-        if(!confirm('حذف المجموعة؟')) return;
-        grpEl(idx).remove();
-        updateSummary();
-    }
-
-    function grpRules(idx){
-        var p  = grpEl(idx);
-        var rt = p.find('.grp-req-type').val();
-        var wt = p.find('.grp-wallet-type').val();
-        var cm = p.find('.grp-calc-method').val();
-        p.find('.grp-f-calc, .grp-f-percent, .grp-f-amount, .grp-f-paytype').hide();
-        if(rt == C_REQ_FULL_SALARY){ p.find('.grp-wallet-type').val(C_WALLET_SALARY); }
-        else if(rt == C_REQ_PART_SALARY){
-            p.find('.grp-wallet-type').val(C_WALLET_SALARY);
-            p.find('.grp-f-calc').show();
-            if(cm == C_CALC_PERCENT) p.find('.grp-f-percent').show();
-            else if(cm == C_CALC_FIXED) p.find('.grp-f-amount').show();
+    // Add checkbox to each row
+    $('#requests_container').find('table tbody tr').each(function(){
+        var $row = $(this);
+        // Extract REQ_ID from the link in the row
+        var $link = $row.find('a[href*="/get/"]');
+        var reqId = '';
+        if($link.length){
+            var href = $link.attr('href');
+            var match = href.match(/\/get\/(\d+)/);
+            if(match) reqId = match[1];
         }
-        else if(rt == C_REQ_LUMP_SUM){
-            p.find('.grp-f-amount').show();
-            wt = p.find('.grp-wallet-type').val();
-            if(wt == C_WALLET_DUES || wt == C_WALLET_BOTH) p.find('.grp-f-paytype').show();
+        if(!reqId){
+            // Try from ondblclick
+            var dbl = $row.attr('ondblclick') || '';
+            var m2 = dbl.match(/\/get\/(\d+)/);
+            if(m2) reqId = m2[1];
         }
-        updateSummary();
-    }
 
-    function grpEmpChanged(idx){
-        var p = grpEl(idx);
-        var sel = p.find('.grp-employees').val();
-        var c = sel ? sel.length : 0;
-        if(c > 0){ p.find('.grp-badge').show(); p.find('.grp-emp-cnt').text(c); }
-        else { p.find('.grp-badge').hide(); }
-        updateSummary();
-    }
+        if(reqId){
+            $row.prepend('<td style="text-align:center"><input type="checkbox" class="req-chk" value="'+reqId+'" onchange="onReqCheck()"></td>');
+        } else {
+            $row.prepend('<td></td>');
+        }
+    });
 
-    function grpSelectAll(idx){
-        var p = grpEl(idx), all = [];
-        p.find('.grp-employees option').each(function(){ all.push(jQuery(this).val()); });
-        p.find('.grp-employees').val(all).trigger('change');
-    }
+    // Hide view mode switcher and action column (not needed here)
+    // إخفاء أزرار الحذف/الإلغاء + مبدّل العرض (مش مطلوبين بشاشة الاحتساب)
+    $('#requests_container').find('.btn-group-sm').has('[onclick*="switchView"]').hide();
+    $('#requests_container').find('[onclick*="delete_req"], [onclick*="cancel_req"]').hide();
 
-    function grpDeselectAll(idx){
-        grpEl(idx).find('.grp-employees').val([]).trigger('change');
-    }
-
-    function updateSummary(){
-        var html = '', num = 0, hasValid = false;
-        jQuery('.grp-panel').each(function(){
-            num++;
-            var p = jQuery(this);
-            var rt = p.find('.grp-req-type').val();
-            var wt = p.find('.grp-wallet-type').val();
-            var emp = p.find('.grp-employees').val();
-            var cnt = emp ? emp.length : 0;
-            var valid = (rt && wt && cnt > 0);
-            if(valid) hasValid = true;
-            html += '<tr><td>' + num + '</td>';
-            html += '<td>' + (rt ? p.find('.grp-req-type option:selected').text() : '—') + '</td>';
-            html += '<td>' + (wt ? p.find('.grp-wallet-type option:selected').text() : '—') + '</td>';
-            html += '<td><b>' + cnt + '</b></td>';
-            html += '<td>' + (valid ? '<span class="res-ok"><i class="fa fa-check-circle"></i> جاهز</span>' : '<span style="color:#94a3b8"><i class="fa fa-clock-o"></i> غير مكتمل</span>') + '</td></tr>';
-        });
-        if(num > 0){ jQuery('#summaryRows').html(html); jQuery('#summaryPanel').show(); }
-        else { jQuery('#summaryPanel').hide(); }
-        jQuery('#btnExecuteAll').prop('disabled', !hasValid);
-    }
-
-    function executeAll(obj){
-        if(isDoubleClicked(jQuery(obj))) return;
-        var theMonth = jQuery('#bt_the_month').val();
-        if(!theMonth){ danger_msg('تحذير','الشهر مطلوب'); return; }
-        var batches = [];
-        jQuery('.grp-panel').each(function(i){
-            var p = jQuery(this);
-            var rt = p.find('.grp-req-type').val();
-            var wt = p.find('.grp-wallet-type').val();
-            var emp = p.find('.grp-employees').val();
-            if(!rt || !wt || !emp || emp.length === 0) return;
-            batches.push({
-                num: i+1, batch_type: 'by_list', the_month: theMonth,
-                req_type: rt, wallet_type: wt,
-                calc_method: p.find('.grp-calc-method').val() || '',
-                percent_val: p.find('.grp-percent').val() || '',
-                fixed_amount: p.find('.grp-fixed-amount').val() || '',
-                pay_type: p.find('.grp-pay-type').val() || '',
-                emp_list: emp.join(','),
-                note: p.find('.grp-note').val() || 'دفعة جماعية',
-                emp_count: emp.length
+    // Re-bind pagination to work with our filters
+    $('#requests_container').find('a[data-ci-pagination-page]').off('click').on('click', function(e){
+        e.preventDefault();
+        var pg = $(this).attr('data-ci-pagination-page');
+        var params = {
+            page: pg,
+            branch_no: $('#dp_branch_no').val() || '',
+            the_month: $('#txt_the_month').val() || '',
+            req_type:  $('#dp_req_type').val() || '',
+            status:    '1',
+            view_mode: 'master'
+        };
+        get_data(getPageUrl, params, function(html){
+            $('#requests_container').html(html);
+            injectCheckboxes();
+            // Re-check previously selected
+            $('#requests_container').find('.req-chk').each(function(){
+                if(_selectedReqIds.indexOf($(this).val()) >= 0){
+                    $(this).prop('checked', true);
+                    $(this).closest('tr').addClass('selected-row');
+                }
             });
-        });
-        if(batches.length === 0){ danger_msg('تحذير','لا توجد مجموعات جاهزة'); return; }
-        if(!confirm('سيتم تنفيذ ' + batches.length + ' مجموعة. متابعة؟')) return;
-        jQuery('#btnExecuteAll').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> جاري التنفيذ...');
-        jQuery('#resultsPanel').show();
-        jQuery('#resultsContent').html('<div class="text-center" style="padding:2rem"><i class="fa fa-spinner fa-spin fa-2x"></i><p style="margin-top:.5rem;color:#94a3b8">جاري تنفيذ المجموعات...</p></div>');
-        var total = batches.length, done = 0, results = [];
-        for(var i = 0; i < batches.length; i++){
-            (function(batch){
-                get_data(batchUrl, batch, function(resp){
-                    var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
-                    results.push({ num: batch.num, ok: j && j.ok, success: j?(j.success||0):0, fail: j?(j.fail||0):0, batch_id: j?(j.batch_id||''):'', msg: j?(j.msg||''):'فشل', emp_count: batch.emp_count });
-                    done++;
-                    if(done >= total) renderResults(results);
-                });
-            })(batches[i]);
+        }, 'html');
+    });
+}
+
+// ===================== CHECKBOX HANDLING =====================
+function onReqCheck(){
+    _selectedReqIds = [];
+    $('#requests_container').find('.req-chk:checked').each(function(){
+        _selectedReqIds.push($(this).val());
+        $(this).closest('tr').addClass('selected-row');
+    });
+    $('#requests_container').find('.req-chk:not(:checked)').each(function(){
+        $(this).closest('tr').removeClass('selected-row');
+    });
+    updateSelectedCount();
+}
+
+function toggleAll(el){
+    var checked = $(el).prop('checked');
+    $('#requests_container').find('.req-chk').prop('checked', checked).trigger('change');
+    onReqCheck();
+}
+
+function updateSelectedCount(){
+    var n = _selectedReqIds.length;
+    $('#selectedCount').text(n > 0 ? n + ' طلب محدد' : '');
+    if(n > 0) $('#btnPreview').show(); else $('#btnPreview').hide();
+}
+
+// ===================== LOAD PREVIEW =====================
+function backToRequests(){
+    $('#preview_section, #previewDivider').hide();
+    $('#batchActions').css('display','none');
+    $('#requests_section, #batch_form, #batchCardHeader').show();
+    $('html, body').animate({scrollTop: 0}, 200);
+}
+
+function loadPreview(){
+    if(_selectedReqIds.length === 0){ danger_msg('تحذير','يجب تحديد طلب واحد على الأقل'); return; }
+
+    _previewReqIds = _selectedReqIds.join(',');
+    // إخفاء الفلاتر والطلبات — عرض المعاينة فقط
+    var selCount = _selectedReqIds.length;
+    $('#loadingTitle').text('جاري احتساب الصرف...');
+    $('#loadingDetail').text('تجميع ' + selCount + ' طلب — حساب المبالغ وبيانات البنوك');
+    $('#batch_form, #requests_section, #batchCardHeader').hide();
+    $('#batchLoading').show();
+    $('#preview_section').hide();
+
+    get_data(batchDataUrl, {req_ids: _previewReqIds}, function(resp){
+        $('#batchLoading').hide();
+        var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+        if(!j.ok){ danger_msg('خطأ', j.msg || 'فشل تحميل البيانات'); return; }
+        _previewData = j.rows || [];
+        if(_previewData.length === 0){ danger_msg('تحذير','لا توجد بيانات معتمدة للصرف في الطلبات المحددة — قد تكون محتسبة مسبقاً (راجع سجل الدفعات)'); return; }
+        renderPreview(_previewData);
+        $('#preview_section, #previewDivider, #btnExport, #btnPrint').show();
+        $('#batchActions').css('display','flex');
+        if(canPay) { $('#btnConfirm').show(); $('#btnPay').hide(); }
+        _batchId = 0;
+
+        // تحذير موظفين بدون بنك
+        var noBankCount = 0;
+        for(var i=0; i<_previewData.length; i++){
+            if(parseInt(_previewData[i].NO_BANK_FLAG||0)) noBankCount++;
         }
+        if(noBankCount > 0){
+            danger_msg('تنبيه', 'يوجد '+noBankCount+' موظف بدون بيانات بنك — تم تمييزهم باللون الأحمر');
+        }
+
+        // تحذير طلبات فيها موظفين غير معتمدين
+        var warnings = j.warnings || [];
+        if(warnings.length > 0){
+            var whtml = '<div class="alert alert-warning py-2 px-3 mb-2" style="font-size:.8rem">';
+            whtml += '<i class="fa fa-exclamation-triangle me-1"></i> <strong>تنبيه:</strong> الطلبات التالية فيها موظفين غير معتمدين (لم يتم شملهم بالدفعة):<br>';
+            for(var w=0; w<warnings.length; w++){
+                var wr = warnings[w];
+                whtml += '<span class="me-3">'+wr.REQ_NO+': <strong>'+wr.DRAFT_COUNT+'</strong> مسودة من أصل '+wr.TOTAL_COUNT+'</span>';
+            }
+            whtml += '</div>';
+            $('#batchSummary').prepend(whtml);
+        }
+    }, 'json');
+}
+
+// ===================== RENDER PREVIEW =====================
+// تجميع حسب الموظف — كل موظف صف واحد مع إجمالي + تفاصيل قابلة للتوسيع
+function renderPreview(rows){
+    // تجميع حسب الموظف + البنك (فرع + رئيسي) + المقر + نوع الطلب
+    var emps = {}, empOrder = [], grandTotal = 0, grandCount = 0;
+    var branches = {}, masterBanks = {};
+    var byBranch = {};                                  // تجميع حسب مقر العمل
+    var sumT1 = 0, sumT2 = 0, sumT3 = 0, sumT4 = 0;      // إجماليات أنواع الطلبات
+
+    for(var i=0; i<rows.length; i++){
+        var r = rows[i], eno = r.EMP_NO, amt = parseFloat(r.REQ_AMOUNT||0);
+        var rt = parseInt(r.REQ_TYPE||0);
+        var branchBk = r.BANK_NAME || '---';
+        var masterBk = r.MASTER_BANK_NAME;
+        if(!masterBk || masterBk === '---'){
+            // fallback: أول جزء من اسم الفرع قبل " - "
+            var p = branchBk.split(' - ');
+            masterBk = p[0].replace(/\s*-\s*$/,'').trim();
+        }
+
+        if(!emps[eno]){
+            emps[eno] = {emp_no: eno, name: r.EMP_NAME||'', branch: r.BRANCH_NAME||'', bank: branchBk, masterBank: masterBk, iban: r.IBAN||'', no_bank: parseInt(r.NO_BANK_FLAG||0), details: [], total: 0};
+            empOrder.push(eno);
+        }
+        emps[eno].details.push(r);
+        emps[eno].total += amt;
+
+        // فروع
+        if(!branches[branchBk]) branches[branchBk] = {total:0, empSet:{}, master: masterBk};
+        branches[branchBk].total += amt; branches[branchBk].empSet[eno] = 1;
+
+        // بنوك رئيسية + أعمدة الأنواع لكل بنك
+        if(!masterBanks[masterBk]) masterBanks[masterBk] = {branches:{}, total:0, empSet:{}, t1:0, t2:0, t3:0, t4:0};
+        if(!masterBanks[masterBk].branches[branchBk]) masterBanks[masterBk].branches[branchBk] = {total:0, empSet:{}};
+        masterBanks[masterBk].branches[branchBk].total += amt;
+        masterBanks[masterBk].branches[branchBk].empSet[eno] = 1;
+        masterBanks[masterBk].total += amt;
+        masterBanks[masterBk].empSet[eno] = 1;
+
+        // توزيع المبلغ على نوع الطلب (للبنك والإجمالي)
+        if(rt === 1)                  { masterBanks[masterBk].t1 += amt; sumT1 += amt; }
+        else if(rt === 2)             { masterBanks[masterBk].t2 += amt; sumT2 += amt; }
+        else if(rt === 3 || rt === 4) { masterBanks[masterBk].t3 += amt; sumT3 += amt; }
+        else if(rt === 5)             { masterBanks[masterBk].t4 += amt; sumT4 += amt; }
+
+        // تجميع حسب مقر العمل
+        var empBr = r.BRANCH_NAME || 'غير محدد';
+        if(!byBranch[empBr]) byBranch[empBr] = {empSet:{}, total:0};
+        byBranch[empBr].empSet[eno] = 1;
+        byBranch[empBr].total += amt;
+
+        grandTotal += amt; grandCount++;
     }
 
-    function renderResults(results){
-        results.sort(function(a,b){ return a.num - b.num; });
-        var html = '<div class="table-responsive"><table class="table mb-0" style="font-size:.82rem">';
-        html += '<thead><tr style="background:#f8fafc"><th>#</th><th>Batch ID</th><th>الموظفين</th><th>نجح</th><th>فشل</th><th>الحالة</th></tr></thead><tbody>';
-        var totalS = 0, totalF = 0;
-        for(var i = 0; i < results.length; i++){
-            var r = results[i]; totalS += r.success; totalF += r.fail;
-            html += '<tr><td>' + r.num + '</td><td>' + (r.batch_id||'—') + '</td><td>' + r.emp_count + '</td>';
-            html += '<td><span class="res-ok">' + r.success + '</span></td><td><span class="res-fail">' + r.fail + '</span></td><td>';
-            if(r.ok && r.fail==0) html += '<span class="res-ok"><i class="fa fa-check-circle"></i> تم</span>';
-            else if(r.ok) html += '<span class="res-partial"><i class="fa fa-exclamation-triangle"></i> جزئي</span>';
-            else html += '<span class="res-fail"><i class="fa fa-times-circle"></i> ' + r.msg + '</span>';
+    // ═══ جدول ملخص البنوك (رئيسي → فروع) ═══
+    var mbKeys = Object.keys(masterBanks).sort(function(a,b){ return masterBanks[b].total - masterBanks[a].total; });
+    _bankSummary = {masterBanks: masterBanks, mbKeys: mbKeys, grandTotal: grandTotal, grandCount: grandCount, empCount: empOrder.length};
+
+    // ═══ البطاقات العلوية ═══
+    var html = '<div class="pr-row mb-2">';
+    html += '<div class="pr-card c-total"><div class="c-label"><i class="fa fa-users"></i> الموظفين</div><div class="c-val">'+empOrder.length+'</div><div class="c-cnt" style="color:#cbd5e1">'+grandCount+' حركة</div></div>';
+    html += '<div class="pr-card"><div class="c-label"><i class="fa fa-bank"></i> البنوك</div><div class="c-val">'+mbKeys.length+'</div></div>';
+    html += '<div class="pr-card"><div class="c-label"><i class="fa fa-building"></i> المقرات</div><div class="c-val">'+Object.keys(byBranch).length+'</div></div>';
+    html += '<div class="pr-card" style="background:#f0fdf4;border-color:#86efac"><div class="c-label"><i class="fa fa-money"></i> إجمالي الصرف</div><div class="c-val" style="color:#059669">'+nf(grandTotal)+'</div></div>';
+    html += '</div>';
+
+    // ═══ تفصيل حسب المقر ═══
+    var brKeys2 = Object.keys(byBranch).sort(function(a,b){ return byBranch[b].total - byBranch[a].total; });
+    html += '<div class="row mb-3"><div class="col-md-6">';
+    html += '<table class="table table-bordered table-sm mb-0" style="font-size:.8rem">';
+    html += '<thead class="table-light"><tr><th><i class="fa fa-building me-1"></i> المقر</th><th class="text-center" style="width:80px">موظفين</th><th class="text-end" style="width:120px">المبلغ</th></tr></thead>';
+    html += '<tbody>';
+    for(var b=0; b<brKeys2.length; b++){
+        var brn = brKeys2[b], brd = byBranch[brn];
+        html += '<tr><td>'+brn+'</td><td class="text-center">'+Object.keys(brd.empSet).length+'</td><td class="text-end amt">'+nf(brd.total)+'</td></tr>';
+    }
+    html += '<tr style="background:#1e293b;color:#fff;font-weight:800"><td>الإجمالي</td><td class="text-center">'+empOrder.length+'</td><td class="text-end">'+nf(grandTotal)+'</td></tr>';
+    html += '</tbody></table></div></div>';
+
+    // ═══ ملخص البنوك مع تفصيل أنواع الطلبات ═══
+    html += '<h6 class="fw-bold mb-2" style="font-size:.82rem"><i class="fa fa-bank me-1"></i> ملخص حسب البنك</h6>';
+    html += '<div class="table-responsive mb-3">';
+    html += '<table class="table table-bordered table-sm mb-0" style="font-size:.8rem" id="bankSummaryTable">';
+    html += '<thead class="table-light"><tr><th style="width:30px">#</th><th>البنك</th><th class="text-center" style="width:60px">الفروع</th><th class="text-center" style="width:70px">الموظفين</th>';
+    html += '<th class="text-end">راتب كامل</th><th class="text-end">راتب جزئي</th><th class="text-end">مستحقات</th><th class="text-end">إضافات</th>';
+    html += '<th class="text-end">الإجمالي</th></tr></thead><tbody>';
+    var rn = 0;
+    for(var m=0; m<mbKeys.length; m++){
+        var mk = mbKeys[m], md = masterBanks[mk];
+        var brKeys = Object.keys(md.branches).sort(function(a,b){ return md.branches[b].total - md.branches[a].total; });
+        var masterEmpCount = Object.keys(md.empSet).length;
+        rn++;
+        if(brKeys.length === 1){
+            html += '<tr><td class="text-muted">'+rn+'</td><td>'+brKeys[0]+'</td><td class="text-center">1</td><td class="text-center">'+masterEmpCount+'</td>';
+            html += '<td class="text-end">'+(md.t1>0?nf(md.t1):'-')+'</td>';
+            html += '<td class="text-end">'+(md.t2>0?nf(md.t2):'-')+'</td>';
+            html += '<td class="text-end">'+(md.t3>0?nf(md.t3):'-')+'</td>';
+            html += '<td class="text-end">'+(md.t4>0?nf(md.t4):'-')+'</td>';
+            html += '<td class="text-end amt">'+nf(md.total)+'</td></tr>';
+        } else {
+            html += '<tr style="background:#f1f5f9;cursor:pointer" onclick="$(\'.sub-'+m+'\').toggle();$(this).find(\'.fa-chevron-down,.fa-chevron-up\').toggleClass(\'fa-chevron-down fa-chevron-up\')">';
+            html += '<td class="text-muted">'+rn+'</td><td class="fw-bold">'+mk+' <i class="fa fa-chevron-down" style="font-size:.55rem;color:#94a3b8"></i></td>';
+            html += '<td class="text-center fw-bold">'+brKeys.length+'</td><td class="text-center fw-bold">'+masterEmpCount+'</td>';
+            html += '<td class="text-end fw-bold">'+(md.t1>0?nf(md.t1):'-')+'</td>';
+            html += '<td class="text-end fw-bold">'+(md.t2>0?nf(md.t2):'-')+'</td>';
+            html += '<td class="text-end fw-bold">'+(md.t3>0?nf(md.t3):'-')+'</td>';
+            html += '<td class="text-end fw-bold">'+(md.t4>0?nf(md.t4):'-')+'</td>';
+            html += '<td class="text-end amt fw-bold">'+nf(md.total)+'</td></tr>';
+            for(var br=0; br<brKeys.length; br++){
+                var brd = md.branches[brKeys[br]];
+                html += '<tr class="sub-'+m+'" style="display:none;font-size:.72rem;color:#64748b">';
+                html += '<td></td><td style="padding-right:1.5rem">↳ '+brKeys[br]+'</td>';
+                html += '<td></td><td class="text-center">'+Object.keys(brd.empSet).length+'</td>';
+                html += '<td colspan="4"></td>';
+                html += '<td class="text-end">'+nf(brd.total)+'</td></tr>';
+            }
+        }
+    }
+    html += '<tr style="background:#1e293b;color:#fff;font-weight:800"><td colspan="3">الإجمالي</td><td class="text-center">'+empOrder.length+'</td>';
+    html += '<td class="text-end">'+(sumT1>0?nf(sumT1):'-')+'</td>';
+    html += '<td class="text-end">'+(sumT2>0?nf(sumT2):'-')+'</td>';
+    html += '<td class="text-end">'+(sumT3>0?nf(sumT3):'-')+'</td>';
+    html += '<td class="text-end">'+(sumT4>0?nf(sumT4):'-')+'</td>';
+    html += '<td class="text-end">'+nf(grandTotal)+'</td></tr>';
+    html += '</tbody></table></div>';
+
+    // ═══ القسم 2: تفصيل حسب النوع ═══
+    var typeBreakdown = {};
+    for(var i=0; i<rows.length; i++){
+        var r = rows[i], rt = r.REQ_TYPE_NAME || '---', amt = parseFloat(r.REQ_AMOUNT||0);
+        if(!typeBreakdown[rt]) typeBreakdown[rt] = {count:0, total:0, empSet:{}};
+        typeBreakdown[rt].count++; typeBreakdown[rt].total += amt; typeBreakdown[rt].empSet[r.EMP_NO] = 1;
+    }
+    var tbKeys = Object.keys(typeBreakdown);
+    if(tbKeys.length > 1){
+        html += '<h6 class="fw-bold mb-2 mt-3" style="font-size:.82rem"><i class="fa fa-pie-chart me-1"></i> حسب النوع</h6>';
+        html += '<table class="table table-bordered table-sm mb-0" style="font-size:.82rem">';
+        html += '<thead class="table-light"><tr><th>النوع</th><th class="text-center">حركات</th><th class="text-center">موظفين</th><th class="text-end">المبلغ</th></tr></thead><tbody>';
+        for(var t=0; t<tbKeys.length; t++){
+            var tk = tbKeys[t], td = typeBreakdown[tk];
+            html += '<tr><td>'+tk+'</td><td class="text-center">'+td.count+'</td><td class="text-center">'+Object.keys(td.empSet).length+'</td><td class="text-end amt">'+nf(td.total)+'</td></tr>';
+        }
+        html += '</tbody><tfoot><tr style="background:#1e293b;color:#fff;font-weight:800"><td>الإجمالي</td><td class="text-center">'+grandCount+'</td><td class="text-center">'+empOrder.length+'</td><td class="text-end">'+nf(grandTotal)+'</td></tr></tfoot></table>';
+    }
+
+    // ═══ القسم 3: تحليل التداخل ═══
+    var multiCount = 0, singleCount = 0;
+    for(var idx=0; idx<empOrder.length; idx++){
+        if(emps[empOrder[idx]].details.length > 1) multiCount++; else singleCount++;
+    }
+    if(singleCount > 0 && multiCount > 0){
+        html += '<div class="mt-3 p-2" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;font-size:.78rem">';
+        html += '<div class="fw-bold mb-1"><i class="fa fa-link me-1"></i> '+empOrder.length+' موظف فريد | '+multiCount+' مشترك | '+singleCount+' في طلب واحد</div>';
+
+        var singleByType = {};
+        for(var idx=0; idx<empOrder.length; idx++){
+            var e = emps[empOrder[idx]];
+            if(e.details.length === 1){
+                var rt = e.details[0].REQ_TYPE_NAME || '---';
+                if(!singleByType[rt]) singleByType[rt] = [];
+                singleByType[rt].push(e);
+            }
+        }
+        html += '<table class="table table-sm mb-0" style="font-size:.75rem;background:transparent"><tbody>';
+        for(var rt in singleByType){
+            var list = singleByType[rt];
+            html += '<tr><td class="fw-bold" style="width:200px;border:0">'+rt+' فقط ('+list.length+')</td><td style="border:0">';
+            for(var s=0; s<list.length; s++){
+                html += '<span class="badge bg-warning text-dark me-1 mb-1" style="cursor:pointer;font-weight:500" ondblclick="showEmpModal(\''+list[s].emp_no+'\')">'+list[s].emp_no+' — '+list[s].name+'</span>';
+            }
             html += '</td></tr>';
         }
         html += '</tbody></table></div>';
-        html += '<div style="margin-top:1rem;display:flex;gap:.75rem">';
-        html += '<span style="background:#d1fae5;color:#065f46;padding:.4rem 1rem;border-radius:10px;font-weight:700"><i class="fa fa-check"></i> نجح: ' + totalS + '</span>';
-        if(totalF > 0) html += '<span style="background:#fee2e2;color:#991b1b;padding:.4rem 1rem;border-radius:10px;font-weight:700"><i class="fa fa-times"></i> فشل: ' + totalF + '</span>';
-        html += '</div>';
-        jQuery('#resultsContent').html(html);
-        jQuery('#btnExecuteAll').html('<i class="fa fa-check"></i> تم التنفيذ');
-        if(totalS > 0) success_msg('رسالة', 'تم تنفيذ ' + totalS + ' طلب بنجاح');
-        if(totalF > 0) danger_msg('تحذير', 'فشل ' + totalF + ' طلب');
     }
 
-    var payTypeTreeData = null;
+    // ═══ القسم 4: شريط التحكم ═══
+    html += '<div class="d-flex justify-content-between align-items-center mt-3 mb-2 p-2" style="background:#f8fafc;border-radius:8px">';
+    html += '<span style="font-size:.78rem"><i class="fa fa-check-circle text-success me-1"></i> <span id="summaryDetailCount">'+grandCount+'</span> سجل معتمد — <strong id="summaryGrandTotal">'+nf(grandTotal)+'</strong></span>';
+    html += '<button class="btn btn-sm btn-info text-white" onclick="exportEmpExcel()"><i class="fa fa-file-excel-o me-1"></i> تصدير Excel</button>';
+    html += '</div>';
+    $('#batchSummary').html(html);
 
-    function openTree(idx){
-        activeTreeGrp = idx;
-        loadPayTypeTree();
-        jQuery('#payTypeTreeModal').modal('show');
-        jQuery('#pay_type_tree_search').val('');
-        setTimeout(function(){ jQuery('#pay_type_tree_search').focus(); }, 400);
-    }
+    // جدول الموظفين
+    var thtml = '<table class="table table-bordered table-sm mb-0" style="font-size:.82rem">';
+    thtml += '<style>.chk-col{display:none}</style>';
+    thtml += '<thead class="table-light"><tr>';
+    thtml += '<th class="chk-col"><input type="checkbox" checked onchange="toggleAllDetails(this)"></th>';
+    thtml += '<th style="width:30px">#</th><th>الموظف</th><th>المقر</th><th>البنك</th>';
+    thtml += '<th class="text-center" style="width:50px">طلبات</th><th class="text-end" style="width:100px">الإجمالي</th>';
+    thtml += '</tr></thead><tbody>';
 
-    function buildPayTypeTreeHtml(nodes){
-        if(!nodes || nodes.length === 0) return '';
-        var html = '';
-        for(var i = 0; i < nodes.length; i++){
-            var n = nodes[i], hasKids = n.children && n.children.length > 0;
-            var lt = (n.attributes && n.attributes.lineType) ? n.attributes.lineType : 1;
-            var cls = 'lt-' + lt;
-            if(hasKids){
-                html += '<li class="parent_li" data-id="' + n.id + '"><span class="tree-node ' + cls + ' pay-type-parent"><i class="fa fa-plus tree-icon"></i> ' + (n.text||'') + '</span>';
-                html += '<ul class="list-unstyled" style="display:none;">' + buildPayTypeTreeHtml(n.children) + '</ul></li>';
-            } else {
-                html += '<li data-id="' + n.id + '"><span class="tree-node ' + cls + ' pay-type-leaf' + (lt==2?'':' leaf-disabled') + '"><i class="fa tree-icon" style="display:inline-block;width:16px;"></i> ' + (n.text||'') + '</span></li>';
+    for(var idx=0; idx<empOrder.length; idx++){
+        var e = emps[empOrder[idx]], hasMulti = e.details.length > 1;
+        var rowId = 'emp_' + e.emp_no;
+
+        if(!hasMulti){
+            // ═══ طلب واحد — صف واحد فقط ═══
+            var det = e.details[0];
+            thtml += '<tr ondblclick="showEmpModal(\''+e.emp_no+'\')" style="cursor:pointer">';
+            thtml += '<td class="text-center chk-col" ondblclick="event.stopPropagation()"><input type="checkbox" class="detail-chk" data-emp="'+e.emp_no+'" value="'+det.DETAIL_ID+'" data-amt="'+det.REQ_AMOUNT+'" checked onchange="onDetailCheck()"></td>';
+            thtml += '<td class="text-muted">'+(idx+1)+'</td>';
+            thtml += '<td><strong>'+e.emp_no+'</strong> — '+e.name+(e.no_bank?' <i class="fa fa-exclamation-triangle" style="color:#dc2626" title="بدون بنك"></i>':'')+'</td>';
+            thtml += '<td style="font-size:.75rem">'+e.branch+'</td>';
+            thtml += '<td style="font-size:.75rem">'+e.bank+'</td>';
+            thtml += '<td class="text-center">1</td>';
+            thtml += '<td class="text-end amt">'+nf(e.total)+'</td>';
+            thtml += '</tr>';
+        } else {
+            // ═══ أكثر من طلب — صف رئيسي + تفاصيل قابلة للتوسيع ═══
+            thtml += '<tr style="cursor:pointer" onclick="$(\'.\'+\''+rowId+'\').toggle();$(this).find(\'.fa-chevron-down,.fa-chevron-up\').toggleClass(\'fa-chevron-down fa-chevron-up\')" ondblclick="event.stopPropagation();showEmpModal(\''+e.emp_no+'\')">';
+            thtml += '<td class="text-center chk-col" onclick="event.stopPropagation()"><input type="checkbox" class="emp-chk" data-emp="'+e.emp_no+'" checked onchange="toggleEmpDetails(this)"></td>';
+            thtml += '<td class="text-muted">'+(idx+1)+'</td>';
+            thtml += '<td><strong>'+e.emp_no+'</strong> — '+e.name+(e.no_bank?' <i class="fa fa-exclamation-triangle" style="color:#dc2626" title="بدون بنك"></i>':'')+' <i class="fa fa-chevron-down" style="font-size:.6rem;color:#94a3b8"></i></td>';
+            thtml += '<td style="font-size:.75rem">'+e.branch+'</td>';
+            thtml += '<td style="font-size:.75rem">'+e.bank+'</td>';
+            thtml += '<td class="text-center"><span class="badge bg-info text-white">'+e.details.length+'</span></td>';
+            thtml += '<td class="text-end amt">'+nf(e.total)+'</td>';
+            thtml += '</tr>';
+            for(var d=0; d<e.details.length; d++){
+                var det = e.details[d];
+                thtml += '<tr class="'+rowId+'" style="background:#f8fafc;font-size:.75rem;display:none">';
+                thtml += '<td class="text-center chk-col"><input type="checkbox" class="detail-chk" data-emp="'+e.emp_no+'" value="'+det.DETAIL_ID+'" data-amt="'+det.REQ_AMOUNT+'" checked onchange="onDetailCheck()"></td>';
+                thtml += '<td></td>';
+                thtml += '<td style="padding-right:2rem"><span class="text-muted">'+(det.REQ_NO||'')+'</span></td>';
+                thtml += '<td>'+(det.REQ_TYPE_NAME||'')+'</td>';
+                thtml += '<td>'+(det.THE_MONTH||'')+'</td>';
+                thtml += '<td></td>';
+                thtml += '<td class="text-end">'+nf(parseFloat(det.REQ_AMOUNT||0))+'</td>';
+                thtml += '</tr>';
             }
         }
-        return html;
     }
+    thtml += '</tbody></table>';
+    $('#batchBanks').html(thtml);
+    onDetailCheck();
+}
 
-    function loadPayTypeTree(){
-        var ld = jQuery('#pay_type_tree_loading'), wr = jQuery('#pay_type_tree_wrap'), tr = jQuery('#pay_type_tree');
-        if(payTypeTreeData){ ld.hide(); tr.html(buildPayTypeTreeHtml(payTypeTreeData)); wr.show(); bindTreeEvents(); return; }
-        if(!payTypeTreeUrl) return;
-        ld.show(); wr.hide(); tr.empty();
-        jQuery.getJSON(payTypeTreeUrl).done(function(data){
-            var p = data;
-            if(typeof data==='string'){ try{p=JSON.parse(data);}catch(e){p=[];} }
-            if(p && !Array.isArray(p)){ p = Array.isArray(p.data)?p.data : Array.isArray(p.children)?p.children : []; }
-            payTypeTreeData = Array.isArray(p) ? p : [];
-            ld.hide(); tr.html(buildPayTypeTreeHtml(payTypeTreeData)); wr.show(); bindTreeEvents();
-        }).fail(function(){ ld.html('<span class="text-danger">فشل تحميل الشجرة</span>'); });
+function toggleEmpDetails(el){
+    var emp = $(el).data('emp'), checked = $(el).prop('checked');
+    $('.detail-chk[data-emp="'+emp+'"]').prop('checked', checked);
+    onDetailCheck();
+}
+
+function showEmpModal(empNo){
+    var details = [];
+    for(var i=0; i<_previewData.length; i++){
+        if(String(_previewData[i].EMP_NO) === String(empNo)) details.push(_previewData[i]);
     }
+    if(details.length === 0) return;
+    var d0 = details[0], total = 0;
+    $('#edm_title').text(d0.EMP_NO + ' — ' + (d0.EMP_NAME||''));
 
-    function bindTreeEvents(){
-        jQuery('#pay_type_tree').off('click','.pay-type-parent').on('click','.pay-type-parent',function(e){
-            e.stopPropagation();
-            var ul=jQuery(this).closest('li').children('ul'), ic=jQuery(this).find('.tree-icon');
-            if(ul.is(':visible')){ul.slideUp(200);ic.removeClass('fa-minus').addClass('fa-plus');}
-            else{ul.slideDown(200);ic.removeClass('fa-plus').addClass('fa-minus');}
-        });
-        jQuery('#pay_type_tree').off('click','.pay-type-leaf').on('click','.pay-type-leaf',function(e){
-            e.stopPropagation();
-            if(jQuery(this).hasClass('leaf-disabled')) return;
-            var li=jQuery(this).closest('li'), id=li.data('id'), text=jQuery(this).text().trim();
-            if(id && activeTreeGrp){
-                var p = grpEl(activeTreeGrp);
-                p.find('.grp-pay-type').val(id);
-                p.find('.grp-pay-type-display').val(text);
-                jQuery('#payTypeTreeModal').modal('hide');
-                updateSummary();
+    var c = function(label, val, col, extra){
+        return '<div class="'+col+'"><div style="padding:.5rem .6rem;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;'+(extra||'')+'">'
+             + '<div style="font-size:.6rem;color:#94a3b8;margin-bottom:.15rem">'+label+'</div>'
+             + '<div style="font-size:.85rem;font-weight:700;color:#1e293b">'+val+'</div></div></div>';
+    };
+    var info = '';
+    info += c('رقم الموظف', d0.EMP_NO, 'col-md-2');
+    info += c('المقر', d0.BRANCH_NAME||'—', 'col-md-3');
+    info += c('البنك', (d0.MASTER_BANK_NAME||d0.BANK_NAME||'—'), 'col-md-3');
+    info += c('فرع البنك', d0.BANK_NAME||'—', 'col-md-4');
+    info += c('IBAN', '<span style="direction:ltr;font-size:.72rem">'+(d0.IBAN||'—')+'</span>', 'col-md-5');
+    info += c('الحساب', '<span style="direction:ltr;font-size:.72rem">'+(d0.BANK_ACCOUNT||d0.ACCOUNT_BANK_EMAIL||'—')+'</span>', 'col-md-3');
+    info += c('عدد الطلبات', details.length, 'col-md-2');
+    info += c('إجمالي الصرف', '<span id="edm_total_card" style="color:#1e40af"></span>', 'col-md-2', 'background:#eff6ff;border-color:#bfdbfe');
+    $('#edm_info').html(info);
+
+    var html = '';
+    for(var i=0; i<details.length; i++){
+        var r = details[i], amt = parseFloat(r.REQ_AMOUNT||0);
+        total += amt;
+        html += '<tr>';
+        html += '<td class="text-muted">'+(i+1)+'</td>';
+        html += '<td class="fw-bold">'+(r.REQ_NO||'')+'</td>';
+        html += '<td>'+(r.REQ_TYPE_NAME||'')+'</td>';
+        html += '<td class="text-center" style="direction:ltr">'+(r.THE_MONTH||'')+'</td>';
+        html += '<td class="text-end amt">'+nf(amt)+'</td>';
+        html += '</tr>';
+    }
+    $('#edm_body').html(html);
+    $('#edm_total').text(nf(total));
+    $('#edm_total_card').text(nf(total));
+    $('#empDetailModal').modal('show');
+}
+
+// ===================== DETAIL CHECKBOX HANDLING =====================
+function onDetailCheck(){
+    var total = 0, cnt = 0;
+    $('.detail-chk:checked').each(function(){ total += parseFloat($(this).data('amt')||0); cnt++; });
+    var allCnt = $('.detail-chk').length;
+    $('#detailSelectedCount').text(cnt + '/' + allCnt + ' محدد — ' + nf(total));
+    $('#summaryGrandTotal').text(nf(total));
+    $('#summaryDetailCount').text(cnt);
+}
+
+function toggleAllDetails(el){
+    $('.detail-chk').prop('checked', $(el).prop('checked'));
+    onDetailCheck();
+}
+
+function toggleBankDetails(el){
+    $(el).closest('table').find('.detail-chk').prop('checked', $(el).prop('checked'));
+    onDetailCheck();
+}
+
+function getSelectedDetailIds(){
+    var ids = [];
+    $('.detail-chk:checked').each(function(){ ids.push($(this).val()); });
+    return ids.join(',');
+}
+
+var _bankGrouped = {};
+var _grandTotals = {};
+
+// ===================== PRINT REPORT =====================
+function batchPrintReport(){
+    if(!_previewData || _previewData.length===0){ danger_msg('تحذير','يجب احتساب المعاينة أولاً'); return; }
+
+    // تجميع البيانات من _previewData
+    var banks = {}, gt = {total:0,t1:0,t2:0,t3:0,t4:0,empSet:{},types:{}};
+    for(var i=0; i<_previewData.length; i++){
+        var row = _previewData[i];
+        var masterBk = row.MASTER_BANK_NAME || row.BANK_NAME || '---';
+        var branchBk = row.BANK_NAME || '---';
+        var amt = parseFloat(row.REQ_AMOUNT||0);
+        var rt = parseInt(row.REQ_TYPE||0);
+        var rtName = row.REQ_TYPE_NAME || '---';
+
+        if(!banks[masterBk]) banks[masterBk] = {branches:{}, total:0, t1:0, t2:0, t3:0, t4:0, empSet:{}};
+        if(!banks[masterBk].branches[branchBk]) banks[masterBk].branches[branchBk] = {total:0, t1:0, t2:0, t3:0, t4:0, empSet:{}};
+        banks[masterBk].branches[branchBk].total += amt;
+        banks[masterBk].branches[branchBk].empSet[row.EMP_NO] = 1;
+        if(rt==1) banks[masterBk].branches[branchBk].t1 += amt;
+        else if(rt==2) banks[masterBk].branches[branchBk].t2 += amt;
+        else if(rt==3||rt==4) banks[masterBk].branches[branchBk].t3 += amt;
+        else banks[masterBk].branches[branchBk].t4 += amt;
+        banks[masterBk].total += amt; banks[masterBk].empSet[row.EMP_NO] = 1;
+        if(rt==1) banks[masterBk].t1+=amt; else if(rt==2) banks[masterBk].t2+=amt;
+        else if(rt==3||rt==4) banks[masterBk].t3+=amt; else banks[masterBk].t4+=amt;
+
+        gt.total += amt; gt.empSet[row.EMP_NO] = 1;
+        if(rt==1) gt.t1+=amt; else if(rt==2) gt.t2+=amt; else if(rt==3||rt==4) gt.t3+=amt; else gt.t4+=amt;
+        if(!gt.types[rtName]) gt.types[rtName] = {total:0, empSet:{}};
+        gt.types[rtName].total += amt; gt.types[rtName].empSet[row.EMP_NO] = 1;
+    }
+    var gtEmpCount = Object.keys(gt.empSet).length;
+    var bankKeys = Object.keys(banks).sort(function(a,b){ return banks[b].total - banks[a].total; });
+    var today = new Date(); var dateStr = today.getDate()+'/'+(today.getMonth()+1)+'/'+today.getFullYear();
+
+    var w = window.open('', '_blank');
+    var h = '<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8">';
+    h += '<title>كشف إجمالي احتساب الصرف</title>';
+    h += '<style>';
+    h += 'body{font-family:Arial,sans-serif;font-size:11px;margin:20px;direction:rtl}';
+    h += 'h2{text-align:center;margin-bottom:5px;font-size:15px}';
+    h += 'h4{text-align:center;margin:3px 0;font-size:12px;color:#555}';
+    h += 'table{width:100%;border-collapse:collapse;margin-top:10px}';
+    h += 'th,td{border:1px solid #333;padding:4px 6px;text-align:center;font-size:10px}';
+    h += 'th{background:#d0e4f5;font-weight:bold}';
+    h += '.sub-total{background:#e8f0fe;font-weight:bold}';
+    h += '.grand-total{background:#b8d4f0;font-weight:bold;font-size:11px}';
+    h += '.master-hdr{background:#1e293b;color:#fff;font-weight:bold;text-align:right;font-size:11px}';
+    h += '.num{direction:ltr;text-align:center}';
+    h += '.info-tbl{width:auto;margin:5px auto 10px;border:0} .info-tbl td{border:0;padding:2px 10px;font-size:10px;text-align:right}';
+    h += '@media print{body{margin:10px}button{display:none!important}}';
+    h += '</style></head><body>';
+    h += '<button onclick="window.print()" style="margin-bottom:10px;padding:5px 20px;cursor:pointer">طباعة</button>';
+    h += '<h2>كشف بإجمالي احتساب الصرف</h2>';
+    h += '<h4>بالشيكل الإسرائيلي</h4>';
+
+    // معلومات عامة
+    h += '<table class="info-tbl"><tr><td><strong>التاريخ:</strong> '+dateStr+'</td>';
+    h += '<td><strong>عدد الموظفين:</strong> '+gtEmpCount+'</td>';
+    h += '<td><strong>عدد الحركات:</strong> '+_previewData.length+'</td>';
+    h += '<td><strong>عدد البنوك:</strong> '+bankKeys.length+'</td>';
+    h += '<td><strong>الإجمالي:</strong> '+nf(gt.total)+'</td></tr></table>';
+
+    // جدول البنوك
+    h += '<table><thead><tr>';
+    h += '<th style="width:25px">م</th>';
+    h += '<th>البنك</th>';
+    h += '<th>موظفين</th>';
+    h += '<th>راتب كامل</th>';
+    h += '<th>راتب جزئي</th>';
+    h += '<th>مستحقات</th>';
+    h += '<th>أخرى</th>';
+    h += '<th>الإجمالي</th>';
+    h += '</tr></thead><tbody>';
+
+    var rowNum = 0;
+    for(var b=0; b<bankKeys.length; b++){
+        var bk = bankKeys[b], bdata = banks[bk];
+        var brKeys = Object.keys(bdata.branches).sort(function(a,b2){ return bdata.branches[b2].total - bdata.branches[a].total; });
+        var bEmpCount = Object.keys(bdata.empSet).length;
+
+        if(brKeys.length > 1){
+            // عنوان البنك الرئيسي
+            h += '<tr class="master-hdr"><td colspan="8">'+bk+' ('+brKeys.length+' فرع)</td></tr>';
+            for(var br=0; br<brKeys.length; br++){
+                rowNum++;
+                var brName = brKeys[br], brData = bdata.branches[brName];
+                h += '<tr>';
+                h += '<td>'+rowNum+'</td>';
+                h += '<td style="text-align:right;padding-right:15px">'+brName+'</td>';
+                h += '<td>'+Object.keys(brData.empSet).length+'</td>';
+                h += '<td class="num">'+nf(brData.t1)+'</td>';
+                h += '<td class="num">'+nf(brData.t2)+'</td>';
+                h += '<td class="num">'+nf(brData.t3)+'</td>';
+                h += '<td class="num">'+nf(brData.t4)+'</td>';
+                h += '<td class="num">'+nf(brData.total)+'</td>';
+                h += '</tr>';
             }
-        });
-        jQuery('#pay_type_tree_search').off('input').on('input',function(){
-            var q=jQuery(this).val().trim().toLowerCase();
-            if(!q){ jQuery('#pay_type_tree li').show(); jQuery('#pay_type_tree ul').hide(); jQuery('#pay_type_tree .tree-icon').removeClass('fa-minus').addClass('fa-plus'); return; }
-            jQuery('#pay_type_tree li').each(function(){
-                var txt=jQuery(this).children('.tree-node').text().toLowerCase();
-                var m = txt.indexOf(q)>-1;
-                var cm = jQuery(this).find('.tree-node').filter(function(){return jQuery(this).text().toLowerCase().indexOf(q)>-1;}).length>0;
-                if(m||cm){jQuery(this).show().parents('li').show().children('ul').show(); jQuery(this).parents('li').children('.pay-type-parent').find('.tree-icon').removeClass('fa-plus').addClass('fa-minus');}
-                else{jQuery(this).hide();}
-            });
-        });
+            h += '<tr class="sub-total"><td colspan="2" style="text-align:right">إجمالي '+bk+'</td><td>'+bEmpCount+'</td>';
+            h += '<td class="num">'+nf(bdata.t1)+'</td><td class="num">'+nf(bdata.t2)+'</td><td class="num">'+nf(bdata.t3)+'</td><td class="num">'+nf(bdata.t4)+'</td><td class="num">'+nf(bdata.total)+'</td></tr>';
+        } else {
+            rowNum++;
+            var brData = bdata.branches[brKeys[0]];
+            h += '<tr>';
+            h += '<td>'+rowNum+'</td>';
+            h += '<td style="text-align:right">'+brKeys[0]+'</td>';
+            h += '<td>'+Object.keys(brData.empSet).length+'</td>';
+            h += '<td class="num">'+nf(brData.t1)+'</td>';
+            h += '<td class="num">'+nf(brData.t2)+'</td>';
+            h += '<td class="num">'+nf(brData.t3)+'</td>';
+            h += '<td class="num">'+nf(brData.t4)+'</td>';
+            h += '<td class="num" style="font-weight:bold">'+nf(brData.total)+'</td>';
+            h += '</tr>';
+        }
     }
 
-    if(typeof initFunctions === 'function') initFunctions();
-    addGroup();
+    h += '<tr class="grand-total"><td colspan="2">الإجمالي الكلي</td><td>'+gtEmpCount+'</td>';
+    h += '<td class="num">'+nf(gt.t1)+'</td><td class="num">'+nf(gt.t2)+'</td><td class="num">'+nf(gt.t3)+'</td><td class="num">'+nf(gt.t4)+'</td><td class="num">'+nf(gt.total)+'</td></tr>';
+    h += '</tbody></table>';
+
+    // ملخص حسب النوع
+    var typeKeys = Object.keys(gt.types);
+    if(typeKeys.length > 1){
+        h += '<table style="margin-top:15px"><thead><tr><th>نوع الطلب</th><th>موظفين</th><th>المبلغ</th></tr></thead><tbody>';
+        for(var t=0; t<typeKeys.length; t++){
+            var tk = typeKeys[t], td = gt.types[tk];
+            h += '<tr><td style="text-align:right">'+tk+'</td><td>'+Object.keys(td.empSet).length+'</td><td class="num">'+nf(td.total)+'</td></tr>';
+        }
+        h += '<tr class="grand-total"><td style="text-align:right">الإجمالي</td><td>'+gtEmpCount+'</td><td class="num">'+nf(gt.total)+'</td></tr>';
+        h += '</tbody></table>';
+    }
+
+    h += '</body></html>';
+    w.document.write(h);
+    w.document.close();
+}
+
+// ===================== EXPORT CSV =====================
+function batchExport(){
+    if(!_previewReqIds){ danger_msg('تحذير','يجب احتساب المعاينة أولاً'); return; }
+    window.location.href = batchCsvUrl + '?req_ids=' + encodeURIComponent(_previewReqIds);
+}
+
+// ===================== CONFIRM (اعتماد الاحتساب) =====================
+function batchConfirm(){
+    var selectedIds = getSelectedDetailIds();
+    if(!selectedIds){ danger_msg('تحذير','يجب تحديد موظف واحد على الأقل'); return; }
+    if(_actionInProgress){ danger_msg('تحذير','العملية قيد التنفيذ بالفعل'); return; }
+
+    // نبعث REQ_IDS (قصير) + المستبعدين فقط (unchecked)
+    var allIds = [];
+    $('.detail-chk').each(function(){ allIds.push($(this).val()); });
+    var selectedSet = {};
+    selectedIds.split(',').forEach(function(id){ selectedSet[id] = true; });
+    var excludeIds = allIds.filter(function(id){ return !selectedSet[id]; }).join(',');
+
+    var cnt = selectedIds.split(',').length;
+    var nl = String.fromCharCode(10);
+    if(!confirm('اعتماد احتساب الصرف لـ '+cnt+' سجل؟' + nl + nl + 'سيتم حفظ الدفعة — بدون صرف فعلي بعد.')) return;
+    _actionInProgress = true;
+
+    $('#btnConfirm').prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> جاري الاعتماد...');
+
+    get_data(batchConfirmUrl, {req_ids: _previewReqIds, exclude_detail_ids: excludeIds}, function(resp){
+        var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+        _actionInProgress = false;
+        $('#btnConfirm').prop('disabled',false).html('<i class="fa fa-check-circle"></i> اعتماد الاحتساب');
+        if(j.ok){
+            _batchId = j.batch_id;
+            success_msg('تم الاعتماد', j.msg);
+            $('#btnConfirm').hide();
+            $('#btnPay').show().html('<i class="fa fa-money"></i> تنفيذ الصرف (PB-'+String(_batchId).padStart(5,'0')+')');
+        } else {
+            danger_msg('خطأ', j.msg || 'فشل الاعتماد');
+        }
+    }, 'json');
+}
+
+// ===================== PAY (تنفيذ الصرف) =====================
+function batchPay(){
+    if(!_batchId){ danger_msg('تحذير','يجب اعتماد الاحتساب أولاً'); return; }
+    if(_actionInProgress){ danger_msg('تحذير','العملية قيد التنفيذ بالفعل'); return; }
+    if(!confirm('تنفيذ الصرف للدفعة PB-'+String(_batchId).padStart(5,'0')+'؟\n\nسيتم التسديد في جدول المستحقات.\nهذه العملية لا يمكن التراجع عنها.')) return;
+    _actionInProgress = true;
+
+    $('#btnPay').prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> جاري الصرف...');
+
+    get_data(batchPayUrl, {batch_id: _batchId}, function(resp){
+        var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+        _actionInProgress = false;
+        $('#btnPay').prop('disabled',false).html('<i class="fa fa-money"></i> تنفيذ الصرف');
+        if(j.ok){
+            success_msg('تم الصرف', j.msg);
+            _previewReqIds = ''; _previewData = []; _batchId = 0;
+            backToRequests();
+            loadRequests();
+        } else {
+            danger_msg('خطأ', j.msg || 'فشل الصرف');
+        }
+    }, 'json');
+}
+
+function clearFilters(){
+    $('#dp_branch_no').val('');
+    $('#txt_the_month').val('');
+    $('#dp_req_type').val('');
+    $('#requests_container').html('<div class="alert alert-light text-center text-muted py-4"><i class="fa fa-hand-pointer-o fa-2x d-block mb-2" style="opacity:.4"></i>اختر الفلاتر واضغط بحث</div>');
+    $('#chkAllWrap, #preview_section, #previewDivider, #btnExport, #btnPay, #btnPrint, #btnConfirm, #btnPreview').hide();
+    $('#batchActions').css('display','none');
+    _selectedReqIds = [];
+    _previewReqIds = '';
+    _previewData = [];
+    updateSelectedCount();
+}
+
+// ===================== EXPORT EXCEL (بنوك + موظفين) =====================
+var _bankSummary = {};
+function exportBankExcel(){
+    if(!_previewData || _previewData.length === 0){ return; }
+    var bs = _bankSummary;
+
+    var rows = _previewData;
+
+    // ورقة 1: ملخص البنوك (رئيسي + فروع)
+    var s1 = [['#', 'البنك الرئيسي', 'الفرع', 'عدد الموظفين', 'المبلغ']];
+    var rn = 0;
+    for(var m=0; m<bs.mbKeys.length; m++){
+        var mk = bs.mbKeys[m], md = bs.masterBanks[mk];
+        var brKeys = Object.keys(md.branches);
+        for(var br=0; br<brKeys.length; br++){
+            rn++; var brd = md.branches[brKeys[br]];
+            s1.push([rn, mk, brKeys[br], Object.keys(brd.empSet).length, brd.total]);
+        }
+        if(brKeys.length > 1) s1.push(['', mk + ' — إجمالي', '', Object.keys(md.empSet).length, md.total]);
+    }
+    s1.push(['', 'الإجمالي الكلي', '', bs.empCount, bs.grandTotal]);
+
+    // ورقة 2: تفصيل حسب النوع
+    var s2 = [['نوع الطلب', 'عدد الحركات', 'عدد الموظفين', 'المبلغ']];
+    for(var i=0; i<rows.length; i++){
+        var rt = rows[i].REQ_TYPE_NAME||''; if(!_s2map) var _s2map = {};
+        if(!_s2map[rt]) _s2map[rt] = {c:0,t:0,es:{}};
+        _s2map[rt].c++; _s2map[rt].t += parseFloat(rows[i].REQ_AMOUNT||0); _s2map[rt].es[rows[i].EMP_NO]=1;
+    }
+    for(var tk in _s2map) s2.push([tk, _s2map[tk].c, Object.keys(_s2map[tk].es).length, _s2map[tk].t]);
+    s2.push(['الإجمالي النهائي', bs.grandCount, bs.empCount, bs.grandTotal]);
+
+    // ورقة 3: تفاصيل الموظفين
+    var s3 = [['#', 'رقم الموظف', 'اسم الموظف', 'المقر', 'البنك الرئيسي', 'فرع البنك', 'IBAN', 'رقم الحساب', 'رقم الطلب', 'نوع الطلب', 'الشهر', 'المبلغ']];
+    for(var i=0; i<rows.length; i++){
+        var r = rows[i];
+        s3.push([i+1, parseInt(r.EMP_NO)||r.EMP_NO, r.EMP_NAME||'', r.BRANCH_NAME||'', r.MASTER_BANK_NAME||'', r.BANK_NAME||'', r.IBAN||'', r.BANK_ACCOUNT||'', r.REQ_NO||'', r.REQ_TYPE_NAME||'', parseInt(r.THE_MONTH)||'', parseFloat(r.REQ_AMOUNT||0)]);
+    }
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s1), 'ملخص البنوك');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s2), 'تفصيل حسب النوع');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s3), 'تفاصيل الموظفين');
+    XLSX.writeFile(wb, 'احتساب_الصرف.xlsx');
+}
+
+function exportEmpExcel(){
+    if(!_previewData || _previewData.length === 0) return;
+    // تجميع حسب الموظف
+    var emps = {}, order = [];
+    for(var i=0; i<_previewData.length; i++){
+        var r = _previewData[i], e = r.EMP_NO;
+        if(!emps[e]){ emps[e] = {name: r.EMP_NAME||'', branch: r.BRANCH_NAME||'', bank: r.BANK_NAME||'', iban: r.IBAN||'', total: 0, details: []}; order.push(e); }
+        emps[e].total += parseFloat(r.REQ_AMOUNT||0);
+        emps[e].details.push(r);
+    }
+    var rows = [['#', 'رقم الموظف', 'اسم الموظف', 'المقر', 'البنك الرئيسي', 'فرع البنك', 'IBAN', 'رقم الطلب', 'نوع الطلب', 'الشهر', 'المبلغ', 'إجمالي الموظف']];
+    var n = 0;
+    for(var i=0; i<order.length; i++){
+        var emp = emps[order[i]], first = true;
+        for(var d=0; d<emp.details.length; d++){
+            var r = emp.details[d]; n++;
+            rows.push([n, parseInt(r.EMP_NO)||r.EMP_NO, first?emp.name:'', first?emp.branch:'', first?(r.MASTER_BANK_NAME||''):'', first?emp.bank:'', first?emp.iban:'', r.REQ_NO||'', r.REQ_TYPE_NAME||'', parseInt(r.THE_MONTH)||'', parseFloat(r.REQ_AMOUNT||0), first?emp.total:'']);
+            first = false;
+        }
+    }
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'الموظفين');
+    XLSX.writeFile(wb, 'موظفين_احتساب_الصرف.xlsx');
+}
+
+function nf(n){ return parseFloat(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function nfz(n){ var v=parseFloat(n||0); return v===0 ? '—' : nf(v); }
 </script>
-<?php
-$scripts = ob_get_clean();
+SCRIPT;
 sec_scripts($scripts);
 ?>
