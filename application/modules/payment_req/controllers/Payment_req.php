@@ -712,6 +712,20 @@ class Payment_req extends MY_Controller
         echo json_encode(['ok' => true, 'data' => is_array($rows) ? $rows : []]);
     }
 
+    function batch_emp_accounts_json()
+    {
+        $batch_id = (int)$this->input->get_post('batch_id');
+        $emp_no   = (int)$this->input->get_post('emp_no');
+        $rows = $this->{$this->MODEL_NAME}->batch_emp_accounts($batch_id, $emp_no);
+        if (is_array($rows)) {
+            array_walk_recursive($rows, function (&$val) {
+                if (is_string($val)) { $val = mb_convert_encoding($val, 'UTF-8', 'UTF-8'); }
+            });
+        }
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => true, 'data' => is_array($rows) ? $rows : []]);
+    }
+
     function batch_reverse_pay_action()
     {
         if (!HaveAccess(base_url('payment_req/payment_req/batch_reverse_pay_action'))) {
@@ -770,9 +784,11 @@ class Payment_req extends MY_Controller
         }
         $req_ids = $this->input->post('req_ids') ?: $this->p_req_ids;
         $exclude_ids = $this->input->post('exclude_detail_ids') ?: '';
+        // طريقة الصرف: 1=قديم (افتراضي) | 2=جديد (PAYMENT_ACCOUNTS + split)
+        $disburse_method = (int)($this->input->post('disburse_method') ?: 1);
         if (!$req_ids) { echo json_encode(['ok' => false, 'msg' => 'يجب تحديد طلبات']); return; }
 
-        $result = $this->{$this->MODEL_NAME}->batch_confirm($req_ids, $exclude_ids);
+        $result = $this->{$this->MODEL_NAME}->batch_confirm($req_ids, $exclude_ids, $disburse_method);
 
         header('Content-Type: application/json');
         echo json_encode($result);
@@ -914,10 +930,14 @@ class Payment_req extends MY_Controller
                 $row = 6; $n = 0;
                 foreach ($empRows as $r) {
                     $n++;
+                    // المرسَل للبنك = صاحب الحساب الفعلي (موظف أو مستفيد)
+                    // OWNER_NAME/OWNER_ID_NO يفولوا على EMP لو الطريقة قديمة (في الـ view)
+                    $owner_name = $r['OWNER_NAME'] ?? $r['EMP_NAME'] ?? '';
+                    $owner_id   = $r['OWNER_ID_NO'] ?? $r['EMP_ID'] ?? '';
                     $sheet->setCellValue('A' . $row, $n);
-                    $sheet->setCellValue('B' . $row, $r['EMP_NAME'] ?? '');
-                    $sheet->setCellValue('C' . $row, (int)($r['EMP_ID'] ?? 0));
-                    $sheet->setCellValue('D' . $row, $r['IBAN'] ?? '');
+                    $sheet->setCellValue('B' . $row, $owner_name);
+                    $sheet->setCellValueExplicit('C' . $row, (string)$owner_id, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                    $sheet->setCellValueExplicit('D' . $row, (string)($r['IBAN'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
                     $sheet->setCellValue('E' . $row, (float)($r['TOTAL_AMOUNT'] ?? 0));
                     $sheet->setCellValue('F' . $row, 'ILS');
                     $row++;
@@ -932,12 +952,14 @@ class Payment_req extends MY_Controller
                 $sheet->setCellValue('F1', 'iban');
                 $row = 2;
                 foreach ($empRows as $r) {
-                    $sheet->setCellValue('A' . $row, (int)($r['EMP_ID'] ?? 0));
-                    $sheet->setCellValue('B' . $row, $r['EMP_NAME'] ?? '');
-                    $sheet->setCellValue('C' . $row, $r['BANK_ACCOUNT'] ?? '');
+                    $owner_name = $r['OWNER_NAME'] ?? $r['EMP_NAME'] ?? '';
+                    $owner_id   = $r['OWNER_ID_NO'] ?? $r['EMP_ID'] ?? '';
+                    $sheet->setCellValueExplicit('A' . $row, (string)$owner_id, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                    $sheet->setCellValue('B' . $row, $owner_name);
+                    $sheet->setCellValueExplicit('C' . $row, (string)($r['BANK_ACCOUNT'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
                     $sheet->setCellValue('D' . $row, $r['BANK_NO'] ?? 0);
                     $sheet->setCellValue('E' . $row, (float)($r['TOTAL_AMOUNT'] ?? 0));
-                    $sheet->setCellValue('F' . $row, $r['IBAN'] ?? '');
+                    $sheet->setCellValueExplicit('F' . $row, (string)($r['IBAN'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
                     $row++;
                 }
                 if ($row > 2) $sheet->getStyle('E2:E' . ($row - 1))->getNumberFormat()->setFormatCode('#,##0.00');

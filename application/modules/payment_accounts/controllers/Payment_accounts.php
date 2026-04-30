@@ -28,7 +28,7 @@ class Payment_accounts extends MY_Controller
     }
 
     // ==================== INDEX ====================
-    function index($page = 1, $branch_no = -1, $emp_no = -1, $is_active = -1, $has_acc = -1)
+    function index($page = 1, $branch_no = -1, $emp_no = -1, $is_active = -1, $has_acc = -1, $has_benef = -1, $the_month = -1)
     {
         $data['title']     = 'إدارة حسابات الصرف';
         $data['content']   = 'payment_accounts_index';
@@ -37,12 +37,14 @@ class Payment_accounts extends MY_Controller
         $data['emp_no']    = $emp_no;
         $data['is_active'] = $is_active;
         $data['has_acc']   = $has_acc;
+        $data['has_benef'] = $has_benef;
+        $data['the_month'] = $the_month;
         $this->_lookup($data);
         $this->load->view('template/template1', $data);
     }
 
     // ==================== PAGINATED LIST ====================
-    function get_page($page = 1, $branch_no = -1, $emp_no = -1, $is_active = -1, $has_acc = -1)
+    function get_page($page = 1, $branch_no = -1, $emp_no = -1, $is_active = -1, $has_acc = -1, $has_benef = -1, $the_month = -1)
     {
         $this->load->library('pagination');
 
@@ -50,6 +52,8 @@ class Payment_accounts extends MY_Controller
         $emp_no    = $this->check_vars($emp_no,    'emp_no');
         $is_active = $this->check_vars($is_active, 'is_active');
         $has_acc   = $this->check_vars($has_acc,   'has_acc');
+        $has_benef = $this->check_vars($has_benef, 'has_benef');
+        $the_month = $this->check_vars($the_month, 'the_month');
 
         if ($this->user->branch != 1) {
             $branch_no = $this->user->branch;
@@ -60,6 +64,8 @@ class Payment_accounts extends MY_Controller
             'branch_no' => ($branch_no !== null && $branch_no !== '') ? intval($branch_no) : null,
             'is_active' => ($is_active !== null && $is_active !== '') ? intval($is_active) : null,
             'has_acc'   => ($has_acc   !== null && $has_acc   !== '') ? intval($has_acc)   : null,
+            'has_benef' => ($has_benef !== null && $has_benef !== '') ? intval($has_benef) : null,
+            'the_month' => ($the_month !== null && $the_month !== '') ? intval($the_month) : null,
         ];
 
         $total_rows = $this->{$this->MODEL_NAME}->employees_count($filters);
@@ -88,6 +94,7 @@ class Payment_accounts extends MY_Controller
         $data['page']       = $page;
         $data['offset']     = $offset;
         $data['totals']     = $totals;
+        $data['the_month']  = $filters['the_month']; // للعرض في الـ header (لو موجود)
 
         $this->load->view('payment_accounts_page', $data);
     }
@@ -115,6 +122,8 @@ class Payment_accounts extends MY_Controller
         $emp_no    = $this->check_vars(-1, 'emp_no');
         $is_active = $this->check_vars(-1, 'is_active');
         $has_acc   = $this->check_vars(-1, 'has_acc');
+        $has_benef = $this->check_vars(-1, 'has_benef');
+        $the_month = $this->check_vars(-1, 'the_month');
 
         if ($this->user->branch != 1) {
             $branch_no = $this->user->branch;
@@ -125,6 +134,8 @@ class Payment_accounts extends MY_Controller
             'branch_no' => ($branch_no !== null && $branch_no !== '') ? intval($branch_no) : null,
             'is_active' => ($is_active !== null && $is_active !== '') ? intval($is_active) : null,
             'has_acc'   => ($has_acc   !== null && $has_acc   !== '') ? intval($has_acc)   : null,
+            'has_benef' => ($has_benef !== null && $has_benef !== '') ? intval($has_benef) : null,
+            'the_month' => ($the_month !== null && $the_month !== '') ? intval($the_month) : null,
         ];
 
         $rows = $this->{$this->MODEL_NAME}->employees_list($filters, 0, 999999);
@@ -268,7 +279,10 @@ class Payment_accounts extends MY_Controller
     {
         $beneficiary_id = $this->input->post('beneficiary_id') ?: null;
 
+        // ⏸️ TEMPORARILY DISABLED — التحقق من المرفقات للمستفيد
+        // (سيُعاد تشغيله لاحقاً — راجع طارق قبل الإلغاء)
         // Validation: لا يُسمح بربط حساب بمستفيد بدون مرفقات (مستندات إثبات)
+        /*
         if ($beneficiary_id) {
             $this->load->model('attachments/attachment_model');
             $atts = $this->attachment_model->get_list($beneficiary_id, 'payment_benef', 0);
@@ -282,6 +296,7 @@ class Payment_accounts extends MY_Controller
                 return;
             }
         }
+        */
 
         $data = [
             'emp_no'         => $this->input->post('emp_no'),
@@ -773,6 +788,70 @@ class Payment_accounts extends MY_Controller
         echo json_encode(['ok' => true, 'data' => is_array($rows) ? $rows : []]);
     }
 
+    // تصدير Excel لحسابات موظفين مزود معين
+    function provider_accounts_export_excel($pid = null, $only_active = 0)
+    {
+        $pid = $pid ?: $this->input->get('provider_id');
+        if (!$pid) { show_error('provider_id required'); return; }
+
+        $rows = $this->{$this->MODEL_NAME}->provider_accounts($pid, (int)$only_active);
+        if (!is_array($rows) || count($rows) === 0) {
+            echo '<script>alert("لا توجد بيانات للتصدير"); history.back();</script>'; return;
+        }
+
+        // اسم المزود لـ filename + title
+        $provider = $this->{$this->MODEL_NAME}->provider_get($pid);
+        $prov_name = (is_array($provider) && !empty($provider))
+            ? ($provider[0]['PROVIDER_NAME'] ?? 'مزود')
+            : 'مزود';
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('حسابات ' . mb_substr($prov_name, 0, 25));
+        $sheet->setRightToLeft(true);
+
+        $headers = ['م', 'رقم الموظف', 'اسم الموظف', 'المقر', 'رقم الحساب', 'IBAN', 'الفرع', 'صاحب الحساب', 'افتراضي', 'الحالة'];
+        $lastCol = chr(64 + count($headers)); // J
+        $col = 'A';
+        foreach ($headers as $h) { $sheet->setCellValue($col . '1', $h); $col++; }
+        $sheet->getStyle("A1:{$lastCol}1")->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle("A1:{$lastCol}1")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('1e293b');
+        $sheet->getStyle("A1:{$lastCol}1")->getAlignment()
+            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        $rowNum = 2; $count = 1;
+        foreach ($rows as $r) {
+            $acc = $r['ACCOUNT_NO'] ?? ($r['WALLET_NUMBER'] ?? '');
+            $sheet->setCellValue('A' . $rowNum, $count++);
+            $sheet->setCellValue('B' . $rowNum, $r['EMP_NO'] ?? '');
+            $sheet->setCellValue('C' . $rowNum, $r['EMP_NAME'] ?? '');
+            $sheet->setCellValue('D' . $rowNum, $r['BRANCH_NAME'] ?? '');
+            $sheet->setCellValueExplicit('E' . $rowNum, (string)$acc, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit('F' . $rowNum, (string)($r['IBAN'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('G' . $rowNum, $r['BANK_BRANCH_NAME'] ?? '');
+            $sheet->setCellValue('H' . $rowNum, $r['OWNER_NAME'] ?? '');
+            $sheet->setCellValue('I' . $rowNum, ((int)($r['IS_DEFAULT'] ?? 0) === 1) ? 'نعم' : '');
+            $sheet->setCellValue('J' . $rowNum, ((int)($r['IS_ACTIVE'] ?? 0) === 1) ? 'نشط' : 'موقوف');
+            $rowNum++;
+        }
+
+        // Auto width + borders
+        foreach (range('A', $lastCol) as $c) { $sheet->getColumnDimension($c)->setAutoSize(true); }
+        $sheet->getStyle("A1:{$lastCol}" . ($rowNum - 1))->getBorders()->getAllBorders()
+            ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+        $filename = 'accounts_' . preg_replace('/[^a-z0-9_\-]/i', '_', $prov_name) . '_' . date('Ymd_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+
     function provider_branches_json()
     {
         $pid = $this->input->get_post('provider_id');
@@ -802,13 +881,14 @@ class Payment_accounts extends MY_Controller
     function branch_save()
     {
         $data = [
-            'provider_id' => $this->input->post('provider_id'),
-            'name'        => $this->input->post('name'),
-            'print_no'    => $this->input->post('print_no'),
-            'address'     => $this->input->post('address'),
-            'phone1'      => $this->input->post('phone1'),
-            'phone2'      => $this->input->post('phone2'),
-            'fax'         => $this->input->post('fax'),
+            'provider_id'    => $this->input->post('provider_id'),
+            'name'           => $this->input->post('name'),
+            'legacy_bank_no' => $this->input->post('legacy_bank_no'),
+            'print_no'       => $this->input->post('print_no'),
+            'address'        => $this->input->post('address'),
+            'phone1'         => $this->input->post('phone1'),
+            'phone2'         => $this->input->post('phone2'),
+            'fax'            => $this->input->post('fax'),
         ];
 
         $bid = $this->input->post('branch_id');

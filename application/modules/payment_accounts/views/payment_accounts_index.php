@@ -88,6 +88,22 @@ echo AntiForgeryToken();
                                     <option value="0">بدون حساب نشط</option>
                                 </select>
                             </div>
+
+                            <div class="form-group col-md-2">
+                                <label>المستفيدون</label>
+                                <select name="has_benef" id="dp_has_benef" class="form-control">
+                                    <option value="">— الكل —</option>
+                                    <option value="1">عنده مستفيد</option>
+                                    <option value="0">بدون مستفيد</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group col-md-2">
+                                <label>الشهر <small class="text-muted" style="font-size:.65rem">(YYYYMM)</small></label>
+                                <input type="text" name="the_month" id="txt_the_month" class="form-control"
+                                       placeholder="مثال: 202511" maxlength="6"
+                                       title="لو تركته فارغاً → يعرض الحالة الحالية. لو حددته → يعرض حالة الموظف في ذلك الشهر من EMPLOYEES_MONTH">
+                            </div>
                         </div>
                         <hr>
                         <div class="flex-shrink-0">
@@ -103,12 +119,15 @@ echo AntiForgeryToken();
                         </div>
                         <hr>
 
-                        <!-- بطاقات إحصائيات سريعة -->
+                        <!-- بطاقات إحصائيات سريعة (البطاقات قابلة للنقر — تفلتر النتائج) -->
                         <div class="pa-row mb-3" id="paSummary" style="display:none">
                             <div class="pa-card"><div class="c-label"><i class="fa fa-users"></i> إجمالي الموظفين</div><div class="c-val" id="paTotal">—</div></div>
                             <div class="pa-card c-bank"><div class="c-label"><i class="fa fa-bank"></i> حسابات بنكية</div><div class="c-val" id="paBankCount">—</div></div>
                             <div class="pa-card c-wallet"><div class="c-label"><i class="fa fa-mobile"></i> محافظ</div><div class="c-val" id="paWalletCount">—</div></div>
-                            <div class="pa-card c-benef"><div class="c-label"><i class="fa fa-user-circle-o"></i> مستفيدون</div><div class="c-val" id="paBenefCount">—</div></div>
+                            <div class="pa-card c-benef pa-card-clickable" onclick="filterByBenef(); return false;" title="انقر لعرض الموظفين الذين عندهم مستفيدون فقط">
+                                <div class="c-label"><i class="fa fa-user-circle-o"></i> مستفيدون <i class="fa fa-filter" style="font-size:.65rem;opacity:.6"></i></div>
+                                <div class="c-val" id="paBenefCount">—</div>
+                            </div>
                         </div>
 
                         <div id="container">
@@ -132,6 +151,8 @@ echo AntiForgeryToken();
         .pa-card.c-bank{background:#eff6ff;border-color:#bfdbfe}.pa-card.c-bank .c-val{color:#1e40af}
         .pa-card.c-wallet{background:#f5f3ff;border-color:#c4b5fd}.pa-card.c-wallet .c-val{color:#6d28d9}
         .pa-card.c-benef{background:#fef3c7;border-color:#fde68a}.pa-card.c-benef .c-val{color:#92400e}
+        .pa-card-clickable{cursor:pointer;transition:transform .12s,box-shadow .12s}
+        .pa-card-clickable:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(146,64,14,.18);border-color:#f59e0b}
     </style>
 
 <?php
@@ -167,13 +188,22 @@ $scripts = <<<SCRIPT
     function values_search(add_page){
         var values = {
             page: 1,
-            branch_no: $('#dp_branch_no').val() || '',
-            emp_no:    $('#dp_emp_no').val()    || '',
-            is_active: $('#dp_is_active').val() || '',
-            has_acc:   $('#dp_has_acc').val()   || ''
+            branch_no: $('#dp_branch_no').val()  || '',
+            emp_no:    $('#dp_emp_no').val()     || '',
+            is_active: $('#dp_is_active').val()  || '',
+            has_acc:   $('#dp_has_acc').val()    || '',
+            has_benef: $('#dp_has_benef').val()  || '',
+            the_month: ($('#txt_the_month').val() || '').trim()
         };
         if(add_page == 0) delete values.page;
         return values;
+    }
+
+    // اختصار: تفلتر النتائج لتعرض الموظفين الذين عندهم مستفيدون فقط
+    function filterByBenef(){
+        $('#dp_has_benef').val('1');
+        $('#dp_is_active').val(''); // الكل (لأن المستفيدين أحياناً للمتوفين)
+        search();
     }
 
     function search(){
@@ -199,6 +229,8 @@ $scripts = <<<SCRIPT
         $('.sel2').select2('val', '');
         $('#dp_is_active').val('1');
         $('#dp_has_acc').val('1');
+        $('#dp_has_benef').val('');
+        $('#txt_the_month').val('');
         $('#paSummary').hide();
         $('#container').html('<div class="alert alert-light text-center text-muted py-4" id="paInitMsg"><i class="fa fa-search fa-2x d-block mb-2" style="opacity:.4"></i>اضغط <b>استعلام</b> لعرض النتائج</div>');
     }

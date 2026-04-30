@@ -9,6 +9,7 @@ $delete_url         = base_url("$MODULE_NAME/$TB_NAME/provider_delete");
 $toggle_url         = base_url("$MODULE_NAME/$TB_NAME/provider_toggle_active");
 $export_url         = base_url("$MODULE_NAME/$TB_NAME/providers_export_excel");
 $accounts_json_url  = base_url("$MODULE_NAME/$TB_NAME/provider_accounts_json");
+$accounts_xlsx_url  = base_url("$MODULE_NAME/$TB_NAME/provider_accounts_export_excel");
 $branches_json_url  = base_url("$MODULE_NAME/$TB_NAME/provider_branches_json");
 $branches_all_url   = base_url("$MODULE_NAME/$TB_NAME/branches_list_json");
 $providers_json_url = base_url("$MODULE_NAME/$TB_NAME/providers_list_json");
@@ -234,7 +235,7 @@ echo AntiForgeryToken();
 
     <!-- ══════════ Modal: حسابات/فروع ══════════ -->
     <div class="modal fade" id="provListModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
             <div class="modal-content" style="border:0;border-radius:12px;overflow:hidden">
                 <div class="modal-header py-2" style="background:#1e293b">
                     <h6 class="modal-title text-white fw-bold">
@@ -242,12 +243,40 @@ echo AntiForgeryToken();
                     </h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="provListBody">
+                <!-- Toolbar: بحث + عدّاد + تصدير -->
+                <div id="provListToolbar" class="d-none px-3 py-2" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:5">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-6">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="fa fa-search"></i></span>
+                                <input type="text" id="provListSearch" class="form-control" placeholder="بحث برقم الموظف، الاسم، رقم الحساب، IBAN...">
+                                <button class="btn btn-outline-secondary" type="button" id="provListSearchClear" title="مسح"><i class="fa fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <span class="badge bg-secondary" style="font-size:.78rem">
+                                <i class="fa fa-list-ol me-1"></i>
+                                <span id="provListCountVisible">0</span> / <span id="provListCountTotal">0</span> موظف
+                            </span>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <button type="button" id="provListExportBtn" class="btn btn-success btn-sm">
+                                <i class="fa fa-file-excel me-1"></i> تصدير Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-body" id="provListBody" style="max-height:70vh">
                     <div class="text-center py-4 text-muted"><i class="fa fa-spinner fa-spin"></i> جاري التحميل...</div>
                 </div>
             </div>
         </div>
     </div>
+    <style>
+        #provListBody table.acc-list-tbl thead th {position:sticky;top:0;background:#f1f5f9;z-index:3;box-shadow:0 1px 0 #e2e8f0}
+        #provListBody table.acc-list-tbl tbody tr.row-hidden {display:none}
+        #provListBody table.acc-list-tbl tbody tr:hover {background:#fffbeb}
+    </style>
 
     <!-- ══════════ Modal: إضافة/تعديل فرع ══════════ -->
     <div class="modal fade" id="branchEditModal" tabindex="-1" aria-hidden="true">
@@ -270,11 +299,15 @@ echo AntiForgeryToken();
                         </div>
 
                         <div class="row g-2 mt-1">
-                            <div class="form-group col-md-8">
+                            <div class="form-group col-md-3">
+                                <label class="fw-bold" style="font-size:.78rem">رقم الفرع <span class="text-danger">*</span></label>
+                                <input type="number" id="br_legacy_bank_no" name="legacy_bank_no" class="form-control" style="direction:ltr" min="1" placeholder="مثال: 100">
+                            </div>
+                            <div class="form-group col-md-6">
                                 <label class="fw-bold" style="font-size:.78rem">اسم الفرع <span class="text-danger">*</span></label>
                                 <input type="text" id="br_name" name="name" class="form-control" placeholder="بنك فلسطين - فرع الرمال">
                             </div>
-                            <div class="form-group col-md-4">
+                            <div class="form-group col-md-3">
                                 <label class="fw-bold" style="font-size:.78rem">رقم الطباعة</label>
                                 <input type="number" id="br_print_no" name="print_no" class="form-control" style="direction:ltr">
                             </div>
@@ -374,6 +407,7 @@ $scripts = <<<SCRIPT
     var provDeleteUrl   = "{$delete_url}";
     var provToggleUrl   = "{$toggle_url}";
     var provAccountsUrl = "{$accounts_json_url}";
+    var provAccountsXlsx= "{$accounts_xlsx_url}";
     var provBranchesUrl = "{$branches_json_url}";
     var branchesAllUrl  = "{$branches_all_url}";
     var providersJsonUrl= "{$providers_json_url}";
@@ -571,23 +605,37 @@ $scripts = <<<SCRIPT
         bootstrap.Modal.getOrCreateInstance(document.getElementById('provDetailsModal')).show();
     }
 
+    var _provListCurrent = { id: null, name: '' };
+
     function showAccounts(provId, provName){
+        _provListCurrent = { id: provId, name: provName };
         $('#provListIcon').attr('class', 'fa fa-users me-1');
         $('#provListTitle').text('حسابات الموظفين — ' + provName);
         $('#provListBody').html('<div class="text-center py-4 text-muted"><i class="fa fa-spinner fa-spin"></i> جاري التحميل...</div>');
+        $('#provListToolbar').addClass('d-none');
+        $('#provListSearch').val('');
         bootstrap.Modal.getOrCreateInstance(document.getElementById('provListModal')).show();
         get_data(provAccountsUrl, { provider_id: provId, only_active: 0 }, function(resp){
             var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
             var rows = (j && j.data) ? j.data : [];
-            if (rows.length === 0) { $('#provListBody').html('<div class="alert alert-light text-center py-3">لا توجد حسابات</div>'); return; }
-            var html = '<table class="table table-bordered table-sm" style="font-size:.78rem"><thead class="table-light"><tr>';
-            html += '<th>#</th><th>الموظف</th><th>المقر</th><th>رقم الحساب</th><th>IBAN</th><th>الفرع</th><th>افتراضي</th><th>الحالة</th>';
+            if (rows.length === 0) {
+                $('#provListBody').html('<div class="alert alert-light text-center py-3">لا توجد حسابات</div>');
+                return;
+            }
+            var html = '<table class="table table-bordered table-sm acc-list-tbl mb-0" style="font-size:.78rem"><thead><tr>';
+            html += '<th style="width:40px">#</th><th>الموظف</th><th>المقر</th><th>رقم الحساب</th><th>IBAN</th><th>الفرع</th><th style="width:80px">افتراضي</th><th style="width:75px">الحالة</th>';
             html += '</tr></thead><tbody>';
             for (var i = 0; i < rows.length; i++) {
                 var r = rows[i];
                 var acc = r.ACCOUNT_NO || r.WALLET_NUMBER || '—';
-                html += '<tr>';
-                html += '<td>' + (i+1) + '</td>';
+                // searchable text on the row (lowercase, all key fields combined)
+                var search = (
+                    (r.EMP_NO||'') + ' ' + (r.EMP_NAME||'') + ' ' + (r.BRANCH_NAME||'') + ' ' +
+                    (r.ACCOUNT_NO||'') + ' ' + (r.WALLET_NUMBER||'') + ' ' + (r.IBAN||'') + ' ' +
+                    (r.BANK_BRANCH_NAME||'') + ' ' + (r.OWNER_NAME||'')
+                ).toString().toLowerCase();
+                html += '<tr data-search="' + search.replace(/"/g, '&quot;') + '">';
+                html += '<td class="row-num">' + (i+1) + '</td>';
                 html += '<td><b>' + (r.EMP_NO||'') + '</b><br><small>' + (r.EMP_NAME||'') + '</small></td>';
                 html += '<td>' + (r.BRANCH_NAME||'—') + '</td>';
                 html += '<td style="direction:ltr;font-family:monospace">' + acc + '</td>';
@@ -599,8 +647,54 @@ $scripts = <<<SCRIPT
             }
             html += '</tbody></table>';
             $('#provListBody').html(html);
+
+            // فعّل الـ toolbar وحدّث العدّادات
+            $('#provListCountTotal').text(rows.length);
+            $('#provListCountVisible').text(rows.length);
+            $('#provListToolbar').removeClass('d-none');
         }, 'json');
     }
+
+    // البحث المحلي: يفلتر الصفوف بدون round-trip للسيرفر
+    function _filterProvList(){
+        var q = ($('#provListSearch').val() || '').trim().toLowerCase();
+        var $rows = $('#provListBody table.acc-list-tbl tbody tr');
+        if (!q) {
+            $rows.removeClass('row-hidden');
+            // أعد ترقيم الصفوف 1..N
+            $rows.each(function(i){ $(this).find('.row-num').text(i+1); });
+            $('#provListCountVisible').text($rows.length);
+            return;
+        }
+        var visible = 0;
+        $rows.each(function(){
+            var match = ($(this).attr('data-search') || '').indexOf(q) !== -1;
+            if (match) {
+                $(this).removeClass('row-hidden');
+                visible++;
+                $(this).find('.row-num').text(visible);
+            } else {
+                $(this).addClass('row-hidden');
+            }
+        });
+        $('#provListCountVisible').text(visible);
+    }
+
+    // البحث: input بـ debounce بسيط
+    var _provListSearchTimer;
+    $(document).on('input', '#provListSearch', function(){
+        clearTimeout(_provListSearchTimer);
+        _provListSearchTimer = setTimeout(_filterProvList, 120);
+    });
+    $(document).on('click', '#provListSearchClear', function(){
+        $('#provListSearch').val('').trigger('input').focus();
+    });
+
+    // تصدير Excel: يفتح URL مباشر بـ provider_id
+    $(document).on('click', '#provListExportBtn', function(){
+        if (!_provListCurrent.id) return;
+        window.location.href = provAccountsXlsx + '?provider_id=' + encodeURIComponent(_provListCurrent.id) + '&only_active=0';
+    });
 
     function showBranches(provId, provName){
         _curBranchProv = { id: provId, name: provName };
@@ -625,14 +719,16 @@ $scripts = <<<SCRIPT
             }
             var html = addBtn;
             html += '<table class="table table-bordered table-sm" style="font-size:.78rem"><thead class="table-light"><tr>';
-            html += '<th style="width:35px">#</th><th>اسم الفرع</th><th style="width:90px">رقم الطباعة</th><th>العنوان</th><th style="width:110px">الهاتف</th><th style="width:75px">الحالة</th><th style="width:95px">إجراءات</th>';
+            html += '<th style="width:35px">#</th><th style="width:80px">رقم الفرع</th><th>اسم الفرع</th><th style="width:90px">رقم الطباعة</th><th>العنوان</th><th style="width:110px">الهاتف</th><th style="width:75px">الحالة</th><th style="width:95px">إجراءات</th>';
             html += '</tr></thead><tbody>';
             for (var i = 0; i < rows.length; i++) {
                 var r = rows[i];
                 var brJson = JSON.stringify(r).replace(/"/g, '&quot;');
                 var isActive = parseInt(r.IS_ACTIVE) === 1;
+                var brNoBadge = r.LEGACY_BANK_NO ? '<span class="badge bg-primary" style="font-size:.78rem;direction:ltr">' + r.LEGACY_BANK_NO + '</span>' : '<span class="text-muted">—</span>';
                 html += '<tr>';
                 html += '<td>' + (i+1) + '</td>';
+                html += '<td>' + brNoBadge + '</td>';
                 html += '<td><b>' + (r.BRANCH_NAME||'') + '</b></td>';
                 html += '<td>' + (r.PRINT_NO||'—') + '</td>';
                 html += '<td>' + (r.ADDRESS||'—') + '</td>';
@@ -676,6 +772,7 @@ $scripts = <<<SCRIPT
         $('#br_provider_id').val(b.PROVIDER_ID || _curBranchProv.id || '');
         $('#br_provider_name').val(b.PROVIDER_NAME || _curBranchProv.name || '');
         $('#br_name').val(b.BRANCH_NAME || '');
+        $('#br_legacy_bank_no').val(b.LEGACY_BANK_NO || '');
         $('#br_print_no').val(b.PRINT_NO || '');
         $('#br_address').val(b.ADDRESS || '');
         $('#br_phone1').val(b.PHONE1 || '');
@@ -687,6 +784,8 @@ $scripts = <<<SCRIPT
     }
 
     function saveBranch(){
+        var brNo = $('#br_legacy_bank_no').val();
+        if(!brNo || parseInt(brNo) <= 0){ warning_msg('تنبيه', 'رقم الفرع مطلوب'); return; }
         if(!$('#br_name').val().trim()){ warning_msg('تنبيه', 'اسم الفرع مطلوب'); return; }
         if(!$('#br_provider_id').val()){ warning_msg('تنبيه', 'البنك الرئيسي مفقود'); return; }
         var f = $('#branchEditForm').serialize();
@@ -706,15 +805,16 @@ $scripts = <<<SCRIPT
         var verb = newActive ? 'تفعيل' : 'إيقاف';
         if(!confirm(verb + ' الفرع: ' + (b.BRANCH_NAME || ''))) return;
         var data = {
-            branch_id:   b.BRANCH_ID,
-            provider_id: b.PROVIDER_ID || _curBranchProv.id || '',
-            name:        b.BRANCH_NAME || '',
-            print_no:    b.PRINT_NO || '',
-            address:     b.ADDRESS || '',
-            phone1:      b.PHONE1 || '',
-            phone2:      b.PHONE2 || '',
-            fax:         b.FAX || '',
-            is_active:   newActive
+            branch_id:      b.BRANCH_ID,
+            provider_id:    b.PROVIDER_ID || _curBranchProv.id || '',
+            name:           b.BRANCH_NAME || '',
+            legacy_bank_no: b.LEGACY_BANK_NO || '',
+            print_no:       b.PRINT_NO || '',
+            address:        b.ADDRESS || '',
+            phone1:         b.PHONE1 || '',
+            phone2:         b.PHONE2 || '',
+            fax:            b.FAX || '',
+            is_active:      newActive
         };
         get_data(branchSaveUrl, data, function(resp){
             var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;

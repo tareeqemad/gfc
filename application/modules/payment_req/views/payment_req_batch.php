@@ -213,6 +213,82 @@ tr.selected-row{background:#eff6ff !important}
     </div>
 </div>
 
+<!-- ══════════ Modal: اختيار طريقة الصرف ══════════ -->
+<div class="modal fade" id="disburseMethodModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border:0;border-radius:12px;overflow:hidden">
+            <div class="modal-header py-2" style="background:#1e293b">
+                <h6 class="modal-title text-white fw-bold">
+                    <i class="fa fa-route me-1"></i> اختر طريقة الصرف لـ <span id="disburseMethodCount">0</span> سجل
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3" style="font-size:.85rem">
+                    <i class="fa fa-info-circle me-1"></i>
+                    الطريقة المختارة بتحدد كيف بتنوّزع المبالغ على حسابات الموظفين.
+                </p>
+                <div class="row g-3">
+                    <!-- الطريقة القديمة -->
+                    <div class="col-md-6">
+                        <div class="card method-card h-100" onclick="_doConfirmWithMethod(1)" style="cursor:pointer;border:2px solid #cbd5e1;transition:all .15s">
+                            <div class="card-body text-center">
+                                <i class="fa fa-bank fa-3x mb-2" style="color:#3b82f6"></i>
+                                <h6 class="fw-bold mb-2">الطريقة القديمة</h6>
+                                <p class="text-muted mb-2" style="font-size:.78rem;line-height:1.5">
+                                    صرف على بنك الموظف المسجّل في<br>
+                                    <code style="font-size:.7rem">DATA.EMPLOYEES.BANK</code>
+                                </p>
+                                <ul class="text-start text-muted mb-0" style="font-size:.75rem;padding-right:1rem">
+                                    <li>سطر واحد لكل موظف</li>
+                                    <li>بدون split — كل المبلغ على الحساب الرئيسي</li>
+                                    <li>متوافق مع البيانات القائمة</li>
+                                </ul>
+                            </div>
+                            <div class="card-footer text-center bg-light py-2">
+                                <button type="button" class="btn btn-primary btn-sm w-100" onclick="event.stopPropagation();_doConfirmWithMethod(1)">
+                                    <i class="fa fa-check"></i> اعتماد بالطريقة القديمة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- الطريقة الجديدة -->
+                    <div class="col-md-6">
+                        <div class="card method-card h-100" onclick="_doConfirmWithMethod(2)" style="cursor:pointer;border:2px solid #cbd5e1;transition:all .15s">
+                            <div class="card-body text-center">
+                                <i class="fa fa-sitemap fa-3x mb-2" style="color:#10b981"></i>
+                                <h6 class="fw-bold mb-2">الطريقة الجديدة <small class="badge bg-success">جديد</small></h6>
+                                <p class="text-muted mb-2" style="font-size:.78rem;line-height:1.5">
+                                    صرف حسب التوزيع المضبوط في<br>
+                                    <code style="font-size:.7rem">PAYMENT_ACCOUNTS_TB</code>
+                                </p>
+                                <ul class="text-start text-muted mb-0" style="font-size:.75rem;padding-right:1rem">
+                                    <li>قد يولّد عدة أسطر للموظف الواحد (split)</li>
+                                    <li>يحترم نسبة/مبلغ ثابت/كامل الباقي</li>
+                                    <li>الموظفين بدون حسابات نشطة يُستثنوا</li>
+                                </ul>
+                            </div>
+                            <div class="card-footer text-center bg-light py-2">
+                                <button type="button" class="btn btn-success btn-sm w-100" onclick="event.stopPropagation();_doConfirmWithMethod(2)">
+                                    <i class="fa fa-check"></i> اعتماد بالطريقة الجديدة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">إلغاء</button>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    .method-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.1)}
+    .method-card:hover[onclick*="1"]{border-color:#3b82f6!important}
+    .method-card:hover[onclick*="2"]{border-color:#10b981!important}
+</style>
+
 <?php
 $batch_history_url  = base_url("$MODULE_NAME/$TB_NAME/batch_history_data");
 $batch_cancel_url_b = base_url("$MODULE_NAME/$TB_NAME/batch_cancel_action");
@@ -878,6 +954,9 @@ function batchExport(){
 }
 
 // ===================== CONFIRM (اعتماد الاحتساب) =====================
+// state داخلي لمعالجة الـ confirm flow
+var _pendingConfirm = null;  // {selectedIds, excludeIds, cnt}
+
 function batchConfirm(){
     var selectedIds = getSelectedDetailIds();
     if(!selectedIds){ danger_msg('تحذير','يجب تحديد موظف واحد على الأقل'); return; }
@@ -889,17 +968,33 @@ function batchConfirm(){
     var selectedSet = {};
     selectedIds.split(',').forEach(function(id){ selectedSet[id] = true; });
     var excludeIds = allIds.filter(function(id){ return !selectedSet[id]; }).join(',');
-
     var cnt = selectedIds.split(',').length;
-    var nl = String.fromCharCode(10);
-    if(!confirm('اعتماد احتساب الصرف لـ '+cnt+' سجل؟' + nl + nl + 'سيتم حفظ الدفعة — بدون صرف فعلي بعد.')) return;
-    _actionInProgress = true;
 
+    _pendingConfirm = {selectedIds: selectedIds, excludeIds: excludeIds, cnt: cnt};
+
+    // افتح modal اختيار الطريقة
+    $('#disburseMethodCount').text(cnt);
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('disburseMethodModal')).show();
+}
+
+// يُستدعى من زر داخل الـ modal بعد اختيار الطريقة
+function _doConfirmWithMethod(method){
+    if(!_pendingConfirm) return;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('disburseMethodModal')).hide();
+
+    _actionInProgress = true;
     $('#btnConfirm').prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> جاري الاعتماد...');
 
-    get_data(batchConfirmUrl, {req_ids: _previewReqIds, exclude_detail_ids: excludeIds}, function(resp){
+    var payload = {
+        req_ids: _previewReqIds,
+        exclude_detail_ids: _pendingConfirm.excludeIds,
+        disburse_method: method
+    };
+
+    get_data(batchConfirmUrl, payload, function(resp){
         var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
         _actionInProgress = false;
+        _pendingConfirm = null;
         $('#btnConfirm').prop('disabled',false).html('<i class="fa fa-check-circle"></i> اعتماد الاحتساب');
         if(j.ok){
             _batchId = j.batch_id;

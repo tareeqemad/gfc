@@ -25,6 +25,7 @@ CREATE OR REPLACE PACKAGE GFC_PAK.DISBURSEMENT_BATCH_PKG AS
   -- ============================================================
   PROCEDURE PAYMENT_REQ_BATCH_CONFIRM (
       P_REQ_IDS VARCHAR2, P_EXCLUDE_DETAIL_IDS VARCHAR2 DEFAULT NULL,
+      P_DISBURSE_METHOD NUMBER DEFAULT 1,
       P_MSG_OUT OUT VARCHAR2
   );
 
@@ -53,6 +54,15 @@ CREATE OR REPLACE PACKAGE GFC_PAK.DISBURSEMENT_BATCH_PKG AS
   PROCEDURE BATCH_HISTORY_GET (
       P_BATCH_ID NUMBER,
       P_REF_CUR_OUT OUT SYS_REFCURSOR, P_MSG_OUT OUT VARCHAR2
+  );
+
+  -- تفاصيل توزيع الصرف لموظف داخل دفعة معينة:
+  -- يعرض كل حسابات الموظف + المبلغ الفعلي المخصّص لكل حساب في هذه الدفعة
+  PROCEDURE BATCH_EMP_ACCOUNTS_GET (
+      P_BATCH_ID    NUMBER,
+      P_EMP_NO      NUMBER,
+      P_REF_CUR_OUT OUT SYS_REFCURSOR,
+      P_MSG_OUT     OUT VARCHAR2
   );
 
   -- ============================================================

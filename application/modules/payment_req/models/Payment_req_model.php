@@ -515,14 +515,17 @@ class Payment_req_model extends MY_Model
     // DISBURSEMENT BATCH — خطوة 1: اعتماد التجهيز
     // Result: BATCH_ID|EMP_COUNT|0   أو   0|0|1|error
     // =========================================================
-    function batch_confirm($req_ids, $exclude_detail_ids = '')
+    function batch_confirm($req_ids, $exclude_detail_ids = '', $disburse_method = 1)
     {
         if ($this->conn->user != 'GFC_PAK') {
             $this->conn = new DBConn();
         }
+        // 1=قديم (DATA.EMPLOYEES) | 2=جديد (PAYMENT_ACCOUNTS_TB + split)
+        $method = in_array((int)$disburse_method, [1, 2], true) ? (int)$disburse_method : 1;
         $params = array(
             array('name' => ':P_REQ_IDS',            'value' => $req_ids,                      'type' => SQLT_CHR, 'length' => 4000),
             array('name' => ':P_EXCLUDE_DETAIL_IDS', 'value' => $exclude_detail_ids ?: null,   'type' => SQLT_CHR, 'length' => 32767),
+            array('name' => ':P_DISBURSE_METHOD',    'value' => $method,                       'type' => '',       'length' => -1),
             array('name' => ':P_MSG_OUT',            'value' => 'MSG_OUT',                     'type' => SQLT_CHR, 'length' => 4000),
         );
         $result = $this->conn->excuteProcedures($this->BATCH_PKG_NAME, 'PAYMENT_REQ_BATCH_CONFIRM', $params);
@@ -674,6 +677,17 @@ class Payment_req_model extends MY_Model
             array('name' => ':MSG_OUT',     'value' => 'MSG_OUT',       'type' => SQLT_CHR, 'length' => 4000),
         );
         return $this->New_rmodel->general_get($this->BATCH_PKG_NAME, 'BATCH_HISTORY_GET', $params);
+    }
+
+    function batch_emp_accounts($batch_id, $emp_no)
+    {
+        $params = array(
+            array('name' => ':P_BATCH_ID',  'value' => (int)$batch_id, 'type' => SQLT_INT,    'length' => -1),
+            array('name' => ':P_EMP_NO',    'value' => (int)$emp_no,   'type' => SQLT_INT,    'length' => -1),
+            array('name' => ':REF_CUR_OUT', 'value' => 'cursor',       'type' => OCI_B_CURSOR),
+            array('name' => ':MSG_OUT',     'value' => 'MSG_OUT',      'type' => SQLT_CHR,    'length' => 4000),
+        );
+        return $this->New_rmodel->general_get($this->BATCH_PKG_NAME, 'BATCH_EMP_ACCOUNTS_GET', $params);
     }
 
     // =========================================================

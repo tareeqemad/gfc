@@ -363,7 +363,7 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
         LEFT JOIN GFC.PAYMENT_PROVIDERS_TB P ON P.PROVIDER_ID = B.PROVIDER_ID
        WHERE B.STATUS = 1
          AND (P_PROVIDER_ID IS NULL OR B.PROVIDER_ID = P_PROVIDER_ID)
-       ORDER BY P.PROVIDER_NAME, B.BRANCH_NAME;
+       ORDER BY P.PROVIDER_NAME, B.LEGACY_BANK_NO NULLS LAST, B.BRANCH_NAME;
     P_MSG_OUT := '1';
   EXCEPTION WHEN OTHERS THEN P_MSG_OUT := SQLERRM;
   END;
@@ -381,23 +381,36 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
   END;
 
   PROCEDURE BRANCH_INSERT (
-      P_PROVIDER_ID NUMBER, P_NAME VARCHAR2, P_PRINT_NO NUMBER,
+      P_PROVIDER_ID NUMBER, P_NAME VARCHAR2, P_LEGACY_BANK_NO NUMBER, P_PRINT_NO NUMBER,
       P_ADDRESS VARCHAR2, P_PHONE1 VARCHAR2, P_PHONE2 VARCHAR2, P_FAX VARCHAR2,
       P_MSG_OUT OUT VARCHAR2
   ) IS
-    V_ID NUMBER;
+    V_ID    NUMBER;
+    V_DUP   NUMBER;
   BEGIN
     IF P_NAME IS NULL OR LENGTH(TRIM(P_NAME)) = 0 THEN
       P_MSG_OUT := 'اسم الفرع مطلوب'; RETURN;
     END IF;
+    IF P_LEGACY_BANK_NO IS NULL OR P_LEGACY_BANK_NO <= 0 THEN
+      P_MSG_OUT := 'رقم الفرع مطلوب'; RETURN;
+    END IF;
+
+    -- فحص التكرار: LEGACY_BANK_NO عليه UK_PAY_BRANCH_LEG (unique عام)
+    SELECT COUNT(*) INTO V_DUP
+      FROM GFC.PAYMENT_BANK_BRANCHES_TB
+     WHERE LEGACY_BANK_NO = P_LEGACY_BANK_NO;
+    IF V_DUP > 0 THEN
+      P_MSG_OUT := 'رقم الفرع ' || P_LEGACY_BANK_NO || ' مستخدم لفرع آخر';
+      RETURN;
+    END IF;
 
     V_ID := GFC_PAK.PAYMENT_BANK_BRANCHES_SEQ.NEXTVAL;
     INSERT INTO GFC.PAYMENT_BANK_BRANCHES_TB (
-      BRANCH_ID, PROVIDER_ID, BRANCH_NAME, PRINT_NO,
+      BRANCH_ID, PROVIDER_ID, BRANCH_NAME, LEGACY_BANK_NO, PRINT_NO,
       ADDRESS, PHONE1, PHONE2, FAX,
       IS_ACTIVE, STATUS, ENTRY_USER, ENTRY_DATE
     ) VALUES (
-      V_ID, P_PROVIDER_ID, P_NAME, P_PRINT_NO,
+      V_ID, P_PROVIDER_ID, P_NAME, P_LEGACY_BANK_NO, P_PRINT_NO,
       P_ADDRESS, P_PHONE1, P_PHONE2, P_FAX,
       1, 1, USER_PKG.GET_USER_ID, SYSDATE
     );
@@ -407,23 +420,42 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
 
   PROCEDURE BRANCH_UPDATE (
       P_BRANCH_ID   NUMBER,
-      P_PROVIDER_ID NUMBER, P_NAME VARCHAR2, P_PRINT_NO NUMBER,
+      P_PROVIDER_ID NUMBER, P_NAME VARCHAR2, P_LEGACY_BANK_NO NUMBER, P_PRINT_NO NUMBER,
       P_ADDRESS VARCHAR2, P_PHONE1 VARCHAR2, P_PHONE2 VARCHAR2, P_FAX VARCHAR2,
       P_IS_ACTIVE   NUMBER,
       P_MSG_OUT     OUT VARCHAR2
   ) IS
+    V_DUP NUMBER;
   BEGIN
+    IF P_NAME IS NULL OR LENGTH(TRIM(P_NAME)) = 0 THEN
+      P_MSG_OUT := 'اسم الفرع مطلوب'; RETURN;
+    END IF;
+    IF P_LEGACY_BANK_NO IS NULL OR P_LEGACY_BANK_NO <= 0 THEN
+      P_MSG_OUT := 'رقم الفرع مطلوب'; RETURN;
+    END IF;
+
+    -- فحص التكرار: استثناء الفرع الحالي
+    SELECT COUNT(*) INTO V_DUP
+      FROM GFC.PAYMENT_BANK_BRANCHES_TB
+     WHERE LEGACY_BANK_NO = P_LEGACY_BANK_NO
+       AND BRANCH_ID     <> P_BRANCH_ID;
+    IF V_DUP > 0 THEN
+      P_MSG_OUT := 'رقم الفرع ' || P_LEGACY_BANK_NO || ' مستخدم لفرع آخر';
+      RETURN;
+    END IF;
+
     UPDATE GFC.PAYMENT_BANK_BRANCHES_TB SET
-      PROVIDER_ID = P_PROVIDER_ID,
-      BRANCH_NAME = P_NAME,
-      PRINT_NO    = P_PRINT_NO,
-      ADDRESS     = P_ADDRESS,
-      PHONE1      = P_PHONE1,
-      PHONE2      = P_PHONE2,
-      FAX         = P_FAX,
-      IS_ACTIVE   = NVL(P_IS_ACTIVE, 1),
-      UPDATE_USER = USER_PKG.GET_USER_ID,
-      UPDATE_DATE = SYSDATE
+      PROVIDER_ID    = P_PROVIDER_ID,
+      BRANCH_NAME    = P_NAME,
+      LEGACY_BANK_NO = P_LEGACY_BANK_NO,
+      PRINT_NO       = P_PRINT_NO,
+      ADDRESS        = P_ADDRESS,
+      PHONE1         = P_PHONE1,
+      PHONE2         = P_PHONE2,
+      FAX            = P_FAX,
+      IS_ACTIVE      = NVL(P_IS_ACTIVE, 1),
+      UPDATE_USER    = USER_PKG.GET_USER_ID,
+      UPDATE_DATE    = SYSDATE
      WHERE BRANCH_ID = P_BRANCH_ID;
 
     IF SQL%ROWCOUNT = 0 THEN P_MSG_OUT := 'الفرع غير موجود'; RETURN; END IF;
@@ -584,7 +616,7 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
       SELECT A.ACC_ID, A.EMP_NO, A.BENEFICIARY_ID,
              A.PROVIDER_ID, P.PROVIDER_NAME, P.PROVIDER_TYPE,
              P.REQUIRES_IBAN, P.REQUIRES_PHONE,
-             A.BRANCH_ID, BR.BRANCH_NAME,
+             A.BRANCH_ID, BR.BRANCH_NAME, BR.LEGACY_BANK_NO,
              A.ACCOUNT_NO, A.IBAN, A.WALLET_NUMBER,
              A.OWNER_ID_NO, A.OWNER_NAME, A.OWNER_PHONE,
              A.IS_DEFAULT, A.SPLIT_TYPE, A.SPLIT_VALUE, A.SPLIT_ORDER,
@@ -920,27 +952,51 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
       END IF;
     END LOOP;
 
-    -- مرحلة 3: الباقي (حساب واحد يأخذ المتبقي)
-    FOR R IN (
-      SELECT ACC_ID, SPLIT_ORDER
+    -- مرحلة 3: الباقي — يُقسم بالتساوي بين كل الحسابات بـ "كامل الباقي"
+    -- (ليطابق سلوك الواجهة renderDistBar)
+    DECLARE
+      V_REM_CNT NUMBER;
+      V_IDX     NUMBER := 0;
+      V_PER     NUMBER;
+      V_LAST_AMT NUMBER;
+    BEGIN
+      SELECT COUNT(*) INTO V_REM_CNT
         FROM GFC.PAYMENT_ACCOUNTS_TB
        WHERE EMP_NO = V_EMP_NO AND IS_ACTIVE = 1 AND STATUS = 1
-         AND SPLIT_TYPE = C_SPLIT_REMAINING
-       ORDER BY SPLIT_ORDER, ACC_ID
-    ) LOOP
-      IF V_REMAIN > 0 THEN
-        INSERT INTO GFC.PAYMENT_REQ_DETAIL_SPLIT_TB (
-          SPLIT_ID, DETAIL_ID, ACC_ID, AMOUNT, PCT_USED,
-          SOURCE_TYPE, AUTO_AMOUNT, ENTRY_USER, ENTRY_DATE
-        ) VALUES (
-          GFC_PAK.PAYMENT_REQ_DETAIL_SPLIT_SEQ.NEXTVAL, P_DETAIL_ID, R.ACC_ID, V_REMAIN,
-          CASE WHEN V_AMOUNT > 0 THEN ROUND(V_REMAIN * 100 / V_AMOUNT, 2) ELSE 0 END,
-          C_SPLIT_SOURCE_AUTO, V_REMAIN, USER_PKG.GET_USER_ID, SYSDATE
-        );
-        V_REMAIN := 0;
+         AND SPLIT_TYPE = C_SPLIT_REMAINING;
+
+      IF V_REM_CNT > 0 AND V_REMAIN > 0 THEN
+        V_PER := ROUND(V_REMAIN / V_REM_CNT, 2);
+
+        FOR R IN (
+          SELECT ACC_ID, SPLIT_ORDER
+            FROM GFC.PAYMENT_ACCOUNTS_TB
+           WHERE EMP_NO = V_EMP_NO AND IS_ACTIVE = 1 AND STATUS = 1
+             AND SPLIT_TYPE = C_SPLIT_REMAINING
+           ORDER BY SPLIT_ORDER, ACC_ID
+        ) LOOP
+          V_IDX := V_IDX + 1;
+          -- آخر حساب يأخذ ما تبقى فعلياً (لتفادي أخطاء التقريب)
+          IF V_IDX = V_REM_CNT THEN
+            V_LAST_AMT := V_REMAIN;
+          ELSE
+            V_LAST_AMT := LEAST(V_PER, V_REMAIN);
+          END IF;
+
+          IF V_LAST_AMT > 0 THEN
+            INSERT INTO GFC.PAYMENT_REQ_DETAIL_SPLIT_TB (
+              SPLIT_ID, DETAIL_ID, ACC_ID, AMOUNT, PCT_USED,
+              SOURCE_TYPE, AUTO_AMOUNT, ENTRY_USER, ENTRY_DATE
+            ) VALUES (
+              GFC_PAK.PAYMENT_REQ_DETAIL_SPLIT_SEQ.NEXTVAL, P_DETAIL_ID, R.ACC_ID, V_LAST_AMT,
+              CASE WHEN V_AMOUNT > 0 THEN ROUND(V_LAST_AMT * 100 / V_AMOUNT, 2) ELSE 0 END,
+              C_SPLIT_SOURCE_AUTO, V_LAST_AMT, USER_PKG.GET_USER_ID, SYSDATE
+            );
+            V_REMAIN := V_REMAIN - V_LAST_AMT;
+          END IF;
+        END LOOP;
       END IF;
-      EXIT;  -- حساب واحد للباقي
-    END LOOP;
+    END;
 
     P_MSG_OUT := '1';
   EXCEPTION
@@ -1113,6 +1169,8 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
       P_BRANCH_NO   NUMBER DEFAULT NULL,
       P_IS_ACTIVE   NUMBER DEFAULT NULL,
       P_HAS_ACC     NUMBER DEFAULT NULL,
+      P_HAS_BENEF   NUMBER DEFAULT NULL,
+      P_THE_MONTH   NUMBER DEFAULT NULL,   -- لو مُحدّد: حالة الموظف وقتها من DATA.EMPLOYEES_MONTH
       P_OFFSET      NUMBER DEFAULT 0,
       P_LIMIT       NUMBER DEFAULT 50,
       P_REF_CUR_OUT OUT SYS_REFCURSOR,
@@ -1164,29 +1222,48 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
       ),
       PAGED AS (
         -- نطبّق الفلاتر + الـ pagination قبل الـ joins (لتجنّب احتساب 1800 صف عند pagination)
+        -- لو P_THE_MONTH مُحدّد: نستخدم EMPLOYEES_MONTH لاستعلام حالة الشهر التاريخية
+        -- ملاحظة: EMPLOYEES_MONTH عادةً يحتوي النشطين فقط — فالغياب يعني "مش فعّال ذاك الشهر"
         SELECT E.NO                              AS EMP_NO,
                E.NAME                            AS EMP_NAME,
                E.ID                              AS ID_NO,
-               NVL(E.IS_ACTIVE, 0)               AS IS_ACTIVE,
+               -- IS_ACTIVE: لو شهر مُحدّد، نستخدم منطق ذكي:
+               --   فيه سجل في EM → IS_ACTIVE من EM
+               --   ما فيه سجل  → 0 (مش فعّال ذاك الشهر)
+               -- وإلا (لا يوجد شهر) → E.IS_ACTIVE الحالي
+               CASE
+                 WHEN P_THE_MONTH IS NOT NULL THEN
+                   CASE WHEN EM.NO IS NOT NULL THEN NVL(EM.IS_ACTIVE, 0) ELSE 0 END
+                 ELSE NVL(E.IS_ACTIVE, 0)
+               END                               AS IS_ACTIVE,
                EMP_PKG.GET_EMP_BRANCH_NAME(E.NO) AS BRANCH_NAME,
                ROW_NUMBER() OVER (ORDER BY E.NO) AS RN
           FROM DATA.EMPLOYEES E
           LEFT JOIN ACC_AGG AC ON AC.EMP_NO = E.NO
+          LEFT JOIN BNF_AGG BN ON BN.EMP_NO = E.NO
+          LEFT JOIN DATA.EMPLOYEES_MONTH EM ON EM.NO = E.NO AND EM.THE_MONTH = P_THE_MONTH
          WHERE (P_EMP_NO    IS NULL OR E.NO = P_EMP_NO)
            AND (P_BRANCH_NO IS NULL OR EMP_PKG.GET_EMP_BRANCH(E.NO) = P_BRANCH_NO)
-           -- P_IS_ACTIVE: 1=فعّال، 0=متقاعد، 2=متوفى، 4=حسابه مغلق من البنك، NULL=الكل
+           -- لو شهر مُحدّد: نقتصر على من عنده سجل في EMPLOYEES_MONTH (snapshot الشهر — strict)
+           -- بدون شهر: كل الموظفين
+           AND (P_THE_MONTH IS NULL OR EM.NO IS NOT NULL)
+           -- P_IS_ACTIVE: 1=فعّال، 0=متقاعد، 2=متوفى، 4=حسابه مغلق
            AND (P_IS_ACTIVE IS NULL
-                OR (P_IS_ACTIVE = 1 AND NVL(E.IS_ACTIVE, 0) = 1
-                                     AND NVL(AC.HAS_DECEASED, 0) = 0
-                                     AND NVL(AC.HAS_FROZEN, 0)   = 0)
-                OR (P_IS_ACTIVE = 0 AND NVL(E.IS_ACTIVE, 0) = 0
-                                     AND NVL(AC.HAS_DECEASED, 0) = 0
-                                     AND NVL(AC.HAS_FROZEN, 0)   = 0)
+                OR (P_IS_ACTIVE = 1 AND NVL(AC.HAS_DECEASED, 0) = 0 AND NVL(AC.HAS_FROZEN, 0) = 0
+                                     AND ((P_THE_MONTH IS NOT NULL AND NVL(EM.IS_ACTIVE, 0) = 1)
+                                       OR (P_THE_MONTH IS NULL     AND NVL(E.IS_ACTIVE, 0) = 1)))
+                OR (P_IS_ACTIVE = 0 AND NVL(AC.HAS_DECEASED, 0) = 0 AND NVL(AC.HAS_FROZEN, 0) = 0
+                                     AND ((P_THE_MONTH IS NOT NULL AND NVL(EM.IS_ACTIVE, 0) = 0)
+                                       OR (P_THE_MONTH IS NULL     AND NVL(E.IS_ACTIVE, 0) = 0)))
                 OR (P_IS_ACTIVE = 2 AND NVL(AC.HAS_DECEASED, 0) = 1)
                 OR (P_IS_ACTIVE = 4 AND NVL(AC.HAS_FROZEN, 0)   = 1))
            AND (P_HAS_ACC   IS NULL
                 OR (P_HAS_ACC = 1 AND NVL(AC.ACTIVE_COUNT, 0) > 0)
                 OR (P_HAS_ACC = 0 AND NVL(AC.ACTIVE_COUNT, 0) = 0))
+           -- P_HAS_BENEF: 1=عنده مستفيد، 0=بدون مستفيد، NULL=الكل
+           AND (P_HAS_BENEF IS NULL
+                OR (P_HAS_BENEF = 1 AND NVL(BN.BENEF_COUNT, 0) > 0)
+                OR (P_HAS_BENEF = 0 AND NVL(BN.BENEF_COUNT, 0) = 0))
       )
       SELECT P.EMP_NO,
              P.EMP_NAME,
@@ -1220,6 +1297,8 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
       P_BRANCH_NO   NUMBER DEFAULT NULL,
       P_IS_ACTIVE   NUMBER DEFAULT NULL,
       P_HAS_ACC     NUMBER DEFAULT NULL,
+      P_HAS_BENEF   NUMBER DEFAULT NULL,
+      P_THE_MONTH   NUMBER DEFAULT NULL,
       P_CNT_OUT     OUT NUMBER,
       P_MSG_OUT     OUT VARCHAR2
   ) IS
@@ -1236,20 +1315,31 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
            WHERE STATUS = 1
            GROUP BY EMP_NO
       ) AC ON AC.EMP_NO = E.NO
+      LEFT JOIN (
+          SELECT EMP_NO, COUNT(*) AS BENEF_COUNT
+            FROM GFC.PAYMENT_BENEFICIARIES_TB
+           WHERE STATUS = 1
+           GROUP BY EMP_NO
+      ) BN ON BN.EMP_NO = E.NO
+      LEFT JOIN DATA.EMPLOYEES_MONTH EM ON EM.NO = E.NO AND EM.THE_MONTH = P_THE_MONTH
      WHERE (P_EMP_NO    IS NULL OR E.NO = P_EMP_NO)
        AND (P_BRANCH_NO IS NULL OR EMP_PKG.GET_EMP_BRANCH(E.NO) = P_BRANCH_NO)
+       AND (P_THE_MONTH IS NULL OR EM.NO IS NOT NULL)
        AND (P_IS_ACTIVE IS NULL
-            OR (P_IS_ACTIVE = 1 AND NVL(E.IS_ACTIVE, 0) = 1
-                                 AND NVL(AC.HAS_DECEASED, 0) = 0
-                                 AND NVL(AC.HAS_FROZEN, 0)   = 0)
-            OR (P_IS_ACTIVE = 0 AND NVL(E.IS_ACTIVE, 0) = 0
-                                 AND NVL(AC.HAS_DECEASED, 0) = 0
-                                 AND NVL(AC.HAS_FROZEN, 0)   = 0)
+            OR (P_IS_ACTIVE = 1 AND NVL(AC.HAS_DECEASED, 0) = 0 AND NVL(AC.HAS_FROZEN, 0) = 0
+                                 AND ((P_THE_MONTH IS NOT NULL AND NVL(EM.IS_ACTIVE, 0) = 1)
+                                   OR (P_THE_MONTH IS NULL     AND NVL(E.IS_ACTIVE, 0) = 1)))
+            OR (P_IS_ACTIVE = 0 AND NVL(AC.HAS_DECEASED, 0) = 0 AND NVL(AC.HAS_FROZEN, 0) = 0
+                                 AND ((P_THE_MONTH IS NOT NULL AND NVL(EM.IS_ACTIVE, 0) = 0)
+                                   OR (P_THE_MONTH IS NULL     AND NVL(E.IS_ACTIVE, 0) = 0)))
             OR (P_IS_ACTIVE = 2 AND NVL(AC.HAS_DECEASED, 0) = 1)
             OR (P_IS_ACTIVE = 4 AND NVL(AC.HAS_FROZEN, 0)   = 1))
        AND (P_HAS_ACC   IS NULL
             OR (P_HAS_ACC = 1 AND NVL(AC.ACTIVE_COUNT, 0) > 0)
-            OR (P_HAS_ACC = 0 AND NVL(AC.ACTIVE_COUNT, 0) = 0));
+            OR (P_HAS_ACC = 0 AND NVL(AC.ACTIVE_COUNT, 0) = 0))
+       AND (P_HAS_BENEF IS NULL
+            OR (P_HAS_BENEF = 1 AND NVL(BN.BENEF_COUNT, 0) > 0)
+            OR (P_HAS_BENEF = 0 AND NVL(BN.BENEF_COUNT, 0) = 0));
     P_MSG_OUT := '1';
   EXCEPTION WHEN OTHERS THEN
     P_CNT_OUT := 0;
@@ -1261,6 +1351,8 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
       P_BRANCH_NO    NUMBER DEFAULT NULL,
       P_IS_ACTIVE    NUMBER DEFAULT NULL,
       P_HAS_ACC      NUMBER DEFAULT NULL,
+      P_HAS_BENEF    NUMBER DEFAULT NULL,
+      P_THE_MONTH    NUMBER DEFAULT NULL,
       P_TOTAL_OUT        OUT NUMBER,
       P_BANK_OUT         OUT NUMBER,
       P_WALLET_OUT       OUT NUMBER,
@@ -1295,20 +1387,25 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
       FROM DATA.EMPLOYEES E
       LEFT JOIN ACC_AGG AC ON AC.EMP_NO = E.NO
       LEFT JOIN BNF_AGG BN ON BN.EMP_NO = E.NO
+      LEFT JOIN DATA.EMPLOYEES_MONTH EM ON EM.NO = E.NO AND EM.THE_MONTH = P_THE_MONTH
      WHERE (P_EMP_NO    IS NULL OR E.NO = P_EMP_NO)
        AND (P_BRANCH_NO IS NULL OR EMP_PKG.GET_EMP_BRANCH(E.NO) = P_BRANCH_NO)
+       AND (P_THE_MONTH IS NULL OR EM.NO IS NOT NULL)
        AND (P_IS_ACTIVE IS NULL
-            OR (P_IS_ACTIVE = 1 AND NVL(E.IS_ACTIVE, 0) = 1
-                                 AND NVL(AC.HAS_DECEASED, 0) = 0
-                                 AND NVL(AC.HAS_FROZEN, 0)   = 0)
-            OR (P_IS_ACTIVE = 0 AND NVL(E.IS_ACTIVE, 0) = 0
-                                 AND NVL(AC.HAS_DECEASED, 0) = 0
-                                 AND NVL(AC.HAS_FROZEN, 0)   = 0)
+            OR (P_IS_ACTIVE = 1 AND NVL(AC.HAS_DECEASED, 0) = 0 AND NVL(AC.HAS_FROZEN, 0) = 0
+                                 AND ((P_THE_MONTH IS NOT NULL AND NVL(EM.IS_ACTIVE, 0) = 1)
+                                   OR (P_THE_MONTH IS NULL     AND NVL(E.IS_ACTIVE, 0) = 1)))
+            OR (P_IS_ACTIVE = 0 AND NVL(AC.HAS_DECEASED, 0) = 0 AND NVL(AC.HAS_FROZEN, 0) = 0
+                                 AND ((P_THE_MONTH IS NOT NULL AND NVL(EM.IS_ACTIVE, 0) = 0)
+                                   OR (P_THE_MONTH IS NULL     AND NVL(E.IS_ACTIVE, 0) = 0)))
             OR (P_IS_ACTIVE = 2 AND NVL(AC.HAS_DECEASED, 0) = 1)
             OR (P_IS_ACTIVE = 4 AND NVL(AC.HAS_FROZEN, 0)   = 1))
        AND (P_HAS_ACC   IS NULL
             OR (P_HAS_ACC = 1 AND NVL(AC.ACTIVE_COUNT, 0) > 0)
-            OR (P_HAS_ACC = 0 AND NVL(AC.ACTIVE_COUNT, 0) = 0));
+            OR (P_HAS_ACC = 0 AND NVL(AC.ACTIVE_COUNT, 0) = 0))
+       AND (P_HAS_BENEF IS NULL
+            OR (P_HAS_BENEF = 1 AND NVL(BN.BENEF_CNT, 0) > 0)
+            OR (P_HAS_BENEF = 0 AND NVL(BN.BENEF_CNT, 0) = 0));
     P_MSG_OUT := '1';
   EXCEPTION WHEN OTHERS THEN
     P_TOTAL_OUT := 0; P_BANK_OUT := 0; P_WALLET_OUT := 0; P_BENEF_OUT := 0;

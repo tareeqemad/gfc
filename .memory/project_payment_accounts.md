@@ -210,3 +210,92 @@ SELECT GRANTEE, TABLE_NAME, PRIVILEGE FROM ALL_TAB_PRIVS
 - SPLIT_TYPE: 1=نسبة 2=مبلغ ثابت 3=كامل المتبقي
 - Migration نقل بيانات لـ 1317 موظف (المتقاعدون)
 - 12 مزود (9 بنك + 3 محفظة): الاستثمار(76)، الإسلامي الفلسطيني(81)، فلسطين(89)، القدس(82)، الإسلامي العربي(30)، الأردن(35)، القاهرة عمان(50)، العربي(70)، الوطني الإسلامي(4444)، PalPay(36)، Jawwal Pay
+
+---
+
+## تحسينات شاملة (2026-04-29)
+
+### 1. فلتر "المستفيدون" + بطاقة قابلة للنقر
+- إضافة `P_HAS_BENEF NUMBER` للـ procedures الـ 3 (LIST_PAGINATED + COUNT + TOTALS)
+- View: dropdown جديد "المستفيدون: الكل / عنده مستفيد / بدون مستفيد"
+- بطاقة "مستفيدون" صارت قابلة للنقر → تستدعي `filterByBenef()` التي تعدّل `dp_has_benef=1` + تشغّل البحث
+- في `EMPLOYEES_LIST_PAGINATED` PAGED CTE: أضيف `LEFT JOIN BNF_AGG BN`
+
+### 2. فلتر الشهر `P_THE_MONTH` (DATA.EMPLOYEES_MONTH)
+- حقل جديد في الـ index: `<input id="txt_the_month" placeholder="YYYYMM">`
+- المنطق (strict snapshot): لما الشهر مُحدّد، النظام يقتصر على من عنده سجل في `EMPLOYEES_MONTH`
+- IS_ACTIVE يُقرأ من `EM.IS_ACTIVE` (تاريخي) بدل `E.IS_ACTIVE` (الحالي)
+- ⚠️ الفلاتر يجب أن تكون متّسقة رياضياً: `الكل = فعّال + متقاعد` (مثلاً 804 = 799 + 5)
+- كل فلاتر `is_active=1/0` تستخدم `EM.IS_ACTIVE` لما الشهر مُحدّد، أو `E.IS_ACTIVE` لما فاضي
+- متوفى/مغلق (2/4): دائماً من `PAYMENT_ACCOUNTS_TB.INACTIVE_REASON` الحالي (مش تاريخي)
+
+### 3. شاشة المزودين — modal "حسابات الموظفين"
+- **توسيع لـ modal-xl** + sticky header
+- **Toolbar جديد**: بحث محلي (debounce 120ms) + عدّاد ديناميكي (X/Y) + زر "تصدير Excel"
+- **Endpoint جديد**: `provider_accounts_export_excel?provider_id=X&only_active=0`
+- البحث client-side في: رقم الموظف، الاسم، رقم الحساب، IBAN، اسم الفرع، صاحب الحساب
+
+### 4. رقم الفرع — استخدام `LEGACY_BANK_NO` (مش عمود جديد)
+- `PAYMENT_BANK_BRANCHES_TB.LEGACY_BANK_NO` كان للـ migration → الآن صار **رقم الفرع الرسمي** (إجباري)
+- `BRANCH_INSERT/UPDATE`: validation + duplicate check
+- في الـ branches table: عمود "رقم الفرع" badge، في الـ modal حقل إجباري
+- في dropdown الفرع بصفحة الموظف: التنسيق `100 — فرع الرمال` (LEGACY_BANK_NO + اسم)
+- في كرت الحساب: badge `#100` بجانب اسم الفرع
+
+### 5. modal "حساب جديد" — صاحب الحساب (تنظيف)
+- ❌ المستفيدون لم يعودوا في dropdown صاحب الحساب (كان مربكاً)
+- ✅ خياران فقط: `الموظف نفسه` / `شخص آخر`
+- "الموظف نفسه": auto-fill من بيانات الموظف + `readonly`
+- "شخص آخر": تفريغ + editable + auto-focus على الهوية
+- عند تعديل حساب موجود: يكتشف النوع من `OWNER_ID_NO` و `OWNER_NAME` تلقائياً
+
+### 6. modal إيقاف الحساب — بدل `prompt()`
+- استبدال 2 `prompt()` بـ `#deactAccModal` كامل
+- `<select>` لسبب الإيقاف (1=تقاعد، 2=وفاة، 3=فصل، 4=تجميد، 5=تحويل، 9=أخرى) — نص نظيف بدون إيموجي
+- `<textarea>` لملاحظة (متعدد الأسطر)
+- Validation: لازم يختار سبب قبل الحفظ
+- زر "تأكيد" مع spinner أثناء الحفظ
+
+### 7. إيقاف الفتح التلقائي للمرفقات
+- `saveBenef()` ما عاد يفتح modal `_showReport` بعد إضافة مستفيد
+- المرفقات تُرفع يدوياً من زر "المرفقات" بجانب المستفيد
+
+### 8. Optgroup في dropdown المزود (بدل emojis)
+- `<optgroup label="بنوك">` و `<optgroup label="محافظ إلكترونية">`
+- استبدال 📱/🏦 بـ FA icons في الكروت (`fa-mobile-alt` للمحفظة، `fa-university` للبنك)
+- داخل `<select>` لا يمكن استخدام FA icons، فاستخدمنا optgroup
+
+### 9. الـ Pitfalls المُكتشفة في هذه الجلسة
+- **`SQLT_INT` + null = 0**: `providers_list($type=null)` كان يطلع فاضي. الحل: `'type' => ''`
+- **`length => -1` للـ MSG_OUT = buffer 3 chars**: ORA-06502 على Delete/Update. الحل: `'length' => 500`
+- **GRANTs ضرورية للـ PUBLIC**: الويب يتصل كـ user الجلسة، مش GFC_PAK
+- **Excel `setCellValueExplicit` + TYPE_STRING** للـ IDs و IBANs (يمنع scientific notation)
+
+تفاصيل في [feedback_php_oracle_gotchas.md](feedback_php_oracle_gotchas.md).
+
+### 10. الملفات المُعدَّلة (2026-04-29)
+
+```
+database/payment_accounts/
+├── 03_pkg_spec.sql           ← P_HAS_BENEF + P_THE_MONTH للـ 3 procedures
+├── 04_pkg_body.sql            ← LEFT JOIN EMPLOYEES_MONTH + LEFT JOIN BNF_AGG
+│                                + LEGACY_BANK_NO required + duplicate check في BRANCH_INSERT/UPDATE
+│                                + ACCOUNTS_LIST يرجع LEGACY_BANK_NO
+
+application/modules/payment_accounts/
+├── controllers/Payment_accounts.php
+│   ├── + has_benef + the_month في filters
+│   └── + provider_accounts_export_excel($pid, $only_active)
+├── models/Payment_accounts_model.php
+│   ├── 35 instance: 'length' => -1 → 500 (MSG_OUT buffer fix)
+│   ├── providers_list/branches_list: 'type' => '' (null safety)
+│   └── + has_benef + the_month في employees_list/count/totals
+│   └── + legacy_bank_no في branch_insert/update
+└── views/
+    ├── payment_accounts_index.php   ← + dp_has_benef + txt_the_month + filterByBenef()
+    ├── payment_accounts_emp.php     ← deactAccModal + self/other dropdown
+    │                                 + LEGACY_BANK_NO في dropdown الفرع
+    │                                 + saveBenef بدون auto-open مرفقات
+    └── payment_accounts_providers.php ← modal toolbar + Excel export + sticky header
+                                       + رقم الفرع في table + modal الفرع
+```

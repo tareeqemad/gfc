@@ -300,11 +300,24 @@ $rel_options = [
                             <label class="fw-bold" style="font-size:.78rem">المزود <span class="text-danger">*</span></label>
                             <select name="provider_id" id="acc_provider_id" class="form-select">
                                 <option value="">— اختر —</option>
-                                <?php foreach ($providers_arr as $p): ?>
-                                    <option value="<?= (int)$p['PROVIDER_ID'] ?>" data-type="<?= (int)$p['PROVIDER_TYPE'] ?>">
-                                        <?= ((int)$p['PROVIDER_TYPE'] == 2 ? '📱 ' : '🏦 ') . htmlspecialchars($p['PROVIDER_NAME']) ?>
-                                    </option>
-                                <?php endforeach; ?>
+                                <?php
+                                $banks   = array_filter($providers_arr, fn($p) => (int)$p['PROVIDER_TYPE'] === 1);
+                                $wallets = array_filter($providers_arr, fn($p) => (int)$p['PROVIDER_TYPE'] === 2);
+                                ?>
+                                <?php if ($banks): ?>
+                                    <optgroup label="بنوك">
+                                        <?php foreach ($banks as $p): ?>
+                                            <option value="<?= (int)$p['PROVIDER_ID'] ?>" data-type="1"><?= htmlspecialchars($p['PROVIDER_NAME']) ?></option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                <?php endif; ?>
+                                <?php if ($wallets): ?>
+                                    <optgroup label="محافظ إلكترونية">
+                                        <?php foreach ($wallets as $p): ?>
+                                            <option value="<?= (int)$p['PROVIDER_ID'] ?>" data-type="2"><?= htmlspecialchars($p['PROVIDER_NAME']) ?></option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                <?php endif; ?>
                             </select>
                         </div>
                         <div class="col-md-6" id="branch_grp">
@@ -339,14 +352,20 @@ $rel_options = [
                             <label class="fw-bold" style="font-size:.78rem">صاحب الحساب</label>
                             <select id="acc_owner_kind" class="form-select">
                                 <option value="self">الموظف نفسه</option>
-                                <?php foreach ($beneficiaries_arr as $b): ?>
-                                    <option value="<?= (int)$b['BENEFICIARY_ID'] ?>"
-                                            data-name="<?= htmlspecialchars($b['NAME'] ?? '') ?>"
-                                            data-id="<?= htmlspecialchars($b['ID_NO'] ?? '') ?>"
-                                            data-phone="<?= htmlspecialchars($b['PHONE'] ?? '') ?>">
-                                        <?= htmlspecialchars(($b['REL_NAME'] ?? '') . ' — ' . ($b['NAME'] ?? '')) ?>
-                                    </option>
-                                <?php endforeach; ?>
+                                <option value="other">شخص آخر</option>
+                                <?php if (!empty($beneficiaries_arr)): ?>
+                                    <optgroup label="المستفيدون (الورثة)">
+                                        <?php foreach ($beneficiaries_arr as $b): ?>
+                                            <option value="benef_<?= (int)$b['BENEFICIARY_ID'] ?>"
+                                                    data-bid="<?= (int)$b['BENEFICIARY_ID'] ?>"
+                                                    data-name="<?= htmlspecialchars($b['NAME'] ?? '') ?>"
+                                                    data-id="<?= htmlspecialchars($b['ID_NO'] ?? '') ?>"
+                                                    data-phone="<?= htmlspecialchars($b['PHONE'] ?? '') ?>">
+                                                <?= htmlspecialchars(($b['REL_NAME'] ?? '') . ' — ' . ($b['NAME'] ?? '')) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                <?php endif; ?>
                             </select>
                             <input type="hidden" name="beneficiary_id" id="acc_beneficiary_id">
                         </div>
@@ -403,6 +422,52 @@ $rel_options = [
             <div class="modal-footer py-2">
                 <button class="btn btn-light btn-sm" data-bs-dismiss="modal">إلغاء</button>
                 <button class="btn btn-primary btn-sm" data-action="acc-save"><i class="fa fa-save me-1"></i> حفظ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══════════ MODAL: إيقاف حساب ══════════ -->
+<div class="modal fade" id="deactAccModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border:0;border-radius:12px;overflow:hidden">
+            <div class="modal-header py-2" style="background:#b91c1c">
+                <h6 class="modal-title text-white fw-bold">
+                    <i class="fa fa-pause-circle me-1"></i> إيقاف حساب
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="deact_acc_id">
+                <div class="alert alert-warning py-2 mb-3" style="font-size:.82rem">
+                    <i class="fa fa-info-circle me-1"></i>
+                    إيقاف الحساب يمنع استخدامه في الصرف، لكن يبقى محفوظاً للسجل التاريخي.
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-12">
+                        <label class="fw-bold" style="font-size:.82rem">سبب الإيقاف <span class="text-danger">*</span></label>
+                        <select id="deact_reason" class="form-select">
+                            <option value="">— اختر السبب —</option>
+                            <option value="1">تقاعد</option>
+                            <option value="2">وفاة</option>
+                            <option value="3">فصل</option>
+                            <option value="4">تجميد الحساب</option>
+                            <option value="5">تحويل لحساب آخر</option>
+                            <option value="9">أخرى</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12 mt-2">
+                        <label class="fw-bold" style="font-size:.82rem">ملاحظة (اختياري)</label>
+                        <textarea id="deact_notes" class="form-control" rows="2" placeholder="مثال: حسب تعميم البنك بتاريخ ..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-danger btn-sm" id="deactAccConfirm">
+                    <i class="fa fa-pause me-1"></i> تأكيد الإيقاف
+                </button>
             </div>
         </div>
     </div>
@@ -533,8 +598,12 @@ $rel_options = [
             if(isBenef)   cls += ' beneficiary';
 
             // Head: provider name + flags
-            var head = '<div class="acc-head"><span class="acc-type">' + (isWallet ? '📱' : '🏦') + ' ' + escHtml(a.PROVIDER_NAME);
-            if(a.BRANCH_NAME) head += ' <small>— ' + escHtml(a.BRANCH_NAME) + '</small>';
+            var icon = isWallet ? '<i class="fa fa-mobile-alt text-success"></i>' : '<i class="fa fa-university text-primary"></i>';
+            var head = '<div class="acc-head"><span class="acc-type">' + icon + ' ' + escHtml(a.PROVIDER_NAME);
+            if(a.BRANCH_NAME){
+                var brBadge = a.LEGACY_BANK_NO ? ' <span class="badge bg-light text-dark" style="font-size:.7rem;direction:ltr">#' + a.LEGACY_BANK_NO + '</span>' : '';
+                head += ' <small>— ' + escHtml(a.BRANCH_NAME) + '</small>' + brBadge;
+            }
             head += '</span>';
             if(isDefault) head += '<span class="acc-flag default">⭐ افتراضي</span>';
             if(isBenef)   head += '<span class="acc-flag benef">🎭 ' + escHtml(a.BENEFICIARY_NAME || '') + '</span>';
@@ -733,16 +802,35 @@ $rel_options = [
             $('#acc_account_no').val(acc.ACCOUNT_NO || '');
             $('#acc_iban').val(acc.IBAN || '');
             $('#acc_wallet_number').val(acc.WALLET_NUMBER || '');
-            $('#acc_owner_id_no').val(acc.OWNER_ID_NO || '');
-            $('#acc_owner_name').val(acc.OWNER_NAME || '');
-            $('#acc_owner_phone').val(acc.OWNER_PHONE || '');
             $('#acc_is_default').prop('checked', parseInt(acc.IS_DEFAULT||0) === 1);
             $('#acc_split_type').val(acc.SPLIT_TYPE || 3);
             $('#acc_split_value').val(acc.SPLIT_VALUE || '');
             $('#acc_split_order').val(acc.SPLIT_ORDER || 1);
             $('#acc_notes').val(acc.NOTES || '');
-            $('#acc_owner_kind').val(acc.BENEFICIARY_ID || 'self');
+
+            // تحديد النوع — 3 حالات:
+            //   1) acc.BENEFICIARY_ID موجود → benef_<ID>  (مستفيد محدد)
+            //   2) لا → owner_id/name = بيانات الموظف → self
+            //   3) لا → other (شخص آخر يدوي)
+            var ownIdSame   = (acc.OWNER_ID_NO || '') === (EMP.ID_NO || '');
+            var ownNameSame = (acc.OWNER_NAME  || '') === (EMP.NAME  || '');
+            var isBenef = !!acc.BENEFICIARY_ID;
+            var isSelf  = !isBenef && (ownIdSame && ownNameSame);
+            var kind    = isBenef ? ('benef_' + acc.BENEFICIARY_ID) : (isSelf ? 'self' : 'other');
+
+            $('#acc_owner_kind').val(kind);
             $('#acc_beneficiary_id').val(acc.BENEFICIARY_ID || '');
+
+            if (isBenef || isSelf){
+                $('#acc_owner_id_no').val(acc.OWNER_ID_NO || '').prop('readonly', true);
+                $('#acc_owner_name').val(acc.OWNER_NAME  || '').prop('readonly', true);
+                $('#acc_owner_phone').val(acc.OWNER_PHONE || '').prop('readonly', true);
+            } else {
+                $('#acc_owner_id_no').val(acc.OWNER_ID_NO || '').prop('readonly', false);
+                $('#acc_owner_name').val(acc.OWNER_NAME  || '').prop('readonly', false);
+                $('#acc_owner_phone').val(acc.OWNER_PHONE || '').prop('readonly', false);
+            }
+
             applyProviderType(function(){ $('#acc_branch_id').val(acc.BRANCH_ID || ''); });
         } else {
             $('#acc_owner_kind').val('self');
@@ -772,7 +860,8 @@ $rel_options = [
                     if(!j || !j.ok){ if(typeof afterCb === 'function') afterCb(); return; }
                     var html = '<option value="">— اختر الفرع —</option>';
                     (j.data || []).forEach(function(b){
-                        html += '<option value="' + b.BRANCH_ID + '">' + escHtml(b.BRANCH_NAME || '') + '</option>';
+                        var prefix = b.LEGACY_BANK_NO ? (b.LEGACY_BANK_NO + ' — ') : '';
+                        html += '<option value="' + b.BRANCH_ID + '">' + escHtml(prefix + (b.BRANCH_NAME || '')) + '</option>';
                     });
                     $('#acc_branch_id').html(html);
                     if(typeof afterCb === 'function') afterCb();
@@ -789,16 +878,24 @@ $rel_options = [
     function applyOwnerKind(){
         var k = $('#acc_owner_kind').val();
         if(k === 'self'){
+            // الموظف نفسه: تعبئة تلقائية + readonly
             $('#acc_beneficiary_id').val('');
-            $('#acc_owner_id_no').val(EMP.ID_NO || '');
-            $('#acc_owner_name').val(EMP.NAME  || '');
-            $('#acc_owner_phone').val(EMP.TEL   || '');
-        } else {
+            $('#acc_owner_id_no').val(EMP.ID_NO || '').prop('readonly', true);
+            $('#acc_owner_name').val(EMP.NAME  || '').prop('readonly', true);
+            $('#acc_owner_phone').val(EMP.TEL  || '').prop('readonly', true);
+        } else if(k === 'other'){
+            // شخص آخر: تفريغ + editable للإدخال اليدوي
+            $('#acc_beneficiary_id').val('');
+            $('#acc_owner_id_no').val('').prop('readonly', false).focus();
+            $('#acc_owner_name').val('').prop('readonly', false);
+            $('#acc_owner_phone').val('').prop('readonly', false);
+        } else if(String(k).indexOf('benef_') === 0){
+            // مستفيد: تعبئة من بيانات المستفيد + readonly + ربط beneficiary_id
             var opt = $('#acc_owner_kind option:selected');
-            $('#acc_beneficiary_id').val(k);
-            $('#acc_owner_id_no').val(opt.data('id')    || '');
-            $('#acc_owner_name').val(opt.data('name')   || '');
-            $('#acc_owner_phone').val(opt.data('phone') || '');
+            $('#acc_beneficiary_id').val(opt.data('bid') || '');
+            $('#acc_owner_id_no').val(opt.data('id')    || '').prop('readonly', true);
+            $('#acc_owner_name').val(opt.data('name')   || '').prop('readonly', true);
+            $('#acc_owner_phone').val(opt.data('phone') || '').prop('readonly', true);
         }
     }
 
@@ -847,17 +944,38 @@ $rel_options = [
     }
 
     function deactivateAccount(id){
+        // افتح modal الإيقاف بدل prompt() المتعدّد
+        $('#deact_acc_id').val(id);
+        $('#deact_reason').val('');           // فاضي → يجبر المستخدم يختار بوعي
+        $('#deact_notes').val('');
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('deactAccModal')).show();
+    }
+
+    // confirm handler للـ modal
+    $(document).on('click', '#deactAccConfirm', function(){
+        var id     = $('#deact_acc_id').val();
+        var reason = $('#deact_reason').val();
+        var notes  = $('#deact_notes').val() || '';
+
+        if(!reason){ warning_msg('تنبيه', 'اختر سبب الإيقاف'); return; }
         if(!_guard('acc-deact-'+id)) return;
-        var reason = prompt('سبب الإيقاف:\n1=تقاعد  2=وفاة  3=فصل  4=تجميد  5=تحويل  9=أخرى', '4');
-        if(reason === null){ _release('acc-deact-'+id); return; }
-        var notes = prompt('ملاحظة (اختياري):', '') || '';
+
+        var $btn = $('#deactAccConfirm');
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> جاري الإيقاف...');
+
         get_data(URLS.acc_deact, {acc_id: id, reason: reason, notes: notes}, function(resp){
             var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
             _release('acc-deact-'+id);
-            if(j.ok){ success_msg('تم', j.msg); reload_Page(); }
-            else    { danger_msg('خطأ', j.msg); }
+            $btn.prop('disabled', false).html('<i class="fa fa-pause me-1"></i> تأكيد الإيقاف');
+            if(j.ok){
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('deactAccModal')).hide();
+                success_msg('تم', j.msg);
+                reload_Page();
+            } else {
+                danger_msg('خطأ', j.msg);
+            }
         }, 'json');
-    }
+    });
 
     function reactivateAccount(id){
         if(!_guard('acc-react-'+id)) return;
@@ -884,30 +1002,15 @@ $rel_options = [
         if(!$('#benef_name').val().trim()){ danger_msg('تنبيه','الاسم مطلوب'); return; }
         if(!$('#benef_id_no').val().trim()){ danger_msg('تنبيه','الهوية مطلوبة'); return; }
         if(!_guard('benef-save')) return;
-        var isCreate = !$('#benef_id').val();
         get_data(URLS.benef_save, $('#benefForm').serialize(), function(resp){
             var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
             _release('benef-save');
             if(!j.ok){ danger_msg('خطأ', j.msg); return; }
             success_msg('تم', j.msg);
-
-            var newBenefId = isCreate && j.id && /^\d+$/.test(String(j.id)) ? j.id : null;
-
-            if(newBenefId){
-                // مهم: انتظر حتى يُغلق benef modal بالكامل قبل فتح نافذة المرفقات
-                // (وإلا modal-backdrop يبقى ويمنع التفاعل)
-                $('#benefModal').one('hidden.bs.modal', function(){
-                    info_msg && info_msg('الخطوة التالية', 'يجب رفع مستندات إثبات للمستفيد');
-                    openBenefAttach(newBenefId);
-                    // أعد تحميل الصفحة عند إغلاق نافذة المرفقات لتحديث العدّاد
-                    $('#report').one('hidden.bs.modal', function(){ reload_Page(); });
-                });
-                $('#benefModal').modal('hide');
-            } else {
-                // تعديل: ما في حاجة لمرفقات جديدة
-                $('#benefModal').modal('hide');
-                reload_Page();
-            }
+            $('#benefModal').modal('hide');
+            // ملاحظة: المرفقات تُرفع يدوياً من زر "المرفقات" بجانب المستفيد
+            // (سابقاً كانت تُفتح تلقائياً — أُلغي بناءً على طلب المحاسب)
+            reload_Page();
         }, 'json');
     }
 

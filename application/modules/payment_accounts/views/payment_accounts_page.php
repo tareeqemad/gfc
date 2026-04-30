@@ -14,6 +14,7 @@ $tot         = $totals ?? ['total'=>0,'bank'=>0,'wallet'=>0,'benef'=>0];
      data-benef="<?= (int)$tot['benef'] ?>"
      style="display:none"></div>
 
+
 <style>
     .pa-tbl td, .pa-tbl th { vertical-align: middle; font-size:.82rem }
     .pa-tbl .emp-cell { min-width: 200px }

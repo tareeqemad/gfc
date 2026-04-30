@@ -23,7 +23,7 @@ class Payment_accounts_model extends MY_Model
         $params = array(
             array('name' => ':P_TYPE',        'value' => $type,    'type' => '',          'length' => -1),
             array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor', 'type' => OCI_B_CURSOR),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',    'type' => SQLT_CHR,    'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',    'type' => SQLT_CHR,    'length' => -1),
         );
         return $this->New_rmodel->general_get($this->PKG_NAME, 'PROVIDERS_LIST', $params);
     }
@@ -33,7 +33,7 @@ class Payment_accounts_model extends MY_Model
         $params = array(
             array('name' => ':P_PROVIDER_ID', 'value' => $id,      'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor', 'type' => OCI_B_CURSOR),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',    'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',    'type' => SQLT_CHR, 'length' => -1),
         );
         return $this->New_rmodel->general_get($this->PKG_NAME, 'PROVIDER_GET', $params);
     }
@@ -49,7 +49,7 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_COMPANY_IBAN',   'value' => $data['company_iban']   ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_EXPORT_FORMAT',  'value' => $data['export_format']  ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_SORT_ORDER',     'value' => $data['sort_order']     ?? 999,  'type' => '', 'length' => -1),
-            array('name' => ':P_MSG_OUT',        'value' => 'MSG',                           'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',        'value' => 'MSG',                           'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'PROVIDER_INSERT', $params);
         return $result['MSG'];
@@ -67,7 +67,7 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_EXPORT_FORMAT',  'value' => $data['export_format']  ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_SORT_ORDER',     'value' => $data['sort_order']     ?? 999,  'type' => '', 'length' => -1),
             array('name' => ':P_IS_ACTIVE',      'value' => $data['is_active']      ?? 1,    'type' => '', 'length' => -1),
-            array('name' => ':P_MSG_OUT',        'value' => 'MSG',                           'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',        'value' => 'MSG',                           'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'PROVIDER_UPDATE', $params);
         return $result['MSG'];
@@ -77,7 +77,7 @@ class Payment_accounts_model extends MY_Model
     {
         $params = array(
             array('name' => ':P_PROVIDER_ID', 'value' => $provider_id, 'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',        'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',        'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'PROVIDER_DELETE', $params);
         return $result['MSG'];
@@ -88,7 +88,7 @@ class Payment_accounts_model extends MY_Model
         $params = array(
             array('name' => ':P_PROVIDER_ID', 'value' => $provider_id,         'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_IS_ACTIVE',   'value' => $is_active ? 1 : 0,   'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',                'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',                'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'PROVIDER_TOGGLE_ACTIVE', $params);
         return $result['MSG'];
@@ -100,7 +100,7 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_PROVIDER_ID', 'value' => $provider_id, 'type' => SQLT_INT,    'length' => -1),
             array('name' => ':P_ONLY_ACTIVE', 'value' => $only_active, 'type' => SQLT_INT,    'length' => -1),
             array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor',     'type' => OCI_B_CURSOR),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',        'type' => SQLT_CHR,    'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',        'type' => SQLT_CHR,    'length' => -1),
         );
         return $this->New_rmodel->general_get($this->PKG_NAME, 'PROVIDER_ACCOUNTS_LIST', $params);
     }
@@ -114,7 +114,7 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_OFFSET',      'value' => $offset,                       'type' => SQLT_INT,    'length' => -1),
             array('name' => ':P_LIMIT',       'value' => $limit,                        'type' => SQLT_INT,    'length' => -1),
             array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor',                      'type' => OCI_B_CURSOR),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',                         'type' => SQLT_CHR,    'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',                         'type' => SQLT_CHR,    'length' => -1),
         );
         return $this->New_rmodel->general_get($this->PKG_NAME, 'PROVIDERS_LIST_PAGINATED', $params);
     }
@@ -126,7 +126,7 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_IS_ACTIVE', 'value' => $filters['is_active'] ?? null, 'type' => '',          'length' => -1),
             array('name' => ':P_SEARCH',    'value' => $filters['search']    ?? null, 'type' => SQLT_CHR,    'length' => 200),
             array('name' => ':P_CNT_OUT',   'value' => 'CNT',                         'type' => SQLT_INT,    'length' => -1),
-            array('name' => ':P_MSG_OUT',   'value' => 'MSG',                         'type' => SQLT_CHR,    'length' => 500),
+            array('name' => ':P_MSG_OUT',   'value' => 'MSG',                         'type' => SQLT_CHR,    'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'PROVIDERS_COUNT', $params);
         return intval($result['CNT'] ?? 0);
@@ -142,7 +142,7 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_BANKS_OUT',    'value' => 'BNK',  'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_WALLETS_OUT',  'value' => 'WLT',  'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_INACTIVE_OUT', 'value' => 'INAC', 'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_MSG_OUT',      'value' => 'MSG',  'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',      'value' => 'MSG',  'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'PROVIDERS_TOTALS', $params);
         return [
@@ -160,7 +160,7 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_ACTION',   'value' => $action,  'type' => SQLT_CHR, 'length' => -1),
             array('name' => ':P_OK_OUT',   'value' => 'OK',     'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_FAIL_OUT', 'value' => 'FAIL',   'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_MSG_OUT',  'value' => 'MSG',    'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',  'value' => 'MSG',    'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'PROVIDERS_BULK_ACTION', $params);
         return [
@@ -180,7 +180,7 @@ class Payment_accounts_model extends MY_Model
         $params = array(
             array('name' => ':P_PROVIDER_ID', 'value' => $provider_id, 'type' => '',          'length' => -1),
             array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor',     'type' => OCI_B_CURSOR),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',        'type' => SQLT_CHR,    'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',        'type' => SQLT_CHR,    'length' => -1),
         );
         return $this->New_rmodel->general_get($this->PKG_NAME, 'BRANCHES_LIST', $params);
     }
@@ -188,15 +188,14 @@ class Payment_accounts_model extends MY_Model
     function branch_insert($data)
     {
         $params = array(
-            array('name' => ':P_PROVIDER_ID',    'value' => $data['provider_id']    ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_NAME',           'value' => $data['name']           ?? '',   'type' => '', 'length' => -1),
-            array('name' => ':P_LEGACY_BANK_NO', 'value' => $data['legacy_bank_no'] ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_PRINT_NO',       'value' => $data['print_no']       ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_ADDRESS',        'value' => $data['address']        ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_PHONE1',         'value' => $data['phone1']         ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_PHONE2',         'value' => $data['phone2']         ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_FAX',            'value' => $data['fax']            ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_MSG_OUT',        'value' => 'MSG',                           'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_PROVIDER_ID', 'value' => $data['provider_id'] ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_NAME',        'value' => $data['name']        ?? '',   'type' => '', 'length' => -1),
+            array('name' => ':P_PRINT_NO',    'value' => $data['print_no']    ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_ADDRESS',     'value' => $data['address']     ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_PHONE1',      'value' => $data['phone1']      ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_PHONE2',      'value' => $data['phone2']      ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_FAX',         'value' => $data['fax']         ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',                        'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'BRANCH_INSERT', $params);
         return $result['MSG'];
@@ -205,17 +204,16 @@ class Payment_accounts_model extends MY_Model
     function branch_update($data)
     {
         $params = array(
-            array('name' => ':P_BRANCH_ID',      'value' => $data['branch_id']      ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_PROVIDER_ID',    'value' => $data['provider_id']    ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_NAME',           'value' => $data['name']           ?? '',   'type' => '', 'length' => -1),
-            array('name' => ':P_LEGACY_BANK_NO', 'value' => $data['legacy_bank_no'] ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_PRINT_NO',       'value' => $data['print_no']       ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_ADDRESS',        'value' => $data['address']        ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_PHONE1',         'value' => $data['phone1']         ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_PHONE2',         'value' => $data['phone2']         ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_FAX',            'value' => $data['fax']            ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_IS_ACTIVE',      'value' => $data['is_active']      ?? 1,    'type' => '', 'length' => -1),
-            array('name' => ':P_MSG_OUT',        'value' => 'MSG',                           'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_BRANCH_ID',   'value' => $data['branch_id']   ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_PROVIDER_ID', 'value' => $data['provider_id'] ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_NAME',        'value' => $data['name']        ?? '',   'type' => '', 'length' => -1),
+            array('name' => ':P_PRINT_NO',    'value' => $data['print_no']    ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_ADDRESS',     'value' => $data['address']     ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_PHONE1',      'value' => $data['phone1']      ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_PHONE2',      'value' => $data['phone2']      ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_FAX',         'value' => $data['fax']         ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_IS_ACTIVE',   'value' => $data['is_active']   ?? 1,    'type' => '', 'length' => -1),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',                        'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'BRANCH_UPDATE', $params);
         return $result['MSG'];
@@ -226,7 +224,7 @@ class Payment_accounts_model extends MY_Model
         $params = array(
             array('name' => ':P_BRANCH_ID',   'value' => $branch_id,   'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_PROVIDER_ID', 'value' => $provider_id, 'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',        'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',        'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'BRANCH_LINK_PROVIDER', $params);
         return $result['MSG'];
@@ -240,7 +238,7 @@ class Payment_accounts_model extends MY_Model
         $params = array(
             array('name' => ':P_EMP_NO',      'value' => $emp_no,  'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor', 'type' => OCI_B_CURSOR),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',    'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',    'type' => SQLT_CHR, 'length' => -1),
         );
         return $this->New_rmodel->general_get($this->PKG_NAME, 'BENEF_LIST', $params);
     }
@@ -257,7 +255,7 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_FROM_DATE', 'value' => $data['from_date'] ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_TO_DATE',   'value' => $data['to_date']   ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_NOTES',     'value' => $data['notes']     ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_MSG_OUT',   'value' => 'MSG',                      'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',   'value' => 'MSG',                      'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'BENEF_INSERT', $params);
         return $result['MSG'];
@@ -276,7 +274,7 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_TO_DATE',   'value' => $data['to_date']   ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_STATUS',    'value' => $data['status']    ?? 1,    'type' => '', 'length' => -1),
             array('name' => ':P_NOTES',     'value' => $data['notes']     ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_MSG_OUT',   'value' => 'MSG',                      'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',   'value' => 'MSG',                      'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'BENEF_UPDATE', $params);
         return $result['MSG'];
@@ -286,7 +284,7 @@ class Payment_accounts_model extends MY_Model
     {
         $params = array(
             array('name' => ':P_BENEF_ID', 'value' => $benef_id, 'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_MSG_OUT',  'value' => 'MSG',     'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',  'value' => 'MSG',     'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'BENEF_DELETE', $params);
         return $result['MSG'];
@@ -301,7 +299,7 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_EMP_NO',      'value' => $emp_no,      'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_ONLY_ACTIVE', 'value' => $only_active, 'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor',     'type' => OCI_B_CURSOR),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',        'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',        'type' => SQLT_CHR, 'length' => -1),
         );
         return $this->New_rmodel->general_get($this->PKG_NAME, 'ACCOUNTS_LIST', $params);
     }
@@ -311,7 +309,7 @@ class Payment_accounts_model extends MY_Model
         $params = array(
             array('name' => ':P_ACC_ID',      'value' => $acc_id,  'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor', 'type' => OCI_B_CURSOR),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',    'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',    'type' => SQLT_CHR, 'length' => -1),
         );
         return $this->New_rmodel->general_get($this->PKG_NAME, 'ACCOUNT_GET', $params);
     }
@@ -334,7 +332,7 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_SPLIT_VALUE',    'value' => $data['split_value']    ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_SPLIT_ORDER',    'value' => $data['split_order']    ?? 1,    'type' => '', 'length' => -1),
             array('name' => ':P_NOTES',          'value' => $data['notes']          ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_MSG_OUT',        'value' => 'MSG',                           'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',        'value' => 'MSG',                           'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'ACCOUNT_INSERT', $params);
         return $result['MSG'];
@@ -356,7 +354,7 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_SPLIT_VALUE',    'value' => $data['split_value']    ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_SPLIT_ORDER',    'value' => $data['split_order']    ?? 1,    'type' => '', 'length' => -1),
             array('name' => ':P_NOTES',          'value' => $data['notes']          ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_MSG_OUT',        'value' => 'MSG',                           'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',        'value' => 'MSG',                           'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'ACCOUNT_UPDATE', $params);
         return $result['MSG'];
@@ -368,7 +366,7 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_ACC_ID',  'value' => $acc_id, 'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_REASON',  'value' => $reason, 'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_NOTES',   'value' => $notes,  'type' => '',       'length' => -1),
-            array('name' => ':P_MSG_OUT', 'value' => 'MSG',   'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT', 'value' => 'MSG',   'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'ACCOUNT_DEACTIVATE', $params);
         return $result['MSG'];
@@ -379,7 +377,7 @@ class Payment_accounts_model extends MY_Model
         $params = array(
             array('name' => ':P_ACC_ID',  'value' => $acc_id, 'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_NOTES',   'value' => $notes,  'type' => '',       'length' => -1),
-            array('name' => ':P_MSG_OUT', 'value' => 'MSG',   'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT', 'value' => 'MSG',   'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'ACCOUNT_REACTIVATE', $params);
         return $result['MSG'];
@@ -389,7 +387,7 @@ class Payment_accounts_model extends MY_Model
     {
         $params = array(
             array('name' => ':P_ACC_ID',  'value' => $acc_id, 'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_MSG_OUT', 'value' => 'MSG',   'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT', 'value' => 'MSG',   'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'ACCOUNT_DELETE', $params);
         return $result['MSG'];
@@ -399,7 +397,7 @@ class Payment_accounts_model extends MY_Model
     {
         $params = array(
             array('name' => ':P_ACC_ID',  'value' => $acc_id, 'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_MSG_OUT', 'value' => 'MSG',   'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT', 'value' => 'MSG',   'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'ACCOUNT_SET_DEFAULT', $params);
         return $result['MSG'];
@@ -413,7 +411,7 @@ class Payment_accounts_model extends MY_Model
         $params = array(
             array('name' => ':P_DETAIL_ID',   'value' => $detail_id, 'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor',   'type' => OCI_B_CURSOR),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',      'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',      'type' => SQLT_CHR, 'length' => -1),
         );
         return $this->New_rmodel->general_get($this->PKG_NAME, 'SPLIT_LIST', $params);
     }
@@ -422,7 +420,7 @@ class Payment_accounts_model extends MY_Model
     {
         $params = array(
             array('name' => ':P_DETAIL_ID', 'value' => $detail_id, 'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_MSG_OUT',   'value' => 'MSG',      'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',   'value' => 'MSG',      'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'AUTO_FILL_SPLIT', $params);
         return $result['MSG'];
@@ -433,7 +431,7 @@ class Payment_accounts_model extends MY_Model
         $params = array(
             array('name' => ':P_DETAIL_ID',   'value' => $detail_id,  'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_SPLITS_JSON', 'value' => $splits_json, 'type' => OCI_B_CLOB, 'length' => -1),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',        'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',        'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'UPDATE_SPLIT_MANUAL', $params);
         return $result['MSG'];
@@ -443,7 +441,7 @@ class Payment_accounts_model extends MY_Model
     {
         $params = array(
             array('name' => ':P_DETAIL_ID', 'value' => $detail_id, 'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_MSG_OUT',   'value' => 'MSG',      'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',   'value' => 'MSG',      'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'RESET_SPLIT_TO_AUTO', $params);
         return $result['MSG'];
@@ -460,16 +458,14 @@ class Payment_accounts_model extends MY_Model
         // يخزّن بـ array key = value، فلو القيمة 0 تتشارك مع is_active/has_acc
         // ويحدث type confusion. نستخدم نفس النوع الافتراضي ('').
         $params = array(
-            array('name' => ':P_EMP_NO',      'value' => $filters['emp_no']     ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_BRANCH_NO',   'value' => $filters['branch_no']  ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_IS_ACTIVE',   'value' => $filters['is_active']  ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_HAS_ACC',     'value' => $filters['has_acc']    ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_HAS_BENEF',   'value' => $filters['has_benef']  ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_THE_MONTH',   'value' => $filters['the_month']  ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_OFFSET',      'value' => $offset,                        'type' => '', 'length' => -1),
-            array('name' => ':P_LIMIT',       'value' => $limit,                         'type' => '', 'length' => -1),
-            array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor',                       'type' => OCI_B_CURSOR),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',                          'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_EMP_NO',      'value' => $filters['emp_no']    ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_BRANCH_NO',   'value' => $filters['branch_no'] ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_IS_ACTIVE',   'value' => $filters['is_active'] ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_HAS_ACC',     'value' => $filters['has_acc']   ?? null, 'type' => '', 'length' => -1),
+            array('name' => ':P_OFFSET',      'value' => $offset,                       'type' => '', 'length' => -1),
+            array('name' => ':P_LIMIT',       'value' => $limit,                        'type' => '', 'length' => -1),
+            array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor',                      'type' => OCI_B_CURSOR),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',                         'type' => SQLT_CHR, 'length' => -1),
         );
         return $this->New_rmodel->general_get($this->PKG_NAME, 'EMPLOYEES_LIST_PAGINATED', $params);
     }
@@ -482,10 +478,8 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_BRANCH_NO', 'value' => $filters['branch_no'] ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_IS_ACTIVE', 'value' => $filters['is_active'] ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_HAS_ACC',   'value' => $filters['has_acc']   ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_HAS_BENEF', 'value' => $filters['has_benef'] ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_THE_MONTH', 'value' => $filters['the_month'] ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_CNT_OUT',   'value' => 'CNT',                         'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_MSG_OUT',   'value' => 'MSG',                         'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',   'value' => 'MSG',                         'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'EMPLOYEES_COUNT', $params);
         return intval($result['CNT'] ?? 0);
@@ -499,13 +493,11 @@ class Payment_accounts_model extends MY_Model
             array('name' => ':P_BRANCH_NO',  'value' => $filters['branch_no'] ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_IS_ACTIVE',  'value' => $filters['is_active'] ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_HAS_ACC',    'value' => $filters['has_acc']   ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_HAS_BENEF',  'value' => $filters['has_benef'] ?? null, 'type' => '', 'length' => -1),
-            array('name' => ':P_THE_MONTH',  'value' => $filters['the_month'] ?? null, 'type' => '', 'length' => -1),
             array('name' => ':P_TOTAL_OUT',  'value' => 'TOT',  'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_BANK_OUT',   'value' => 'BNK',  'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_WALLET_OUT', 'value' => 'WLT',  'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_BENEF_OUT',  'value' => 'BNF',  'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_MSG_OUT',    'value' => 'MSG',  'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',    'value' => 'MSG',  'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'EMPLOYEES_TOTALS', $params);
         return [
@@ -522,7 +514,7 @@ class Payment_accounts_model extends MY_Model
         $params = array(
             array('name' => ':P_EMP_NO',      'value' => $emp_no,  'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor', 'type' => OCI_B_CURSOR),
-            array('name' => ':P_MSG_OUT',     'value' => 'MSG',    'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',    'type' => SQLT_CHR, 'length' => -1),
         );
         $rows = $this->New_rmodel->general_get($this->PKG_NAME, 'EMPLOYEE_GET', $params);
         return is_array($rows) && count($rows) > 0 ? $rows[0] : null;

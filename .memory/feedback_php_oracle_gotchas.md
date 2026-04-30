@@ -4,7 +4,7 @@ description: أخطاء صامتة تحدث في DBConn و excuteProcedures و h
 type: feedback
 originSessionId: de9d02d3-f232-41d9-8bb0-df68ed0272c7
 ---
-أربع pitfalls اكتُشفت في موديول `payment_accounts` (2026-04-26). كلها صامتة (لا تطلع errors واضحة) لكنها تكسر الـ data flow.
+**pitfalls اكتُشفت في موديولي `payment_accounts` و `payment_req` (2026-04-26 → 2026-04-29). كلها صامتة (لا تطلع errors واضحة) لكنها تكسر الـ data flow.**
 
 ## ١. `excuteProcedures` يستخدم `value` كمفتاح للـ output
 
@@ -103,7 +103,88 @@ SCRIPT;
 
 ✅ `sec_scripts($scripts);` → يخزن في config، يُطبع عبر `put_headers('js')` في `template1.php:381`، **بعد** تحميل jQuery
 
-## ٦. الـ Procedure الكفؤة — CTEs بدل scalar subqueries
+## ٦. `SQLT_INT` مع value=null → يتحوّل لـ 0 (مش NULL)
+
+**العَرَض:** procedure ترجع 0 صف في PHP بينما SQL Developer ترجع البيانات كاملة.
+
+**السبب:** عند binding `null` كـ `SQLT_INT`، الـ OCI8 driver يحوّله لـ `0` بدل NULL. لو الـ procedure فيها شرط `WHERE (P_TYPE IS NULL OR PROVIDER_TYPE = P_TYPE)`:
+- متوقع: `WHERE (NULL IS NULL OR ...)` = TRUE → كل الصفوف
+- فعلي: `WHERE (0 IS NULL OR PROVIDER_TYPE = 0)` = FALSE (ما في صفوف بـ TYPE=0)
+
+**الحل:** استخدم `'type' => ''` بدل `SQLT_INT` للـ params اللي قد تكون NULL:
+```php
+// ❌ غلط
+array('name' => ':P_TYPE', 'value' => $type, 'type' => SQLT_INT, 'length' => -1)
+
+// ✅ صحيح — الـ '' يخلي OCI8 يستنتج النوع، فـ null تنتقل كـ NULL
+array('name' => ':P_TYPE', 'value' => $type, 'type' => '', 'length' => -1)
+```
+
+⚠️ هذا الـ pattern أصاب `providers_list($type=null)` — الـ dropdown كان فاضي مع إن في 11 مزود في DB.
+
+## ٧. `length => -1` للـ MSG_OUT (OUT VARCHAR2) → buffer 3 chars فقط
+
+**العَرَض:** `ORA-06502: PL/SQL: numeric or value error: character string buffer too small` ثم `msg:"MSG"` في الاستجابة.
+
+**السبب:**
+```php
+$this->output[$param['value']] = $param['value'];  // = 'MSG' (3 chars)
+oci_bind_by_name($stmt, ':P_MSG_OUT', $this->output['MSG'], -1, SQLT_CHR);
+```
+- `length => -1` يجعل الـ buffer = طول القيمة الابتدائية = 3 chars (طول "MSG")
+- لما الـ procedure يحاول يكتب `'لا يمكن الحذف: المزود عنده 7 فرع، احذف الفروع أولاً'` (طويل) → buffer overflow → ORA-06502
+- الـ exception handler يحاول يكتب `SQLERRM` (نفس الخطأ) → cascade
+- الـ buffer يضل بقيمته الأصلية `'MSG'` فيظهر للمستخدم
+
+**الحل:** خصّص buffer واسع للـ OUT VARCHAR2:
+```php
+array('name' => ':P_MSG_OUT', 'value' => 'MSG', 'type' => SQLT_CHR, 'length' => 500)
+```
+
+⚠️ الـ pattern `length => -1` كان يصيب 35 instance في `Payment_accounts_model.php` — كل عمليات Insert/Update/Delete/Toggle. استبدلت كلها بـ 500.
+
+📌 ملاحظة: الـ `general_get` في `New_rmodel.php` يُعيد كتابة الـ MSG_OUT بـ `length => 500` تلقائياً. المشكلة فقط في الـ functions اللي تستدعي `excuteProcedures` مباشرة.
+
+## ٨. الويب يتصل بـ Oracle باسم الـ user الموقّع (مش GFC_PAK)
+
+في `application/libraries/DBConn.php:32-39`:
+```php
+if($this->CI->session->userdata('user_data')){
+    $current_user = $this->CI->session->userdata('user_data');
+    $db_pass = 'A'.substr(md5($current_user->db_pwd),3);
+    $this->conn = oci_new_connect($current_user->username, $db_pass, ...);
+}
+```
+
+→ كل user مسجّل دخول له **حساب Oracle خاص فيه**. PL/SQL Developer يتصل بـ GFC_PAK (الـ schema) لكن الويب يتصل بـ user الجلسة.
+
+**النتيجة المهمة:** GRANTs لـ PUBLIC (point #2) ضرورية لكل الجداول والـ packages. بدونها، الـ procedures ترجع فاضية بدون error.
+
+```sql
+GRANT EXECUTE ON GFC_PAK.<PKG_NAME> TO PUBLIC;
+GRANT SELECT ON GFC.<TABLE_NAME> TO PUBLIC;
+CREATE OR REPLACE PUBLIC SYNONYM <PKG_NAME> FOR GFC_PAK.<PKG_NAME>;
+```
+
+## ٩. Excel: استخدم `setCellValueExplicit` للـ IDs و IBANs
+
+عند تصدير Excel (PhpSpreadsheet)، الـ `setCellValue` العادي يحوّل الأرقام الطويلة لـ scientific notation أو يحذف leading zeros:
+- `924921596` → `9.24921596E+08` ❌
+- `0599xxxx` → `599xxxx` ❌
+- `PS37PALS...` → OK (string)
+
+```php
+// ❌ غلط
+$sheet->setCellValue('C' . $row, $r['EMP_ID']);
+
+// ✅ صحيح — يحفظ القيمة كـ STRING ويمنع تحويل Excel
+$sheet->setCellValueExplicit('C' . $row, (string)$r['EMP_ID'],
+    \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+```
+
+استخدمها لكل: رقم الهوية، IBAN، رقم الحساب البنكي، رقم المحفظة.
+
+## ١٠. الـ Procedure الكفؤة — CTEs بدل scalar subqueries
 
 عند الحاجة لـ counts متعددة لكل صف في paginated list:
 
