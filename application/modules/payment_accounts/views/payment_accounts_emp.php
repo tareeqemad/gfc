@@ -14,6 +14,7 @@ $urls = [
     'branches'    => base_url("$MODULE_NAME/$TB_NAME/branches_list_json"),
     'attach'      => base_url('attachments/attachment/public_upload'),
     'auto_fix'    => base_url("$MODULE_NAME/$TB_NAME/auto_fix_splits"),
+    'link_auto'   => base_url("$MODULE_NAME/$TB_NAME/account_link_auto"),
 ];
 
 // تصنيف المرفقات الخاص بالمستفيدين (يتعرّف عليه نظام المرفقات)
@@ -156,6 +157,37 @@ $rel_options = [
     </div>
 </div>
 
+<?php $pending_batches_arr = is_array($pending_batches ?? null) ? $pending_batches : []; if (!empty($pending_batches_arr)): ?>
+<div class="alert mb-3" style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:.75rem 1rem">
+    <div class="d-flex align-items-center gap-3">
+        <i class="fa fa-exclamation-triangle" style="font-size:1.7rem;color:#d97706"></i>
+        <div style="flex:1">
+            <div style="font-weight:700;color:#92400e;font-size:.95rem">
+                ⚠️ يوجد <?= count($pending_batches_arr) ?> دفعة محتسبة (لم تُنفّذ بعد) لهذا الموظف
+            </div>
+            <div style="font-size:.78rem;color:#78350f;margin-top:.2rem">
+                أي تعديل على الحسابات يستلزم <b>"تحديث التوزيع"</b> من شاشة الدفعة قبل التنفيذ، وإلا سيُنفّذ بالتوزيع القديم.
+            </div>
+            <div style="margin-top:.4rem;display:flex;gap:.4rem;flex-wrap:wrap">
+                <?php foreach ($pending_batches_arr as $pb):
+                    $bid   = (int)($pb['BATCH_ID'] ?? 0);
+                    $bno   = $pb['BATCH_NO'] ?? '';
+                    $amt   = (float)($pb['EMP_AMOUNT'] ?? 0);
+                    $bdate = $pb['BATCH_DATE'] ?? '';
+                ?>
+                    <a href="<?= base_url('payment_req/payment_req/batch_detail/' . $bid) ?>" target="_blank"
+                       style="background:#fff;border:1px solid #fbbf24;color:#92400e;padding:.25rem .65rem;border-radius:6px;font-size:.78rem;text-decoration:none;font-weight:700">
+                        <i class="fa fa-money"></i> <?= htmlspecialchars($bno) ?>
+                        <small style="font-weight:400;opacity:.85"> · <?= n_format($amt) ?> ₪</small>
+                        <i class="fa fa-external-link" style="font-size:.7rem;margin-inline-start:3px;opacity:.6"></i>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="row"><div class="col-lg-12"><div class="card">
     <div class="card-body">
 
@@ -235,6 +267,12 @@ $rel_options = [
                 <i class="fa fa-credit-card text-primary"></i>
                 <h5>حسابات الصرف</h5>
                 <span class="count"><?= $active_cnt ?>/<?= count($accounts_arr) ?></span>
+                <?php if (!empty($beneficiaries_arr)): ?>
+                    <button class="btn btn-sm btn-outline-secondary" data-action="link-auto"
+                            title="ربط الحسابات الموجودة بالمستفيدين تلقائياً (مطابقة بالهوية أو الاسم)">
+                        <i class="fa fa-link"></i> ربط تلقائي
+                    </button>
+                <?php endif; ?>
                 <button class="btn btn-primary btn-sm" data-action="acc-new"><i class="fa fa-plus"></i> حساب جديد</button>
             </div>
             <div id="accountsList"></div>
@@ -445,7 +483,7 @@ $rel_options = [
                     إيقاف الحساب يمنع استخدامه في الصرف، لكن يبقى محفوظاً للسجل التاريخي.
                 </div>
                 <div class="row g-2">
-                    <div class="col-md-12">
+                    <div class="col-md-7">
                         <label class="fw-bold" style="font-size:.82rem">سبب الإيقاف <span class="text-danger">*</span></label>
                         <select id="deact_reason" class="form-select">
                             <option value="">— اختر السبب —</option>
@@ -456,6 +494,14 @@ $rel_options = [
                             <option value="5">تحويل لحساب آخر</option>
                             <option value="9">أخرى</option>
                         </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="fw-bold" style="font-size:.82rem">
+                            شهر بدء الإيقاف
+                            <small class="text-muted" style="font-weight:400">(اختياري)</small>
+                        </label>
+                        <input type="month" id="deact_month" class="form-control"
+                               title="مهم خاصة في حالات الوفاة — اتركه فارغاً للشهر الحالي">
                     </div>
                     <div class="col-md-12 mt-2">
                         <label class="fw-bold" style="font-size:.82rem">ملاحظة (اختياري)</label>
@@ -607,7 +653,17 @@ $rel_options = [
             head += '</span>';
             if(isDefault) head += '<span class="acc-flag default">⭐ افتراضي</span>';
             if(isBenef)   head += '<span class="acc-flag benef">🎭 ' + escHtml(a.BENEFICIARY_NAME || '') + '</span>';
-            if(!isActive) head += '<span class="acc-flag deactivated">⛔ موقوف</span>';
+            if(!isActive) {
+                // 🆕 سبب الإيقاف + شهر الإيقاف
+                var reason = parseInt(a.INACTIVE_REASON) || 0;
+                var rTxt = ({1:'تقاعد',2:'وفاة',3:'فصل',4:'تجميد',5:'تحويل',9:'أخرى'})[reason] || '';
+                var im   = (a.INACTIVE_FROM_MONTH || '').toString();
+                var imLabel = (im.length === 6) ? (im.substr(4,2) + '/' + im.substr(0,4)) : '';
+                var label = '⛔ موقوف';
+                if(rTxt)    label += ' · ' + rTxt;
+                if(imLabel) label += ' (' + imLabel + ')';
+                head += '<span class="acc-flag deactivated" title="سبب الإيقاف' + (imLabel ? ' منذ ' + imLabel : '') + '">' + label + '</span>';
+            }
             head += '</div>';
 
             // Body: account details
@@ -694,6 +750,26 @@ $rel_options = [
             if(!j.ok){ danger_msg('خطأ', j.msg); return; }
             success_msg('تم', j.msg);
             if((j.fixed||0) > 0){ reload_Page(); }
+        }, 'json');
+    }
+
+    // === ربط الحسابات الموجودة بالمستفيدين تلقائياً ===
+    function linkAccountsAuto(){
+        if(!_guard('link-auto')) return;
+        var nl = String.fromCharCode(10);
+        if(!confirm('سيُحاول النظام ربط الحسابات الموجودة بالمستفيدين:' + nl +
+                    '• مطابقة بهوية صاحب الحساب' + nl +
+                    '• ثم مطابقة بالاسم' + nl + nl +
+                    'الحسابات على اسم الموظف نفسه لن تتأثر.' + nl +
+                    'متابعة؟')){
+            _release('link-auto'); return;
+        }
+        get_data(URLS.link_auto, {emp_no: DATA.emp_no}, function(resp){
+            var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+            _release('link-auto');
+            if(!j.ok){ danger_msg('خطأ', j.msg); return; }
+            success_msg('تم', j.msg);
+            if((j.linked||0) > 0){ reload_Page(); }
         }, 'json');
     }
 
@@ -810,12 +886,23 @@ $rel_options = [
 
             // تحديد النوع — 3 حالات:
             //   1) acc.BENEFICIARY_ID موجود → benef_<ID>  (مستفيد محدد)
-            //   2) لا → owner_id/name = بيانات الموظف → self
+            //   2) لا → owner_id أو name = بيانات الموظف → self
             //   3) لا → other (شخص آخر يدوي)
-            var ownIdSame   = (acc.OWNER_ID_NO || '') === (EMP.ID_NO || '');
-            var ownNameSame = (acc.OWNER_NAME  || '') === (EMP.NAME  || '');
+            // 🆕 matching مرن — يتجاوز اختلاف whitespace/spaces
+            var _norm = function(s){ return String(s || '').replace(/\s+/g, ' ').trim(); };
+            var accId   = _norm(acc.OWNER_ID_NO);
+            var accName = _norm(acc.OWNER_NAME);
+            var empId   = _norm(EMP.ID_NO);
+            var empName = _norm(EMP.NAME);
+            var ownIdSame   = (accId !== '' && accId === empId);
+            var ownNameSame = (accName !== '' && accName === empName);
             var isBenef = !!acc.BENEFICIARY_ID;
-            var isSelf  = !isBenef && (ownIdSame && ownNameSame);
+            // self = ID matches OR (no ID and name matches) OR (both empty — افتراضي)
+            var isSelf  = !isBenef && (
+                ownIdSame ||
+                (accId === '' && ownNameSame) ||
+                (accId === '' && accName === '')
+            );
             var kind    = isBenef ? ('benef_' + acc.BENEFICIARY_ID) : (isSelf ? 'self' : 'other');
 
             $('#acc_owner_kind').val(kind);
@@ -948,6 +1035,7 @@ $rel_options = [
         $('#deact_acc_id').val(id);
         $('#deact_reason').val('');           // فاضي → يجبر المستخدم يختار بوعي
         $('#deact_notes').val('');
+        $('#deact_month').val('');            // 🆕
         bootstrap.Modal.getOrCreateInstance(document.getElementById('deactAccModal')).show();
     }
 
@@ -956,6 +1044,9 @@ $rel_options = [
         var id     = $('#deact_acc_id').val();
         var reason = $('#deact_reason').val();
         var notes  = $('#deact_notes').val() || '';
+        // 🆕 شهر الإيقاف: input type="month" يرجع "YYYY-MM" → نحوّله لـ "YYYYMM"
+        var raw_month   = $('#deact_month').val() || '';
+        var inact_month = raw_month ? raw_month.replace('-', '') : '';
 
         if(!reason){ warning_msg('تنبيه', 'اختر سبب الإيقاف'); return; }
         if(!_guard('acc-deact-'+id)) return;
@@ -963,7 +1054,9 @@ $rel_options = [
         var $btn = $('#deactAccConfirm');
         $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> جاري الإيقاف...');
 
-        get_data(URLS.acc_deact, {acc_id: id, reason: reason, notes: notes}, function(resp){
+        get_data(URLS.acc_deact, {
+            acc_id: id, reason: reason, notes: notes, inact_month: inact_month
+        }, function(resp){
             var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
             _release('acc-deact-'+id);
             $btn.prop('disabled', false).html('<i class="fa fa-pause me-1"></i> تأكيد الإيقاف');
@@ -1044,6 +1137,7 @@ $rel_options = [
             case 'benef-save':      saveBenef();                          break;
             case 'benef-attach':    openBenefAttach(id);                  break;
             case 'auto-fix':        autoFixSplits();                      break;
+            case 'link-auto':       linkAccountsAuto();                   break;
         }
     });
 

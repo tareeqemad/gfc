@@ -86,6 +86,8 @@ echo AntiForgeryToken();
                                     <option value="">— الكل —</option>
                                     <option value="1" selected>عنده حساب نشط</option>
                                     <option value="0">بدون حساب نشط</option>
+                                    <option value="2">📱 عنده محفظة</option>
+                                    <option value="3">🏦 عنده بنك</option>
                                 </select>
                             </div>
 

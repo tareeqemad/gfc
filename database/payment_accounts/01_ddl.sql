@@ -112,6 +112,7 @@ CREATE TABLE GFC.PAYMENT_ACCOUNTS_TB (
     IS_ACTIVE       NUMBER(1) DEFAULT 1,            -- 0=موقوف
     -- سبب الإيقاف (اختياري — للمتابعة)
     INACTIVE_REASON NUMBER,                         -- 1=تقاعد, 2=وفاة, 3=فصل, 4=تجميد, 5=تحويل, 9=أخرى
+    INACTIVE_FROM_MONTH NUMBER(6),                  -- 🆕 شهر بدء الإيقاف (YYYYMM) — مهم للوفاة/التجميد
     FROM_DATE       DATE      DEFAULT SYSDATE,
     TO_DATE         DATE,
     STATUS          NUMBER(1) DEFAULT 1,            -- 1=نشط, 9=محذوف

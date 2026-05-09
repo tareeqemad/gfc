@@ -73,6 +73,84 @@ class Payment_accounts_model extends MY_Model
         return $result['MSG'];
     }
 
+    function link_accounts_to_benef_auto($emp_no)
+    {
+        $params = array(
+            array('name' => ':P_EMP_NO',     'value' => (int)$emp_no, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_LINKED_OUT', 'value' => 'LNK',        'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_MSG_OUT',    'value' => 'MSG',        'type' => SQLT_CHR, 'length' => 500),
+        );
+        $result = $this->conn->excuteProcedures($this->PKG_NAME, 'LINK_ACCOUNTS_TO_BENEF_AUTO', $params);
+        return [
+            'msg'    => $result['MSG'] ?? '',
+            'linked' => intval($result['LNK'] ?? 0),
+        ];
+    }
+
+    // ربط جماعي تلقائي لكل الموظفين
+    function link_accounts_bulk_auto()
+    {
+        $params = array(
+            array('name' => ':P_LINKED_OUT',        'value' => 'LNK',  'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_EMPS_AFFECTED_OUT', 'value' => 'EMPS', 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_MSG_OUT',           'value' => 'MSG',  'type' => SQLT_CHR, 'length' => 500),
+        );
+        $result = $this->conn->excuteProcedures($this->PKG_NAME, 'LINK_ACCOUNTS_BULK_AUTO', $params);
+        return [
+            'msg'    => $result['MSG']  ?? '',
+            'linked' => intval($result['LNK']  ?? 0),
+            'emps'   => intval($result['EMPS'] ?? 0),
+        ];
+    }
+
+    // ============================================================
+    // HEALTH CHECK
+    // ============================================================
+    function health_overview()
+    {
+        $params = array(
+            array('name' => ':P_EMP_NO_ACC_OUT',        'value' => 'EMP_NO_ACC',  'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_ACC_NO_IBAN_OUT',       'value' => 'ACC_NO_IBAN', 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_BENEF_UNLINKED_OUT',    'value' => 'BENEF_UNLNK', 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_ACC_INACTIVE_ONLY_OUT', 'value' => 'INACT_ONLY',  'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_PROV_INCOMPLETE_OUT',   'value' => 'PROV_INCOMP', 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_BENEF_EXPIRED_OUT',     'value' => 'BENEF_EXP',   'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_EMP_DUP_DEFAULT_OUT',   'value' => 'DUP_DEF',     'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_TOTAL_EMPS_OUT',        'value' => 'TOT_EMP',     'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_TOTAL_ACCOUNTS_OUT',    'value' => 'TOT_ACC',     'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_TOTAL_BENEF_OUT',       'value' => 'TOT_BNF',     'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_MSG_OUT',               'value' => 'MSG',         'type' => SQLT_CHR, 'length' => 500),
+        );
+        $result = $this->conn->excuteProcedures($this->PKG_NAME, 'HEALTH_OVERVIEW', $params);
+        return [
+            'emp_no_acc'        => intval($result['EMP_NO_ACC']  ?? 0),
+            'acc_no_iban'       => intval($result['ACC_NO_IBAN'] ?? 0),
+            'benef_unlinked'    => intval($result['BENEF_UNLNK'] ?? 0),
+            'acc_inactive_only' => intval($result['INACT_ONLY']  ?? 0),
+            'prov_incomplete'   => intval($result['PROV_INCOMP'] ?? 0),
+            'benef_expired'     => intval($result['BENEF_EXP']   ?? 0),
+            'emp_dup_default'   => intval($result['DUP_DEF']     ?? 0),
+            'total_emps'        => intval($result['TOT_EMP']     ?? 0),
+            'total_accounts'    => intval($result['TOT_ACC']     ?? 0),
+            'total_benef'       => intval($result['TOT_BNF']     ?? 0),
+            'msg'               => $result['MSG']  ?? '',
+        ];
+    }
+
+    function health_list($category, $filters = [], $offset = 0, $limit = 200)
+    {
+        $params = array(
+            array('name' => ':P_CATEGORY',    'value' => $category,                     'type' => SQLT_CHR,    'length' => 50),
+            array('name' => ':P_BRANCH_NO',   'value' => $filters['branch_no'] ?? null, 'type' => '',          'length' => -1),
+            array('name' => ':P_IS_ACTIVE',   'value' => $filters['is_active'] ?? null, 'type' => '',          'length' => -1),
+            array('name' => ':P_OFFSET',      'value' => $offset,                       'type' => SQLT_INT,    'length' => -1),
+            array('name' => ':P_LIMIT',       'value' => $limit,                        'type' => SQLT_INT,    'length' => -1),
+            array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor',                      'type' => OCI_B_CURSOR),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',                         'type' => SQLT_CHR,    'length' => 500),
+        );
+        return $this->New_rmodel->general_get($this->PKG_NAME, 'HEALTH_LIST', $params);
+    }
+
     function provider_delete($provider_id)
     {
         $params = array(
@@ -306,6 +384,20 @@ class Payment_accounts_model extends MY_Model
         return $this->New_rmodel->general_get($this->PKG_NAME, 'ACCOUNTS_LIST', $params);
     }
 
+    /**
+     * معاينة التوزيع المتوقّع لكل موظفي طلب صرف
+     * يرجع لكل (emp+account) سطر مع ALLOC_AMOUNT بناءً على REQ_AMOUNT الفعلي للموظف
+     */
+    function accounts_preview_by_req($req_id)
+    {
+        $params = array(
+            array('name' => ':P_REQ_ID',      'value' => (int)$req_id, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_REF_CUR_OUT', 'value' => 'cursor',     'type' => OCI_B_CURSOR),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',        'type' => SQLT_CHR, 'length' => 500),
+        );
+        return $this->New_rmodel->general_get($this->PKG_NAME, 'ACCOUNTS_PREVIEW_BY_REQ', $params);
+    }
+
     function account_get($acc_id)
     {
         $params = array(
@@ -362,13 +454,15 @@ class Payment_accounts_model extends MY_Model
         return $result['MSG'];
     }
 
-    function account_deactivate($acc_id, $reason, $notes = '')
+    function account_deactivate($acc_id, $reason, $notes = '', $inact_month = null)
     {
         $params = array(
-            array('name' => ':P_ACC_ID',  'value' => $acc_id, 'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_REASON',  'value' => $reason, 'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':P_NOTES',   'value' => $notes,  'type' => '',       'length' => -1),
-            array('name' => ':P_MSG_OUT', 'value' => 'MSG',   'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_ACC_ID',         'value' => $acc_id,      'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_REASON',         'value' => $reason,      'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_NOTES',          'value' => $notes,       'type' => '',       'length' => -1),
+            // 🆕 شهر بدء الإيقاف YYYYMM (NULL → الشهر الحالي على مستوى DB)
+            array('name' => ':P_INACTIVE_MONTH', 'value' => $inact_month, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_MSG_OUT',        'value' => 'MSG',        'type' => SQLT_CHR, 'length' => 500),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'ACCOUNT_DEACTIVATE', $params);
         return $result['MSG'];

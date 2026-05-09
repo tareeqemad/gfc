@@ -191,8 +191,12 @@ class Payment_accounts extends MY_Controller
                 $prov_label = $def_prov;
             }
 
-            // الحالة: متوفى > حساب مغلق > فعّال/متقاعد
-            if ($has_dead) {
+            // الحالة: لو شهر مُحدّد → الحالة التاريخية فقط (IS_ACTIVE من EMPLOYEES_MONTH عبر الـ procedure)
+            //          لا → الحالة الحالية: متوفى > حساب مغلق > فعّال/متقاعد
+            $is_historical_xl = !empty($filters['the_month']);
+            if ($is_historical_xl) {
+                $status_label = $is_act == 1 ? 'فعّال' : 'متقاعد';
+            } elseif ($has_dead) {
                 $status_label = 'متوفى';
             } elseif ($has_frozen) {
                 $status_label = 'حساب مغلق';
@@ -214,7 +218,11 @@ class Payment_accounts extends MY_Controller
             $sheet->setCellValue('L' . $rowNum, $more_cnt > 0 ? $more_cnt : '');
             $sheet->setCellValue('M' . $rowNum, $benef_cnt > 0 ? $benef_cnt : '');
 
-            if ($has_dead) {
+            if ($is_historical_xl) {
+                if ($is_act != 1) {
+                    $sheet->getStyle("A{$rowNum}:{$lastCol}{$rowNum}")->getFont()->getColor()->setRGB('64748b');
+                }
+            } elseif ($has_dead) {
                 $sheet->getStyle("A{$rowNum}:{$lastCol}{$rowNum}")->getFont()->getColor()->setRGB('991b1b');
             } elseif ($has_frozen) {
                 $sheet->getStyle("A{$rowNum}:{$lastCol}{$rowNum}")->getFont()->getColor()->setRGB('92400e');
@@ -263,12 +271,17 @@ class Payment_accounts extends MY_Controller
             unset($b);
         }
 
+        // البحث عن دفعات محتسبة (غير منفّذة) للموظف
+        $this->load->model('payment_req/payment_req_model');
+        $pending_batches = $this->payment_req_model->emp_pending_batches($emp_no);
+
         $data['title']         = 'حسابات الصرف — ' . ($emp_data['EMP_NAME'] ?? $emp_no);
         $data['emp_no']        = $emp_no;
         $data['emp_data']      = $emp_data;
         $data['accounts']      = $this->{$this->MODEL_NAME}->accounts_list($emp_no);
         $data['beneficiaries'] = $beneficiaries;
         $data['providers']     = $this->{$this->MODEL_NAME}->providers_list();
+        $data['pending_batches'] = is_array($pending_batches) ? $pending_batches : [];
         $data['content']       = 'payment_accounts_emp';
 
         $this->load->view('template/template1', $data);
@@ -339,10 +352,14 @@ class Payment_accounts extends MY_Controller
 
     function account_deactivate()
     {
-        $acc_id = $this->input->post('acc_id');
-        $reason = $this->input->post('reason') ?: 9;
-        $notes  = $this->input->post('notes') ?: '';
-        $res = $this->{$this->MODEL_NAME}->account_deactivate($acc_id, $reason, $notes);
+        $acc_id      = $this->input->post('acc_id');
+        $reason      = $this->input->post('reason') ?: 9;
+        $notes       = $this->input->post('notes') ?: '';
+        // 🆕 شهر بدء الإيقاف YYYYMM (اختياري — لو فاضي، الـ procedure يستخدم الشهر الحالي)
+        $inact_month = $this->input->post('inact_month');
+        $inact_month = ($inact_month !== null && $inact_month !== '') ? intval($inact_month) : null;
+
+        $res = $this->{$this->MODEL_NAME}->account_deactivate($acc_id, $reason, $notes, $inact_month);
         header('Content-Type: application/json');
         echo json_encode(['ok' => $res == '1', 'msg' => $res == '1' ? 'تم الإيقاف' : $res]);
     }
@@ -757,6 +774,455 @@ class Payment_accounts extends MY_Controller
         $rows = $this->{$this->MODEL_NAME}->providers_list($type ?: null);
         header('Content-Type: application/json');
         echo json_encode(['ok' => true, 'data' => is_array($rows) ? $rows : []]);
+    }
+
+    // ==================== BULK IMPORT ====================
+    function bulk_import()
+    {
+        $data['title']     = 'استيراد حسابات من Excel';
+        $data['content']   = 'payment_accounts_bulk_import';
+        $data['providers'] = $this->{$this->MODEL_NAME}->providers_list();
+        $this->load->view('template/template1', $data);
+    }
+
+    function bulk_import_template()
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Accounts');
+        $sheet->setRightToLeft(true);
+
+        $headers = ['رقم الموظف*', 'رمز المزود*', 'رقم الحساب', 'IBAN', 'رقم المحفظة', 'هوية صاحب الحساب', 'اسم صاحب الحساب', 'جوال صاحب الحساب', 'افتراضي (0/1)', 'نوع التوزيع*', 'قيمة التوزيع', 'ترتيب', 'ملاحظات'];
+        $col = 'A';
+        foreach ($headers as $h) { $sheet->setCellValue($col . '1', $h); $col++; }
+        $lastCol = chr(64 + count($headers));
+
+        // Header style
+        $sheet->getStyle("A1:{$lastCol}1")->getFont()->setBold(true);
+        $sheet->getStyle("A1:{$lastCol}1")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('1e293b');
+        $sheet->getStyle("A1:{$lastCol}1")->getFont()->getColor()->setRGB('FFFFFF');
+
+        // مثال
+        $sheet->setCellValue('A2', '1090');
+        $sheet->setCellValue('B2', 'BANK89');
+        $sheet->setCellValueExplicit('C2', '1234567890', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $sheet->setCellValueExplicit('D2', 'PS31PALS045105274280991604000', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $sheet->setCellValue('F2', '801784513');
+        $sheet->setCellValue('G2', 'حنين اسماعيل صافي');
+        $sheet->setCellValue('I2', 1);
+        $sheet->setCellValue('J2', 3); // كامل الباقي
+        $sheet->setCellValue('L2', 1);
+
+        // ملاحظات تعليمات
+        $sheet->setCellValue('A4', 'ملاحظات:');
+        $sheet->setCellValue('A5', '• نوع التوزيع: 1=نسبة، 2=مبلغ ثابت، 3=كامل الباقي');
+        $sheet->setCellValue('A6', '• رمز المزود من شاشة المزودين (مثل BANK89, BANK82, JAWWAL, PALPAY)');
+        $sheet->setCellValue('A7', '• الحقول بـ * إجبارية');
+        $sheet->setCellValue('A8', '• لو رقم المحفظة موجود، رقم الحساب فارغ');
+
+        foreach (range('A', $lastCol) as $c) { $sheet->getColumnDimension($c)->setAutoSize(true); }
+
+        $filename = 'قالب_استيراد_حسابات.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+
+    function bulk_import_preview()
+    {
+        if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'msg' => 'لم يتم رفع الملف']);
+            return;
+        }
+
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($_FILES['file']['tmp_name']);
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows = $sheet->toArray(null, true, true, true);
+        } catch (\Exception $e) {
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'msg' => 'فشل قراءة الملف: ' . $e->getMessage()]);
+            return;
+        }
+
+        // Build provider lookup
+        $providers = $this->{$this->MODEL_NAME}->providers_list();
+        $prov_map  = [];
+        if (is_array($providers)) {
+            foreach ($providers as $p) {
+                $code = trim($p['PROVIDER_CODE'] ?? '');
+                if ($code) $prov_map[mb_strtoupper($code)] = $p;
+            }
+        }
+
+        // helper: تطبيع الأرقام لمقارنة المحافظ/الحسابات (إزالة فراغات/شرَط/صفر بادئ)
+        $norm = function ($s) {
+            $t = mb_strtoupper(trim((string)$s));
+            $t = preg_replace('/[\s\-]+/u', '', $t);
+            return ltrim($t, '0');
+        };
+
+        $parsed = [];
+        $row_n = 0;
+        foreach ($rows as $rIdx => $r) {
+            if ($rIdx == 1) continue; // header
+            $row_n++;
+            $emp_no   = trim((string)($r['A'] ?? ''));
+            $prov_cd  = trim((string)($r['B'] ?? ''));
+            $acc_no   = trim((string)($r['C'] ?? ''));
+            $iban     = trim((string)($r['D'] ?? ''));
+            $wallet   = trim((string)($r['E'] ?? ''));
+            $own_id   = trim((string)($r['F'] ?? ''));
+            $own_nm   = trim((string)($r['G'] ?? ''));
+            $own_ph   = trim((string)($r['H'] ?? ''));
+            $is_def   = (int)($r['I'] ?? 0);
+            $sp_type  = (int)($r['J'] ?? 3);
+            $sp_val   = $r['K'] ?? null;
+            $sp_ord   = (int)($r['L'] ?? 1);
+            $notes    = trim((string)($r['M'] ?? ''));
+
+            if (empty($emp_no) && empty($prov_cd)) continue; // skip empty/notes rows
+
+            $errors = [];
+            if (!$emp_no || !ctype_digit($emp_no))            $errors[] = 'رقم الموظف غير صحيح';
+            if (!$prov_cd)                                     $errors[] = 'رمز المزود مطلوب';
+            $prov = $prov_map[mb_strtoupper($prov_cd)] ?? null;
+            if (!$prov)                                        $errors[] = "المزود '$prov_cd' غير موجود";
+            if (!in_array($sp_type, [1,2,3]))                  $errors[] = 'نوع التوزيع 1 أو 2 أو 3';
+            if ($prov && (int)$prov['PROVIDER_TYPE'] === 1 && !$acc_no && !$iban) $errors[] = 'البنك يحتاج رقم حساب أو IBAN';
+            if ($prov && (int)$prov['PROVIDER_TYPE'] === 2 && !$wallet)           $errors[] = 'المحفظة تحتاج رقم محفظة';
+
+            $parsed[] = [
+                'row'         => $row_n + 1,
+                'emp_no'      => $emp_no,
+                'provider'    => $prov ? $prov['PROVIDER_NAME'] : $prov_cd,
+                'provider_id' => $prov['PROVIDER_ID'] ?? null,
+                'provider_type' => $prov['PROVIDER_TYPE'] ?? null,
+                'account_no'  => $acc_no,
+                'iban'        => $iban,
+                'wallet'      => $wallet,
+                'owner_name'  => $own_nm,
+                'owner_id_no' => $own_id,
+                'owner_phone' => $own_ph,
+                'is_default'  => $is_def,
+                'split_type'  => $sp_type,
+                'split_value' => $sp_val,
+                'split_order' => $sp_ord,
+                'notes'       => $notes,
+                'errors'      => $errors,
+                'valid'       => empty($errors),
+                'duplicate'   => false,
+                'dup_reason'  => '',
+            ];
+        }
+
+        // 🆕 فحص التكرار: (1) داخل الملف نفسه (2) مقابل الموجود في DB
+        $emp_set = [];
+        foreach ($parsed as $p) {
+            if (!empty($p['emp_no']) && ctype_digit($p['emp_no'])) {
+                $emp_set[$p['emp_no']] = true;
+            }
+        }
+        // قيود قائمة في DB لكل موظف (مرة واحدة لكل موظف)
+        $db_keys = []; // key = emp_no|provider_id|kind|normalized_value
+        foreach (array_keys($emp_set) as $emp_no) {
+            $existing = $this->{$this->MODEL_NAME}->accounts_list($emp_no, 1);
+            if (!is_array($existing)) continue;
+            foreach ($existing as $a) {
+                $pid = (int)($a['PROVIDER_ID'] ?? 0);
+                if (!empty($a['WALLET_NUMBER'])) {
+                    $db_keys["$emp_no|$pid|W|" . $norm($a['WALLET_NUMBER'])] = true;
+                }
+                if (!empty($a['ACCOUNT_NO'])) {
+                    $db_keys["$emp_no|$pid|A|" . $norm($a['ACCOUNT_NO'])] = true;
+                }
+                if (!empty($a['IBAN'])) {
+                    $db_keys["$emp_no|$pid|I|" . $norm($a['IBAN'])] = true;
+                }
+            }
+        }
+
+        // فحص كل صف
+        $file_keys = [];
+        foreach ($parsed as &$p) {
+            if (!$p['valid']) continue;
+            $emp_no = $p['emp_no']; $pid = (int)$p['provider_id'];
+            $candidates = [];
+            if (!empty($p['wallet']))     $candidates[] = ['W', $p['wallet'], 'محفظة'];
+            if (!empty($p['account_no'])) $candidates[] = ['A', $p['account_no'], 'رقم حساب'];
+            if (!empty($p['iban']))       $candidates[] = ['I', $p['iban'], 'IBAN'];
+            foreach ($candidates as $c) {
+                $key = "$emp_no|$pid|{$c[0]}|" . $norm($c[1]);
+                if (isset($db_keys[$key])) {
+                    $p['duplicate']  = true;
+                    $p['dup_reason'] = $c[2] . ' موجود مسبقاً في قاعدة البيانات';
+                    break;
+                }
+                if (isset($file_keys[$key])) {
+                    $p['duplicate']  = true;
+                    $p['dup_reason'] = $c[2] . ' مكرر في الملف نفسه';
+                    break;
+                }
+                $file_keys[$key] = true;
+            }
+        }
+        unset($p);
+
+        $valid_cnt = 0; $err_cnt = 0; $dup_cnt = 0;
+        foreach ($parsed as $p) {
+            if (!$p['valid']) { $err_cnt++; continue; }
+            if (!empty($p['duplicate'])) { $dup_cnt++; continue; }
+            $valid_cnt++;
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'ok'         => true,
+            'rows'       => $parsed,
+            'valid'      => $valid_cnt,
+            'errors'     => $err_cnt,
+            'duplicates' => $dup_cnt,
+            'total'      => count($parsed),
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    function bulk_import_execute()
+    {
+        $rows_json = $this->input->post('rows');
+        $rows = json_decode($rows_json, true);
+        if (!is_array($rows)) {
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'msg' => 'بيانات غير صحيحة']);
+            return;
+        }
+
+        $ok_cnt = 0; $err_cnt = 0; $skip_cnt = 0; $errors = [];
+        foreach ($rows as $r) {
+            if (empty($r['valid'])) { $err_cnt++; continue; }
+            // 🆕 تخطّي المكرر (تم اكتشافه في المعاينة)
+            if (!empty($r['duplicate'])) { $skip_cnt++; continue; }
+
+            $data = [
+                'emp_no'      => $r['emp_no'],
+                'provider_id' => $r['provider_id'],
+                'account_no'  => $r['account_no']  ?? '',
+                'iban'        => $r['iban']        ?? '',
+                'wallet_number' => $r['wallet']    ?? '',
+                'owner_name'  => $r['owner_name']  ?? '',
+                'owner_id_no' => $r['owner_id_no'] ?? '',
+                'owner_phone' => $r['owner_phone'] ?? '',
+                'is_default'  => $r['is_default']  ?? 0,
+                'split_type'  => $r['split_type']  ?? 3,
+                'split_value' => $r['split_value'] ?? null,
+                'split_order' => $r['split_order'] ?? 1,
+                'notes'       => $r['notes']       ?? '',
+            ];
+            $res = $this->{$this->MODEL_NAME}->account_insert($data);
+            if (is_numeric($res)) {
+                $ok_cnt++;
+            } elseif (is_string($res) && strpos($res, 'حساب مكرر') !== false) {
+                // الـ DB رفضت المكرر (race condition / فات على المعاينة)
+                $skip_cnt++;
+            } else {
+                $err_cnt++;
+                $errors[] = 'صف ' . ($r['row'] ?? '?') . ': ' . $res;
+            }
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'ok'         => true,
+            'inserted'   => $ok_cnt,
+            'skipped'    => $skip_cnt,
+            'failed'     => $err_cnt,
+            'errors'     => $errors,
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    // ==================== DASHBOARD ====================
+    function dashboard()
+    {
+        // فحص سريع للصحة
+        $health = $this->{$this->MODEL_NAME}->health_overview();
+
+        // آخر 5 دفعات (من payment_req)
+        $this->load->model('payment_req/payment_req_model');
+        $recent = [];
+        $all = $this->payment_req_model->batch_history_list();
+        if (is_array($all)) {
+            $recent = array_slice($all, 0, 5);
+            array_walk_recursive($recent, function (&$v) {
+                if (is_string($v)) { $v = mb_convert_encoding($v, 'UTF-8', 'UTF-8'); }
+            });
+        }
+
+        $data['title']        = 'لوحة التحكم — حسابات الصرف';
+        $data['content']      = 'payment_accounts_dashboard';
+        $data['health']       = $health;
+        $data['recent_batches'] = $recent;
+        $this->_lookup($data);
+        $this->load->view('template/template1', $data);
+    }
+
+    // ==================== HEALTH CHECK ====================
+    function health_check()
+    {
+        $data['title']     = 'فحص صحة بيانات الصرف';
+        $data['content']   = 'payment_accounts_health';
+        $this->_lookup($data);
+        $this->load->view('template/template1', $data);
+    }
+
+    function health_overview_json()
+    {
+        $res = $this->{$this->MODEL_NAME}->health_overview();
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => $res['msg'] == '1', 'data' => $res]);
+    }
+
+    function health_list_json()
+    {
+        // 🆕 يدعم POST (للـ JSON) و GET (للـ Excel export)
+        $is_export = (int)$this->input->get('export') === 1;
+        $get_post  = function ($k, $def = null) {
+            return $this->input->post($k) ?? $this->input->get($k) ?? $def;
+        };
+
+        $category  = $get_post('category', 'EMP_NO_ACC');
+        $branch_no = $get_post('branch_no');
+        $offset    = (int)($get_post('offset', 0));
+        $limit     = (int)($get_post('limit',  $is_export ? 50000 : 200));
+        $filters   = ['branch_no' => ($branch_no !== null && $branch_no !== '' && $branch_no != -1) ? intval($branch_no) : null];
+
+        $rows = $this->{$this->MODEL_NAME}->health_list($category, $filters, $offset, $limit);
+        if (is_array($rows)) {
+            array_walk_recursive($rows, function (&$val) {
+                if (is_string($val)) { $val = mb_convert_encoding($val, 'UTF-8', 'UTF-8'); }
+            });
+        }
+
+        // 🆕 تصدير Excel
+        if ($is_export) {
+            $title = (string)$get_post('title', 'health_check');
+            $this->_health_export_excel($category, $title, is_array($rows) ? $rows : []);
+            return;
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => true, 'data' => is_array($rows) ? $rows : []]);
+    }
+
+    /**
+     * 🆕 تصدير قائمة health check إلى Excel
+     */
+    private function _health_export_excel($category, $title, $rows)
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('فحص الصحة');
+        $sheet->setRightToLeft(true);
+
+        // headers حسب الفئة
+        if ($category === 'PROV_INCOMPLETE') {
+            $headers = ['م', 'المزود', 'الحالة', 'التفاصيل'];
+        } else {
+            $headers = ['م', 'رقم الموظف', 'اسم الموظف', 'المقر', 'الحالة', 'التفاصيل'];
+        }
+        $lastCol = chr(64 + count($headers));
+        $col     = 'A';
+        foreach ($headers as $h) {
+            $sheet->setCellValue($col . '1', $h);
+            $col++;
+        }
+
+        // تنسيق الـ header
+        $sheet->getStyle("A1:{$lastCol}1")->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle("A1:{$lastCol}1")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('1e293b');
+        $sheet->getStyle("A1:{$lastCol}1")->getAlignment()
+            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        // الصفوف
+        $rowNum = 2;
+        $count  = 1;
+        foreach ($rows as $r) {
+            $is_act = (int)($r['IS_ACTIVE'] ?? 0);
+            if ($category === 'PROV_INCOMPLETE') {
+                $sheet->setCellValue('A' . $rowNum, $count);
+                $sheet->setCellValue('B' . $rowNum, $r['EMP_NAME'] ?? '');
+                $sheet->setCellValue('C' . $rowNum, $is_act == 1 ? 'نشط' : 'موقوف');
+                $sheet->setCellValue('D' . $rowNum, $r['DETAIL_INFO'] ?? '');
+            } else {
+                $sheet->setCellValue('A' . $rowNum, $count);
+                $sheet->setCellValue('B' . $rowNum, $r['EMP_NO'] ?? '');
+                $sheet->setCellValue('C' . $rowNum, $r['EMP_NAME'] ?? '');
+                $sheet->setCellValue('D' . $rowNum, $r['BRANCH_NAME'] ?? '');
+                $sheet->setCellValue('E' . $rowNum, $is_act == 1 ? 'فعّال' : 'متقاعد');
+                $sheet->setCellValue('F' . $rowNum, $r['DETAIL_INFO'] ?? '');
+            }
+            $count++;
+            $rowNum++;
+        }
+
+        foreach (range('A', $lastCol) as $c) {
+            $sheet->getColumnDimension($c)->setAutoSize(true);
+        }
+        $sheet->getStyle("A1:{$lastCol}" . max($rowNum - 1, 1))->getBorders()->getAllBorders()
+            ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+        // اسم الملف — نظافة من الأحرف الإشكالية
+        $clean_title = preg_replace('/[^\p{L}\p{N}_\-]+/u', '_', $title);
+        $filename    = ($clean_title ?: 'health_check') . '_' . date('Ymd_His') . '.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+
+    function accounts_link_bulk_auto()
+    {
+        $res = $this->{$this->MODEL_NAME}->link_accounts_bulk_auto();
+        $ok  = $res['msg'] == '1';
+        header('Content-Type: application/json');
+        echo json_encode([
+            'ok'     => $ok,
+            'linked' => (int)$res['linked'],
+            'emps'   => (int)$res['emps'],
+            'msg'    => $ok
+                ? ('تم ربط ' . (int)$res['linked'] . ' حساب على ' . (int)$res['emps'] . ' موظف')
+                : $res['msg']
+        ]);
+    }
+
+    function account_link_auto()
+    {
+        $emp_no = (int)$this->input->post('emp_no');
+        if (!$emp_no) {
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'msg' => 'رقم الموظف مطلوب']);
+            return;
+        }
+        $res = $this->{$this->MODEL_NAME}->link_accounts_to_benef_auto($emp_no);
+        $ok  = $res['msg'] == '1';
+        $cnt = (int)$res['linked'];
+        header('Content-Type: application/json');
+        echo json_encode([
+            'ok'     => $ok,
+            'linked' => $cnt,
+            'msg'    => $ok
+                ? ($cnt > 0 ? "تم ربط $cnt حساب بمستفيدين" : "لا توجد حسابات قابلة للربط — الحسابات إما مرتبطة سابقاً أو لا تطابق أي مستفيد")
+                : $res['msg']
+        ]);
     }
 
     function provider_delete()

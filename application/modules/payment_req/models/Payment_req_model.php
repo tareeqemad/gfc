@@ -3,9 +3,10 @@ if (!defined('BASEPATH')) exit('No direct script access allowed');
 
 class Payment_req_model extends MY_Model
 {
-    var $PKG_NAME       = "GFC_PAK.DISBURSEMENT_PKG";
-    var $BATCH_PKG_NAME = "GFC_PAK.DISBURSEMENT_BATCH_PKG";
-    var $TABLE_NAME     = "PAYMENT_REQ_TB";
+    var $PKG_NAME         = "GFC_PAK.DISBURSEMENT_PKG";
+    var $BATCH_PKG_NAME   = "GFC_PAK.DISBURSEMENT_BATCH_PKG";
+    var $COMPARE_PKG_NAME = "GFC_PAK.BATCH_COMPARE_PKG";
+    var $TABLE_NAME       = "PAYMENT_REQ_TB";
 
     function __construct()
     {
@@ -148,6 +149,69 @@ class Payment_req_model extends MY_Model
     }
 
     // =========================================================
+    // 🆕 IMPORT LINE — ADD سطر أصلي من الإكسل بعد دمجه في detail
+    // =========================================================
+    function import_line_add($detail_id, $line_no, $excel_row, $amount, $note, $attachment_id, $entry_user)
+    {
+        $params = array(
+            array('name' => ':P_DETAIL_ID',     'value' => (int)$detail_id,                'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_LINE_NO',       'value' => (int)$line_no,                  'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_EXCEL_ROW_NUM', 'value' => $excel_row !== null ? (int)$excel_row : null, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_AMOUNT',        'value' => (float)$amount,                 'type' => SQLT_CHR, 'length' => -1),
+            array('name' => ':P_ORIGINAL_NOTE', 'value' => $note !== '' ? $note : null,    'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_ATTACHMENT_ID', 'value' => $attachment_id ?: null,         'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_ENTRY_USER',   'value' => $entry_user ?: null,             'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_NEW_ID_OUT',   'value' => 'NEW_ID',                        'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_MSG_OUT',      'value' => 'MSG',                           'type' => SQLT_CHR, 'length' => 500),
+        );
+        // الـ procedure standalone (مش جزء من PKG)
+        $result = $this->conn->excuteProcedures(null, 'PAYMENT_REQ_IMP_LINE_ADD', $params);
+        return [
+            'new_id' => isset($result['NEW_ID']) ? (int)$result['NEW_ID'] : 0,
+            'msg'    => $result['MSG'] ?? '',
+        ];
+    }
+
+    // =========================================================
+    // 🆕 IMPORT LINE — ADD بإيجاد DETAIL_ID داخلياً من (REQ_ID + EMP_NO)
+    //     يستخدمها الـ wizard لما يحفظ السطور بعد إنشاء الطلب
+    // =========================================================
+    function import_line_add_by_emp($req_id, $emp_no, $line_no, $excel_row, $amount, $note, $attachment_id, $entry_user)
+    {
+        $params = array(
+            array('name' => ':P_REQ_ID',        'value' => (int)$req_id,                                 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_EMP_NO',        'value' => (int)$emp_no,                                 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_LINE_NO',       'value' => (int)$line_no,                                'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_EXCEL_ROW_NUM', 'value' => $excel_row !== null ? (int)$excel_row : null, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_AMOUNT',        'value' => (float)$amount,                               'type' => SQLT_CHR, 'length' => -1),
+            array('name' => ':P_ORIGINAL_NOTE', 'value' => $note !== '' ? $note : null,                  'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':P_ATTACHMENT_ID', 'value' => $attachment_id ?: null,                       'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_ENTRY_USER',    'value' => $entry_user ?: null,                          'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_NEW_ID_OUT',    'value' => 'NEW_ID',                                     'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_MSG_OUT',       'value' => 'MSG',                                        'type' => SQLT_CHR, 'length' => 500),
+        );
+        $result = $this->conn->excuteProcedures(null, 'PAYMENT_REQ_IMP_LN_ADD_BY_EMP', $params);
+        return [
+            'new_id' => isset($result['NEW_ID']) ? (int)$result['NEW_ID'] : 0,
+            'msg'    => $result['MSG'] ?? '',
+        ];
+    }
+
+    // =========================================================
+    // 🆕 IMPORT LINES — GET بنود الموظف الأصلية
+    // =========================================================
+    function import_lines_get($detail_id)
+    {
+        $params = array(
+            array('name' => ':P_DETAIL_ID',  'value' => (int)$detail_id, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':REF_CUR_OUT', 'value' => 'cursor',         'type' => OCI_B_CURSOR),
+            array('name' => ':MSG_OUT',     'value' => 'MSG_OUT',        'type' => SQLT_CHR, 'length' => -1),
+        );
+        return $this->New_rmodel->general_get(null, 'PAYMENT_REQ_IMP_LINES_GET', $params);
+    }
+
+
+    // =========================================================
     // DETAIL — UPDATE employee row
     // =========================================================
     function detail_update($detail_id, $req_amount, $note = '')
@@ -172,6 +236,28 @@ class Payment_req_model extends MY_Model
             array('name' => ':P_MSG_OUT',   'value' => 'MSG_OUT',       'type' => SQLT_CHR, 'length' => 4000),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, 'DETAIL_DELETE', $params);
+        return $result['MSG_OUT'];
+    }
+
+    // =========================================================
+    // DETAIL — SET OVERRIDE distribution
+    //   $provider_type: NULL=افتراضي, 1=بنك فقط, 2=محفظة فقط
+    //   $acc_id: حساب محدد (يطغى على PROVIDER_TYPE)
+    // =========================================================
+    function detail_set_override($detail_id, $provider_type = null, $acc_id = null)
+    {
+        // نمرّر القيم كـ string — Oracle يحوّل '' إلى NULL تلقائياً
+        // ونتجنّب مشكلة SQLT_INT اللي يحوّل NULL إلى 0
+        $pt_val  = ($provider_type === '' || $provider_type === null) ? '' : (string)(int)$provider_type;
+        $acc_val = ($acc_id === '' || $acc_id === null)               ? '' : (string)(int)$acc_id;
+
+        $params = array(
+            array('name' => ':P_DETAIL_ID',     'value' => (int)$detail_id, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_PROVIDER_TYPE', 'value' => $pt_val,         'type' => SQLT_CHR, 'length' => 20),
+            array('name' => ':P_ACC_ID',        'value' => $acc_val,        'type' => SQLT_CHR, 'length' => 20),
+            array('name' => ':P_MSG_OUT',       'value' => 'MSG_OUT',       'type' => SQLT_CHR, 'length' => 4000),
+        );
+        $result = $this->conn->excuteProcedures($this->PKG_NAME, 'DETAIL_SET_OVERRIDE', $params);
         return $result['MSG_OUT'];
     }
 
@@ -357,6 +443,9 @@ class Payment_req_model extends MY_Model
             array('name' => ':P_BRANCH_NO',   'value' => (int)($params['branch_no']   ?: -7), 'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_L_VALUE',     'value' => (int)($params['l_value']     ?: -8), 'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_H_VALUE',     'value' => (int)($params['h_value']     ?: -9), 'type' => SQLT_INT, 'length' => -1),
+            // 🆕 شهر فلتر اختياري (للنوع 3 — لا يربط مالياً)
+            // ⚠️ مهم: لازم قبل REF_CUR_OUT/MSG_OUT — general_get بيحذف آخر عنصرين بـ array_splice
+            array('name' => ':P_FILTER_MONTH','value' => (int)($params['filter_month'] ?: 0), 'type' => SQLT_INT, 'length' => -1),
             array('name' => ':REF_CUR_OUT',   'value' => 'cursor',  'type' => OCI_B_CURSOR),
             array('name' => ':MSG_OUT',       'value' => 'MSG_OUT', 'type' => SQLT_CHR, 'length' => 4000),
         );
@@ -391,6 +480,8 @@ class Payment_req_model extends MY_Model
             array('name' => ':P_H_VALUE',     'value' => (int)($params['h_value']     ?: -9), 'type' => SQLT_INT, 'length' => -1),
             array('name' => ':P_NOTE',        'value' => $params['note'] ?: 'N/A',            'type' => SQLT_CHR, 'length' => 500),
             array('name' => ':P_MSG_OUT',     'value' => 'MSG_OUT',                            'type' => SQLT_CHR, 'length' => 4000),
+            // 🆕 شهر فلتر اختياري (للنوع 3)
+            array('name' => ':P_FILTER_MONTH','value' => (int)($params['filter_month'] ?: 0), 'type' => SQLT_INT, 'length' => -1),
         );
         try {
             $result = $this->conn->excuteProcedures($this->PKG_NAME, 'PAYMENT_REQ_BULK_CREATE', $p);
@@ -688,6 +779,162 @@ class Payment_req_model extends MY_Model
             array('name' => ':MSG_OUT',     'value' => 'MSG_OUT',      'type' => SQLT_CHR,    'length' => 4000),
         );
         return $this->New_rmodel->general_get($this->BATCH_PKG_NAME, 'BATCH_EMP_ACCOUNTS_GET', $params);
+    }
+
+    // =========================================================
+    // 🆕 BATCH COMPARE — Trend / Diff / Diff Summary
+    // =========================================================
+    function batch_trend($batch_id, $limit = 6)
+    {
+        $params = array(
+            array('name' => ':P_BATCH_ID',  'value' => (int)$batch_id, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_LIMIT',     'value' => (int)$limit,    'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':REF_CUR_OUT', 'value' => 'cursor',       'type' => OCI_B_CURSOR),
+            array('name' => ':MSG_OUT',     'value' => 'MSG_OUT',      'type' => SQLT_CHR, 'length' => 4000),
+        );
+        return $this->New_rmodel->general_get($this->COMPARE_PKG_NAME, 'BATCH_TREND', $params);
+    }
+
+    function batch_diff($cur_batch_id, $prv_batch_id)
+    {
+        $params = array(
+            array('name' => ':P_CUR_BATCH_ID', 'value' => (int)$cur_batch_id, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_PRV_BATCH_ID', 'value' => (int)$prv_batch_id, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':REF_CUR_OUT',    'value' => 'cursor',           'type' => OCI_B_CURSOR),
+            array('name' => ':MSG_OUT',        'value' => 'MSG_OUT',          'type' => SQLT_CHR, 'length' => 4000),
+        );
+        return $this->New_rmodel->general_get($this->COMPARE_PKG_NAME, 'BATCH_DIFF', $params);
+    }
+
+    function batch_diff_summary($cur_batch_id, $prv_batch_id)
+    {
+        $params = array(
+            array('name' => ':P_CUR_BATCH_ID', 'value' => (int)$cur_batch_id, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_PRV_BATCH_ID', 'value' => (int)$prv_batch_id, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':REF_CUR_OUT',    'value' => 'cursor',           'type' => OCI_B_CURSOR),
+            array('name' => ':MSG_OUT',        'value' => 'MSG_OUT',          'type' => SQLT_CHR, 'length' => 4000),
+        );
+        return $this->New_rmodel->general_get($this->COMPARE_PKG_NAME, 'BATCH_DIFF_SUMMARY', $params);
+    }
+
+    // 🆕 حالة كل (موظف+شهر) داخل الدفعة (للفلتر الزمني)
+    function batch_emp_month_statuses($batch_id)
+    {
+        $params = array(
+            array('name' => ':P_BATCH_ID',  'value' => (int)$batch_id, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':REF_CUR_OUT', 'value' => 'cursor',       'type' => OCI_B_CURSOR),
+            array('name' => ':MSG_OUT',     'value' => 'MSG_OUT',      'type' => SQLT_CHR, 'length' => 4000),
+        );
+        return $this->New_rmodel->general_get($this->COMPARE_PKG_NAME, 'BATCH_EMP_MONTH_STATUSES', $params);
+    }
+
+    // =========================================================
+    // EMP INFO — معلومات الموظف الأساسية للكشف الشامل
+    // اسم + مقر + IS_ACTIVE + الحالة المركّبة (1/0/2/4)
+    // =========================================================
+    function get_emp_info($emp_no)
+    {
+        $params = array(
+            array('name' => ':P_EMP_NO',     'value' => (int)$emp_no,  'type' => SQLT_INT,    'length' => -1),
+            array('name' => ':REF_CUR_OUT',  'value' => 'cursor',      'type' => OCI_B_CURSOR),
+            array('name' => ':MSG_OUT',      'value' => 'MSG_OUT',     'type' => SQLT_CHR,    'length' => 4000),
+        );
+        return $this->New_rmodel->general_get($this->PKG_NAME, 'GET_EMP_INFO', $params);
+    }
+
+    // =========================================================
+    // EMP ACCOUNTS — للـ override modal (بدون batch_id)
+    // يستخدم PAYMENT_ACCOUNTS_PKG.ACCOUNTS_LIST
+    // =========================================================
+    function emp_accounts_list($emp_no, $only_active = 1)
+    {
+        $params = array(
+            array('name' => ':P_EMP_NO',      'value' => (int)$emp_no,    'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_ONLY_ACTIVE', 'value' => (int)$only_active,'type'=> SQLT_INT, 'length' => -1),
+            array('name' => ':REF_CUR_OUT',   'value' => 'cursor',        'type' => OCI_B_CURSOR),
+            array('name' => ':MSG_OUT',       'value' => 'MSG_OUT',       'type' => SQLT_CHR, 'length' => 4000),
+        );
+        return $this->New_rmodel->general_get('PAYMENT_ACCOUNTS_PKG', 'ACCOUNTS_LIST', $params);
+    }
+
+    // =========================================================
+    // BATCH DETAIL REDIST — إعادة توزيع موظف في دفعة محتسبة
+    // =========================================================
+    function batch_detail_redist($batch_id, $emp_no, $provider_type = null, $acc_id = null)
+    {
+        $pt_val  = ($provider_type === '' || $provider_type === null) ? null : (int)$provider_type;
+        $acc_val = ($acc_id === '' || $acc_id === null) ? null : (int)$acc_id;
+        $params = array(
+            array('name' => ':P_BATCH_ID',     'value' => (int)$batch_id, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_EMP_NO',       'value' => (int)$emp_no,   'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_PROVIDER_TYPE','value' => $pt_val,        'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_ACC_ID',       'value' => $acc_val,       'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_MSG_OUT',      'value' => 'MSG_OUT',      'type' => SQLT_CHR, 'length' => 4000),
+        );
+        $result = $this->conn->excuteProcedures($this->BATCH_PKG_NAME, 'BATCH_DETAIL_REDIST', $params);
+        return $result['MSG_OUT'];
+    }
+
+    function batch_bank_summary($batch_id)
+    {
+        $params = array(
+            array('name' => ':P_BATCH_ID',  'value' => (int)$batch_id, 'type' => SQLT_INT,    'length' => -1),
+            array('name' => ':REF_CUR_OUT', 'value' => 'cursor',       'type' => OCI_B_CURSOR),
+            array('name' => ':MSG_OUT',     'value' => 'MSG_OUT',      'type' => SQLT_CHR,    'length' => 4000),
+        );
+        return $this->New_rmodel->general_get($this->BATCH_PKG_NAME, 'BATCH_BANK_SUMMARY_GET', $params);
+    }
+
+    // الدفعات المحتسبة (غير منفّذة) لموظف معين — للتنبيه عند تعديل الحساب
+    function emp_pending_batches($emp_no)
+    {
+        $params = array(
+            array('name' => ':P_EMP_NO',    'value' => (int)$emp_no, 'type' => SQLT_INT,    'length' => -1),
+            array('name' => ':REF_CUR_OUT', 'value' => 'cursor',     'type' => OCI_B_CURSOR),
+            array('name' => ':MSG_OUT',     'value' => 'MSG_OUT',    'type' => SQLT_CHR,    'length' => 500),
+        );
+        return $this->New_rmodel->general_get($this->BATCH_PKG_NAME, 'EMP_PENDING_BATCHES', $params);
+    }
+
+    function batch_preview_validation($req_ids, $exclude_ids = '')
+    {
+        $params = array(
+            array('name' => ':P_REQ_IDS',            'value' => $req_ids,     'type' => SQLT_CHR,    'length' => -1),
+            array('name' => ':P_EXCLUDE_DETAIL_IDS', 'value' => $exclude_ids, 'type' => SQLT_CHR,    'length' => -1),
+            array('name' => ':REF_CUR_OUT',          'value' => 'cursor',     'type' => OCI_B_CURSOR),
+            array('name' => ':MSG_OUT',              'value' => 'MSG_OUT',    'type' => SQLT_CHR,    'length' => 4000),
+        );
+        return $this->New_rmodel->general_get($this->BATCH_PKG_NAME, 'BATCH_PREVIEW', $params);
+    }
+
+    /**
+     * BATCH_COMPUTE_PREVIEW: التوزيع التفصيلي للعرض في شاشة الاحتساب
+     * يرجع لكل (موظف+حساب) سطر مع المبلغ المخصّص + STATUS + بيانات الحساب
+     * بدون كتابة في DB — للعرض فقط
+     */
+    function batch_compute_preview($req_ids, $exclude_ids = '')
+    {
+        $params = array(
+            array('name' => ':P_REQ_IDS',            'value' => $req_ids,     'type' => SQLT_CHR,    'length' => -1),
+            array('name' => ':P_EXCLUDE_DETAIL_IDS', 'value' => $exclude_ids, 'type' => SQLT_CHR,    'length' => -1),
+            array('name' => ':REF_CUR_OUT',          'value' => 'cursor',     'type' => OCI_B_CURSOR),
+            array('name' => ':MSG_OUT',              'value' => 'MSG_OUT',    'type' => SQLT_CHR,    'length' => 4000),
+        );
+        return $this->New_rmodel->general_get($this->BATCH_PKG_NAME, 'BATCH_COMPUTE_PREVIEW', $params);
+    }
+
+    function batch_refresh_split($batch_id)
+    {
+        $params = array(
+            array('name' => ':P_BATCH_ID',    'value' => (int)$batch_id, 'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_CHANGED_OUT', 'value' => 'CHG',          'type' => SQLT_INT, 'length' => -1),
+            array('name' => ':P_MSG_OUT',     'value' => 'MSG',          'type' => SQLT_CHR, 'length' => 500),
+        );
+        $result = $this->conn->excuteProcedures($this->BATCH_PKG_NAME, 'BATCH_REFRESH_SPLIT', $params);
+        return [
+            'msg'     => $result['MSG'] ?? '',
+            'changed' => intval($result['CHG'] ?? 0),
+        ];
     }
 
     // =========================================================

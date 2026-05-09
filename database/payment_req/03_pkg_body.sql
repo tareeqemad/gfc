@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
+CREATE OR REPLACE PACKAGE BODY DISBURSEMENT_PKG AS
 
   -- ============================================================
   -- Package-level flags (لا تظهر في الـ spec — داخلية فقط)
@@ -37,6 +37,89 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
   EXCEPTION WHEN NO_DATA_FOUND THEN RETURN 0; END;
 
   -- ============================================================
+  -- GET_EMP_DISPLAY_STATUS — الحالة المركّبة للعرض
+  -- ============================================================
+  -- يدمج بين:
+  --   - حالة الموظف:
+  --       • P_THE_MONTH NULL ? DATA.EMPLOYEES.IS_ACTIVE (الحالة الحالية)
+  --       • P_THE_MONTH مُحدّد ? DATA.EMPLOYEES_MONTH.IS_ACTIVE (تاريخية)
+  --   - PAYMENT_ACCOUNTS_TB.IS_ACTIVE (2=متوفى, 4=حساب مغلق)
+  --       • مع P_THE_MONTH ? نتجاهل الإيقافات اللاحقة (INACTIVE_FROM_MONTH > P_THE_MONTH)
+  -- الأولوية (الأشد أولاً):
+  --   2 = متوفى     (أي حساب IS_ACTIVE=2 وقت الشهر/الآن)
+  --   4 = حساب مغلق (كل الحسابات IS_ACTIVE!=1 وما فيش حسابات نشطة)
+  --   0 = متقاعد    (الموظف متقاعد في الشهر المحدد/الآن)
+  --   1 = فعّال     (الافتراضي)
+  --
+  -- ? مهم: لو الـ caller عنده شهر طلب (THE_MONTH) ? يمرّره لمنع عرض موظف كـ "متقاعد"
+  --        لو هو متقاعد اليوم لكن كان فعالاً في شهر الطلب.
+  -- ============================================================
+  FUNCTION GET_EMP_DISPLAY_STATUS (
+      P_EMP_NO    NUMBER,
+      P_THE_MONTH NUMBER DEFAULT NULL    -- ? YYYYMM: لو مُحدّد ? الحالة التاريخية
+  ) RETURN NUMBER IS
+    V_EMP_ACT    NUMBER;
+    V_DECEASED   NUMBER := 0;
+    V_HAS_ACTIVE NUMBER := 0;
+    V_TOTAL_ACC  NUMBER := 0;
+  BEGIN
+    -- حالة الموظف
+    IF P_THE_MONTH IS NOT NULL THEN
+      -- ? الحالة التاريخية من snapshot الشهر
+      BEGIN
+        SELECT NVL(IS_ACTIVE, 0) INTO V_EMP_ACT
+          FROM DATA.EMPLOYEES_MONTH
+         WHERE NO = P_EMP_NO AND THE_MONTH = P_THE_MONTH AND ROWNUM = 1;
+      EXCEPTION WHEN NO_DATA_FOUND THEN
+        -- ? لا يوجد snapshot للشهر المطلوب (مستقبلي أو غير محتسب)
+        -- ? fallback للحالة الحالية بدل افتراض "متقاعد"
+        BEGIN
+          SELECT NVL(IS_ACTIVE, 0) INTO V_EMP_ACT
+            FROM DATA.EMPLOYEES WHERE NO = P_EMP_NO AND ROWNUM = 1;
+        EXCEPTION WHEN NO_DATA_FOUND THEN V_EMP_ACT := 0; END;
+      END;
+    ELSE
+      -- الحالة الحالية من HR
+      BEGIN
+        SELECT NVL(IS_ACTIVE, 0) INTO V_EMP_ACT
+          FROM DATA.EMPLOYEES WHERE NO = P_EMP_NO AND ROWNUM = 1;
+      EXCEPTION WHEN NO_DATA_FOUND THEN V_EMP_ACT := 0; END;
+    END IF;
+
+    -- فحص حسابات الموظف
+    -- مع P_THE_MONTH: نتجاهل الإيقافات اللاحقة (INACTIVE_FROM_MONTH > الشهر)
+    IF P_THE_MONTH IS NOT NULL THEN
+      SELECT
+        COUNT(*),
+        -- متوفى وقتها فقط (الإيقاف بسبب وفاة قبل أو في الشهر)
+        SUM(CASE WHEN IS_ACTIVE = 2
+                  AND NVL(INACTIVE_FROM_MONTH, P_THE_MONTH) <= P_THE_MONTH
+                 THEN 1 ELSE 0 END),
+        -- نشط وقتها = إما حالياً نشط، أو موقوف بعد ذلك الشهر
+        SUM(CASE WHEN IS_ACTIVE = 1
+                  OR (IS_ACTIVE <> 1 AND INACTIVE_FROM_MONTH IS NOT NULL
+                                     AND INACTIVE_FROM_MONTH > P_THE_MONTH)
+                 THEN 1 ELSE 0 END)
+        INTO V_TOTAL_ACC, V_DECEASED, V_HAS_ACTIVE
+        FROM GFC.PAYMENT_ACCOUNTS_TB
+       WHERE EMP_NO = P_EMP_NO AND STATUS = 1;
+    ELSE
+      SELECT
+        COUNT(*),
+        SUM(CASE WHEN IS_ACTIVE = 2 THEN 1 ELSE 0 END),
+        SUM(CASE WHEN IS_ACTIVE = 1 THEN 1 ELSE 0 END)
+        INTO V_TOTAL_ACC, V_DECEASED, V_HAS_ACTIVE
+        FROM GFC.PAYMENT_ACCOUNTS_TB
+       WHERE EMP_NO = P_EMP_NO AND STATUS = 1;
+    END IF;
+
+    IF V_DECEASED > 0                       THEN RETURN 2; END IF;  -- متوفى
+    IF V_TOTAL_ACC > 0 AND V_HAS_ACTIVE = 0 THEN RETURN 4; END IF;  -- كل الحسابات مغلقة
+    IF V_EMP_ACT = 0                        THEN RETURN 0; END IF;  -- متقاعد
+    RETURN 1;  -- فعّال
+  EXCEPTION WHEN OTHERS THEN RETURN 1; END;
+
+  -- ============================================================
   -- مطابقة معادلة SALARYFORM.GET_VAL_ADD_DED القديمة لنوع 2
   -- ترجع المبلغ المصروف للموظف (CAPPED) — مش المرحّل
   -- ============================================================
@@ -66,9 +149,9 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
       -- لا يلمس DATA.SALARY, DATA.ADMIN, DATA.ADD_AND_DED، DATA.EMPLOYEES
       --
       -- Smart Cache:
-      -- 1. نفس (emp+month+rate+L+H) → استخدام القيمة المخزّنة (سريع جداً)
-      -- 2. الشهر نفسه و rate/L/H متطابقة لكن emp مختلف → single-emp calc
-      -- 3. cache فاضي تماماً لهذا الشهر/rate/L/H → BULK calc (لتسريع الإضافات المتعاقبة)
+      -- 1. نفس (emp+month+rate+L+H) ? استخدام القيمة المخزّنة (سريع جداً)
+      -- 2. الشهر نفسه و rate/L/H متطابقة لكن emp مختلف ? single-emp calc
+      -- 3. cache فاضي تماماً لهذا الشهر/rate/L/H ? BULK calc (لتسريع الإضافات المتعاقبة)
       -- ============================================================
       V_MSG           VARCHAR2(4000);
       V_AMOUNT        NUMBER := 0;
@@ -89,7 +172,7 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
          AND NVL(H_VALUE_USED, -1) = V_H;
 
       IF V_EXISTS = 0 THEN
-          -- لا يوجد احتساب لهذا الموظف → فحص: هل الشهر محتسب جماعياً بنفس الـ parameters؟
+          -- لا يوجد احتساب لهذا الموظف ? فحص: هل الشهر محتسب جماعياً بنفس الـ parameters؟
           SELECT COUNT(*) INTO V_MONTH_EXISTS
             FROM GFC.PAYMENT_REQ_ADMIN_CALC_TB
            WHERE MONTH = P_THE_MONTH
@@ -99,7 +182,7 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
              AND ROWNUM = 1;
 
           IF V_MONTH_EXISTS = 0 THEN
-              -- cache فاضي تماماً → BULK calc لكل الشهر (تسريع الإضافات اللاحقة)
+              -- cache فاضي تماماً ? BULK calc لكل الشهر (تسريع الإضافات اللاحقة)
               DISBURSEMENT_CALC_PKG.CAL_SALARY_RATE_PART(
                   P_THE_MONTH => P_THE_MONTH,
                   P_NO_FROM   => 1,
@@ -110,7 +193,7 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
                   P_MSG_OUT   => V_MSG
               );
           ELSE
-              -- الشهر محتسب جزئياً → احتسب هذا الموظف فقط
+              -- الشهر محتسب جزئياً ? احتسب هذا الموظف فقط
               DISBURSEMENT_CALC_PKG.CAL_SALARY_RATE_PART(
                   P_THE_MONTH => P_THE_MONTH,
                   P_NO_FROM   => P_EMP_NO,
@@ -145,7 +228,7 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
     RETURN V;
   EXCEPTION WHEN NO_DATA_FOUND THEN RETURN NULL; END;
 
-  -- اسم البنك الرئيسي: EMPLOYEES.MASTER_BANKS_EMAIL → MASTER_BANKS_EMAIL.B_NAME
+  -- اسم البنك الرئيسي: EMPLOYEES.MASTER_BANKS_EMAIL ? MASTER_BANKS_EMAIL.B_NAME
   -- P_EMP_NO: رقم الموظف (مش رقم البنك)
   FUNCTION GET_MASTER_BANK_NAME (P_EMP_NO NUMBER) RETURN VARCHAR2 IS
     V_MB_NO NUMBER; V_NAME VARCHAR2(200);
@@ -514,10 +597,14 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
       P_CALC_METHOD NUMBER, P_PERCENT_VAL NUMBER,
       P_L_VALUE NUMBER DEFAULT NULL, P_H_VALUE NUMBER DEFAULT NULL,
       P_PAY_TYPE NUMBER DEFAULT NULL, P_ENTRY_DATE DATE DEFAULT NULL,
-      P_NOTE VARCHAR2, P_MSG_OUT OUT VARCHAR2
+      P_NOTE VARCHAR2,
+      -- ? شهر فلتر للنوع 3 (اختياري — للسجل/المتابعة، بدون أثر مالي)
+      P_FILTER_MONTH NUMBER DEFAULT NULL,
+      P_MSG_OUT OUT VARCHAR2
   ) IS
     V_ID NUMBER; V_NO VARCHAR2(50); V_USER NUMBER; V_DUP NUMBER;
     V_MONTH NUMBER := NVL(P_THE_MONTH, GET_DEFAULT_MONTH);
+    V_FM NUMBER := NULLIF(NVL(P_FILTER_MONTH, 0), 0);
   BEGIN
     IF P_REQ_TYPE NOT IN (C_REQ_TYPE_FULL_SALARY, C_REQ_TYPE_PART_SALARY, C_REQ_TYPE_LUMP_SUM, C_REQ_TYPE_MONTHLY_DUES, C_REQ_TYPE_BENEFITS) THEN P_MSG_OUT := 'نوع الطلب غير صحيح'; RETURN; END IF;
 
@@ -538,14 +625,16 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
     INSERT INTO GFC.PAYMENT_REQ_TB (
         REQ_ID, REQ_NO, THE_MONTH, REQ_TYPE,
         CALC_METHOD, PERCENT_VAL, L_VALUE, H_VALUE, PAY_TYPE, REQ_AMOUNT,
-        STATUS, NOTE, ENTRY_USER, ENTRY_DATE
+        STATUS, NOTE, ENTRY_USER, ENTRY_DATE,
+        FILTER_MONTH
     ) VALUES (
         V_ID, V_NO, V_MONTH, P_REQ_TYPE,
         CASE WHEN P_REQ_TYPE IN (C_REQ_TYPE_PART_SALARY, C_REQ_TYPE_LUMP_SUM) THEN P_CALC_METHOD END,
         CASE WHEN P_REQ_TYPE IN (C_REQ_TYPE_PART_SALARY, C_REQ_TYPE_LUMP_SUM) AND P_CALC_METHOD = C_CALC_PERCENT THEN P_PERCENT_VAL END,
         CASE WHEN P_REQ_TYPE = C_REQ_TYPE_PART_SALARY THEN P_L_VALUE END,
         CASE WHEN P_REQ_TYPE = C_REQ_TYPE_PART_SALARY THEN P_H_VALUE END,
-        P_PAY_TYPE, 0, C_REQ_STATUS_DRAFT, P_NOTE, V_USER, NVL(P_ENTRY_DATE, SYSDATE)
+        P_PAY_TYPE, 0, C_REQ_STATUS_DRAFT, P_NOTE, V_USER, NVL(P_ENTRY_DATE, SYSDATE),
+        CASE WHEN P_REQ_TYPE = C_REQ_TYPE_LUMP_SUM THEN V_FM END
     );
 
     LOG_ACTION(V_ID, 'CREATE', NULL, C_REQ_STATUS_DRAFT, P_NOTE);
@@ -559,13 +648,17 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
       P_CALC_METHOD NUMBER, P_PERCENT_VAL NUMBER,
       P_L_VALUE NUMBER DEFAULT NULL, P_H_VALUE NUMBER DEFAULT NULL,
       P_PAY_TYPE NUMBER DEFAULT NULL,
-      P_NOTE VARCHAR2, P_MSG_OUT OUT VARCHAR2
+      P_NOTE VARCHAR2,
+      -- ? شهر فلتر اختياري — للنوع 3
+      P_FILTER_MONTH NUMBER DEFAULT NULL,
+      P_MSG_OUT OUT VARCHAR2
   ) IS
     V_ST NUMBER; V_USER NUMBER;
     V_OLD_TYPE NUMBER; V_OLD_MONTH NUMBER;
     V_MONTH NUMBER; V_AMT NUMBER; V_PT NUMBER; V_DA NUMBER;
     V_LF VARCHAR2(3); V_MSG VARCHAR2(4000);
     V_OK NUMBER := 0; V_ERR NUMBER := 0;
+    V_FM NUMBER := NULLIF(NVL(P_FILTER_MONTH, 0), 0);
   BEGIN
     SELECT STATUS, REQ_TYPE, THE_MONTH INTO V_ST, V_OLD_TYPE, V_OLD_MONTH
       FROM GFC.PAYMENT_REQ_TB WHERE REQ_ID = P_REQ_ID FOR UPDATE NOWAIT;
@@ -582,12 +675,13 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
         L_VALUE = CASE WHEN P_REQ_TYPE = C_REQ_TYPE_PART_SALARY THEN P_L_VALUE END,
         H_VALUE = CASE WHEN P_REQ_TYPE = C_REQ_TYPE_PART_SALARY THEN P_H_VALUE END,
         PAY_TYPE = CASE WHEN P_PAY_TYPE IS NOT NULL THEN P_PAY_TYPE ELSE PAY_TYPE END,
+        FILTER_MONTH = CASE WHEN P_REQ_TYPE = C_REQ_TYPE_LUMP_SUM THEN V_FM ELSE NULL END,
         NOTE = P_NOTE, UPDATE_USER = V_USER, UPDATE_DATE = SYSDATE
      WHERE REQ_ID = P_REQ_ID;
 
     -- هل لازم نعيد حساب الموظفين؟
     IF V_OLD_TYPE <> P_REQ_TYPE THEN
-      -- تغيير النوع → حذف كل الموظفين (البنية مختلفة)
+      -- تغيير النوع ? حذف كل الموظفين (البنية مختلفة)
       DELETE FROM GFC.PAYMENT_REQ_DETAIL_TB WHERE REQ_ID = P_REQ_ID;
       SYNC_MASTER_AMOUNT(P_REQ_ID);
       LOG_ACTION(P_REQ_ID, 'UPDATE_TYPE_CHANGE', V_ST, V_ST, 'نوع قديم=' || V_OLD_TYPE || ' جديد=' || P_REQ_TYPE || ' — تم حذف الموظفين');
@@ -910,6 +1004,74 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
   END;
 
 
+  -- ============================================================
+  -- DETAIL_SET_OVERRIDE — تعيين/إلغاء override توزيع لسطر معين
+  -- ============================================================
+  -- يسمح للمحاسب يحدد وجهة الصرف خاصة لسطر:
+  --   P_PROVIDER_TYPE: NULL=افتراضي, 1=بنك فقط, 2=محفظة فقط
+  --   P_ACC_ID: حساب محدد (يطغى على PROVIDER_TYPE)
+  -- يعمل قبل الاحتساب فقط (DETAIL_STATUS = DRAFT أو APPROVED)
+  -- ============================================================
+  PROCEDURE DETAIL_SET_OVERRIDE (
+      P_DETAIL_ID      NUMBER,
+      P_PROVIDER_TYPE  NUMBER,    -- يقبل NULL
+      P_ACC_ID         NUMBER,    -- يقبل NULL
+      P_MSG_OUT        OUT VARCHAR2
+  ) IS
+    V_DS         NUMBER;
+    V_EMP_NO     NUMBER;
+    V_REQ_ID     NUMBER;
+    V_VALID_ACC  NUMBER := 0;
+  BEGIN
+    SELECT D.DETAIL_STATUS, D.EMP_NO, D.REQ_ID
+      INTO V_DS, V_EMP_NO, V_REQ_ID
+      FROM GFC.PAYMENT_REQ_DETAIL_TB D
+     WHERE D.DETAIL_ID = P_DETAIL_ID;
+
+    IF V_DS NOT IN (C_REQ_STATUS_DRAFT, C_REQ_STATUS_APPROVED) THEN
+      P_MSG_OUT := 'لا يمكن تعديل التوزيع — الحالة الحالية لا تسمح';
+      RETURN;
+    END IF;
+
+    -- التحقق من الـ override_acc_id إذا كان موجود
+    IF P_ACC_ID IS NOT NULL THEN
+      SELECT COUNT(*) INTO V_VALID_ACC
+        FROM GFC.PAYMENT_ACCOUNTS_TB
+       WHERE ACC_ID = P_ACC_ID
+         AND EMP_NO = V_EMP_NO
+         AND STATUS = 1;
+      IF V_VALID_ACC = 0 THEN
+        P_MSG_OUT := 'الحساب المحدد غير موجود/غير صالح للموظف';
+        RETURN;
+      END IF;
+    END IF;
+
+    -- التحقق من قيمة provider_type
+    IF P_PROVIDER_TYPE IS NOT NULL AND P_PROVIDER_TYPE NOT IN (1, 2) THEN
+      P_MSG_OUT := 'قيمة نوع المزود غير صالحة (1=بنك, 2=محفظة)';
+      RETURN;
+    END IF;
+
+    UPDATE GFC.PAYMENT_REQ_DETAIL_TB
+       SET OVERRIDE_PROVIDER_TYPE = P_PROVIDER_TYPE,
+           OVERRIDE_ACC_ID        = P_ACC_ID
+     WHERE DETAIL_ID = P_DETAIL_ID;
+
+    -- log action (اختياري - لو فيه action type مناسب)
+    BEGIN
+      LOG_ACTION(V_REQ_ID, 'SET_OVERRIDE', V_EMP_NO, NULL,
+        'تعديل توزيع: provider=' ||
+        CASE P_PROVIDER_TYPE WHEN 1 THEN 'بنك' WHEN 2 THEN 'محفظة' ELSE 'افتراضي' END ||
+        CASE WHEN P_ACC_ID IS NOT NULL THEN ' / حساب=' || P_ACC_ID ELSE '' END);
+    EXCEPTION WHEN OTHERS THEN NULL; END;  -- لا تفشل العملية لو الـ log فشل
+
+    P_MSG_OUT := '1';
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN P_MSG_OUT := 'السطر غير موجود';
+    WHEN OTHERS THEN P_MSG_OUT := SQLERRM;
+  END;
+
+
   PROCEDURE DETAIL_DELETE (P_DETAIL_ID NUMBER, P_MSG_OUT OUT VARCHAR2) IS
     V_REQ_ID NUMBER; V_EMP_NO NUMBER; V_DS NUMBER; V_MS NUMBER;
     V_USER NUMBER; V_SERIAL NUMBER; V_NEW_ST NUMBER;
@@ -939,7 +1101,7 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
       RETURN;
     END IF;
 
-    -- معتمد: إلغاء الاعتماد → يرجع مسودة
+    -- معتمد: إلغاء الاعتماد ? يرجع مسودة
     IF V_DS = C_REQ_STATUS_APPROVED THEN
       UPDATE GFC.PAYMENT_REQ_DETAIL_TB SET DETAIL_STATUS = C_REQ_STATUS_DRAFT WHERE DETAIL_ID = P_DETAIL_ID;
       V_NEW_ST := CALC_MASTER_STATUS(V_REQ_ID);
@@ -1141,21 +1303,31 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
       P_REQ_ID NUMBER, P_REF_CUR_OUT OUT SYS_REFCURSOR, P_MSG_OUT OUT VARCHAR2
   ) IS
   BEGIN
+    -- ?? بدون JOIN على DATA.EMPLOYEES (تفادي مخاطر التكرار)
+    -- الاسم/الفرع من EMP_PKG functions، البيانات المالية من جدول الاحتساب
     OPEN P_REF_CUR_OUT FOR
       SELECT D.DETAIL_ID, D.REQ_ID, D.EMP_NO,
-             E.NAME AS EMP_NAME,
+             EMP_PKG.GET_EMP_NAME(D.EMP_NO)        AS EMP_NAME,
              EMP_PKG.GET_EMP_BRANCH_NAME(D.EMP_NO) AS BRANCH_NAME,
              D.REQ_AMOUNT, D.DUES_AMOUNT,
              D.PAY_TYPE, D.LIMIT_FLAG, D.DETAIL_STATUS,
              SETTING_PKG.CONSTANT_DETAILS_TB_GET_NAME(541, D.DETAIL_STATUS) AS DETAIL_STATUS_NAME,
              CASE WHEN M.REQ_TYPE = C_REQ_TYPE_BENEFITS THEN GET_CONSTANT_NAME(D.PAY_TYPE) ELSE GET_DUES_TYPE_NAME(D.PAY_TYPE) END AS PAY_TYPE_NAME,
              D.POST_SERIAL_DUES, D.NOTE,
-             -- لنوع 2: بيانات من جدول الاحتساب PAYMENT_REQ_ADMIN_CALC_TB
-             NVL(C.CAPPED_VAL, 0) + NVL(C.ACCRUED_323, 0) AS NET_SALARY_CALC,  -- الصافي الحقيقي
-             NVL(C.CAPPED_VAL, 0) AS CAPPED_CALC,                              -- المبلغ للصرف
-             NVL(C.ACCRUED_323, 0) AS ACCRUED_323_CALC                         -- المبلغ المرحّل للمستحقات
+             NVL(C.CAPPED_VAL, 0) + NVL(C.ACCRUED_323, 0) AS NET_SALARY_CALC,
+             NVL(C.CAPPED_VAL, 0) AS CAPPED_CALC,
+             NVL(C.ACCRUED_323, 0) AS ACCRUED_323_CALC,
+             D.OVERRIDE_PROVIDER_TYPE,
+             D.OVERRIDE_ACC_ID,
+             CASE
+               WHEN D.OVERRIDE_PROVIDER_TYPE = 1 THEN 'بنك فقط'
+               WHEN D.OVERRIDE_PROVIDER_TYPE = 2 THEN 'محفظة فقط'
+               ELSE 'افتراضي'
+             END AS OVERRIDE_LABEL,
+             -- ? سريع: نستدعي function بدون month (Oracle scalar subquery caching)
+             GET_EMP_DISPLAY_STATUS(D.EMP_NO) AS EMP_DISPLAY_STATUS,
+             0 AS IMPORT_LINES_CNT      -- placeholder
         FROM GFC.PAYMENT_REQ_DETAIL_TB D
-        JOIN DATA.EMPLOYEES E ON E.NO = D.EMP_NO
         JOIN GFC.PAYMENT_REQ_TB M ON M.REQ_ID = D.REQ_ID
         LEFT JOIN GFC.PAYMENT_REQ_ADMIN_CALC_TB C
           ON C.EMP_NO = D.EMP_NO AND C.MONTH = M.THE_MONTH
@@ -1452,9 +1624,14 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
       P_PAY_TYPE NUMBER, P_SAL_FROM NUMBER, P_SAL_TO NUMBER,
       P_BRANCH_NO NUMBER,
       P_L_VALUE NUMBER, P_H_VALUE NUMBER,
+      -- ? فلتر اختياري: يقيّد الموظفين على المحتسبين في شهر معيّن (للنوع 3 فقط)
+      --    لا يُؤثر على الحساب المالي. NULL = بدون فلتر.
+      -- ?? مهم: لازم قبل REF_CUR_OUT/MSG_OUT بسبب array_splice في general_get
+      P_FILTER_MONTH NUMBER DEFAULT NULL,
       P_REF_CUR_OUT OUT SYS_REFCURSOR, P_MSG_OUT OUT VARCHAR2
   ) IS
     V_M NUMBER := NVL(P_THE_MONTH, GET_DEFAULT_MONTH);
+    V_FM NUMBER := NULLIF(NVL(P_FILTER_MONTH, 0), 0);  -- NULL أو 0 ? بدون فلتر
     V_RA NUMBER := NULLIF(P_REQ_AMOUNT,-3);
     V_BR NUMBER := NULLIF(P_BRANCH_NO,-7);
     V_PCT NUMBER; V_LV NUMBER; V_HV NUMBER;
@@ -1493,6 +1670,8 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
 
     ELSIF P_REQ_TYPE = C_REQ_TYPE_LUMP_SUM THEN
       -- نوع 3: كل الموظفين اللي عندهم رصيد مستحقات — نسبة أو مبلغ ثابت
+      -- ? فلتر اختياري بـ FILTER_MONTH: يقيّد على المحتسبين في الشهر المحدد فقط
+      --    (بدون ربط مالي — رصيد المستحقات يبقى المرجع الوحيد للمبلغ)
       V_PCT := NVL(NULLIF(P_PERCENT_VAL, -2), 0);
       OPEN P_REF_CUR_OUT FOR
         SELECT E.NO AS EMP_NO, E.NAME AS EMP_NAME,
@@ -1515,6 +1694,11 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
           FROM DATA.EMPLOYEES E
          WHERE (GET_EMP_DUES_BASE(E.NO) + GET_EMP_DUES_ADD(E.NO) - GET_EMP_DUES_DED(E.NO)) > 0
            AND (V_BR IS NULL OR EMP_PKG.GET_EMP_BRANCH(E.NO) = V_BR)
+           -- ? فلتر شهر الاحتساب — existence check في DATA.ADMIN
+           -- (المصدر الشامل لكل احتساب رواتب — مجرد فحص وجود، مش قراءة بيانات مالية)
+           AND (V_FM IS NULL
+                OR EXISTS (SELECT 1 FROM DATA.ADMIN A
+                            WHERE A.EMP_NO = E.NO AND A.MONTH = V_FM))
          ORDER BY E.NO;
 
     ELSIF P_REQ_TYPE = C_REQ_TYPE_PART_SALARY THEN
@@ -1666,9 +1850,12 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
       P_BRANCH_NO NUMBER,
       P_L_VALUE NUMBER, P_H_VALUE NUMBER,
       P_NOTE VARCHAR2,
-      P_MSG_OUT OUT VARCHAR2
+      P_MSG_OUT OUT VARCHAR2,
+      -- ? فلتر شهر اختياري — للنوع 3
+      P_FILTER_MONTH NUMBER DEFAULT NULL
   ) IS
     V_M NUMBER := NVL(P_THE_MONTH, GET_DEFAULT_MONTH);
+    V_FM NUMBER := NULLIF(NVL(P_FILTER_MONTH, 0), 0);  -- NULL أو 0 ? بدون فلتر
     V_RA NUMBER := NULLIF(P_REQ_AMOUNT,-3);
     V_BR NUMBER := NULLIF(P_BRANCH_NO,-7);
     V_PT NUMBER := NULLIF(P_PAY_TYPE,-4);
@@ -1680,7 +1867,8 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
       P_MSG_OUT := '0|0|0|0'; RETURN;
     END IF;
 
-    PAYMENT_REQ_INSERT(V_M, P_REQ_TYPE, P_CALC_METHOD, P_PERCENT_VAL, P_L_VALUE, P_H_VALUE, V_PT, NULL, NVL(V_NT,'bulk'), V_MSG);
+    -- ? ممرر V_FM (شهر الفلتر) — يُحفظ في PAYMENT_REQ_TB.FILTER_MONTH للنوع 3
+    PAYMENT_REQ_INSERT(V_M, P_REQ_TYPE, P_CALC_METHOD, P_PERCENT_VAL, P_L_VALUE, P_H_VALUE, V_PT, NULL, NVL(V_NT,'bulk'), V_FM, V_MSG);
     IF NOT (V_MSG IS NOT NULL AND REGEXP_LIKE(V_MSG, '^\d+$')) THEN
       P_MSG_OUT := '0|0|0|1|' || NVL(V_MSG,'Failed to create master');
       RETURN;
@@ -1751,6 +1939,10 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
       FOR R IN (SELECT E.NO AS EMP_NO FROM DATA.EMPLOYEES E
                  WHERE E.IS_ACTIVE = 1 AND GET_EMP_DUES_AVAILABLE(E.NO, NULL) > 0
                    AND (V_BR IS NULL OR EMP_PKG.GET_EMP_BRANCH(E.NO) = V_BR)
+                   -- ? فلتر شهر الاحتساب — existence check في DATA.ADMIN
+                   AND (V_FM IS NULL
+                        OR EXISTS (SELECT 1 FROM DATA.ADMIN A
+                                    WHERE A.EMP_NO = E.NO AND A.MONTH = V_FM))
                  ORDER BY E.NO)
       LOOP
         BEGIN
@@ -1821,33 +2013,59 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
       P_THE_MONTH NUMBER,
       P_REF_CUR_OUT OUT SYS_REFCURSOR, P_MSG_OUT OUT VARCHAR2
   ) IS
-    V_M NUMBER := NVL(P_THE_MONTH, GET_DEFAULT_MONTH);
+    V_M   NUMBER := NVL(P_THE_MONTH, GET_DEFAULT_MONTH);
     V_CNT NUMBER := 0;
   BEGIN
-    SELECT COUNT(1) INTO V_CNT FROM DATA.ADMIN WHERE MONTH = V_M AND ROWNUM = 1;
+    -- ?? نقرأ من جداولنا الخاصة (PAYMENT_REQ_ADMIN_CALC_TB) — لا نلمس DATA.ADMIN/DATA.SALARY
+    -- جداول الاحتساب تُعبَّأ من DISBURSEMENT_CALC_PKG وتحوي NET_SALARY الذي نعتمده
+    SELECT COUNT(1) INTO V_CNT
+      FROM GFC.PAYMENT_REQ_ADMIN_CALC_TB
+     WHERE MONTH = V_M AND ROWNUM = 1;
 
     OPEN P_REF_CUR_OUT FOR
       SELECT
-        CASE WHEN V_CNT > 0 THEN 'admin' ELSE 'none' END AS SOURCE,
-        NVL((SELECT COUNT(1) FROM DATA.ADMIN WHERE MONTH = V_M), 0) AS EMP_COUNT,
-        NVL((SELECT SUM(NET_SALARY) FROM DATA.ADMIN WHERE MONTH = V_M), 0) AS TOTAL_NET,
-        NVL((SELECT SUM(S.VALUE) FROM DATA.SALARY S
-              WHERE S.CON_NO = C_SALARY_CON_DUES AND S.MONTH = V_M), 0) AS TOTAL_323,
-        NVL((SELECT SUM(D.DUES_AMOUNT) FROM GFC.PAYMENT_REQ_DETAIL_TB D
-               JOIN GFC.PAYMENT_REQ_TB M ON M.REQ_ID = D.REQ_ID
-              WHERE M.THE_MONTH = V_M
-                AND D.DETAIL_STATUS = C_REQ_STATUS_DRAFT
-                AND M.STATUS <> C_REQ_STATUS_CANCELLED), 0) AS TOTAL_DRAFT,
-        NVL((SELECT SUM(D.DUES_AMOUNT) FROM GFC.PAYMENT_REQ_DETAIL_TB D
-               JOIN GFC.PAYMENT_REQ_TB M ON M.REQ_ID = D.REQ_ID
-              WHERE M.THE_MONTH = V_M
-                AND D.DETAIL_STATUS = C_REQ_STATUS_APPROVED
-                AND M.STATUS <> C_REQ_STATUS_CANCELLED), 0) AS TOTAL_APPROVED,
-        NVL((SELECT SUM(D.DUES_AMOUNT) FROM GFC.PAYMENT_REQ_DETAIL_TB D
-               JOIN GFC.PAYMENT_REQ_TB M ON M.REQ_ID = D.REQ_ID
-              WHERE M.THE_MONTH = V_M
-                AND D.DETAIL_STATUS = C_REQ_STATUS_PAID
-                AND M.STATUS <> C_REQ_STATUS_CANCELLED), 0) AS TOTAL_PAID,
+        CASE WHEN V_CNT > 0 THEN 'calc' ELSE 'none' END AS SOURCE,
+        NVL((SELECT COUNT(1) FROM GFC.PAYMENT_REQ_ADMIN_CALC_TB WHERE MONTH = V_M), 0) AS EMP_COUNT,
+        -- TOTAL_NET = الصافي الحقيقي للشهر = CAPPED + ACCRUED_323
+        NVL((SELECT SUM(NVL(CAPPED_VAL, 0) + NVL(ACCRUED_323, 0))
+              FROM GFC.PAYMENT_REQ_ADMIN_CALC_TB WHERE MONTH = V_M), 0) AS TOTAL_NET,
+        -- TOTAL_323 = نفس الصافي (الرصيد الكامل المتاح للصرف)
+        NVL((SELECT SUM(NVL(CAPPED_VAL, 0) + NVL(ACCRUED_323, 0))
+              FROM GFC.PAYMENT_REQ_ADMIN_CALC_TB WHERE MONTH = V_M), 0) AS TOTAL_323,
+        -- ?? المنطق الصحيح للاستهلاك من الصافي:
+        --   • نوع 2 (دفعة من الراتب): يستهلك REQ + DUES (نقد + مستحقات) = كامل الصافي للموظف
+        --   • نوع 1 (راتب كامل):       يستهلك REQ_AMOUNT (= DUES_AMOUNT للنوع 1) — استخدام واحد
+        --   • نوع 3, 4, 5:             لا يستهلكون من الصافي — يأخذون من رصيد المستحقات المتراكم
+        -- مسودة:
+        NVL((SELECT SUM(CASE
+                          WHEN M.REQ_TYPE = C_REQ_TYPE_PART_SALARY  THEN NVL(D.REQ_AMOUNT, 0) + NVL(D.DUES_AMOUNT, 0)
+                          WHEN M.REQ_TYPE = C_REQ_TYPE_FULL_SALARY  THEN NVL(D.REQ_AMOUNT, 0)
+                          ELSE 0 END)
+              FROM GFC.PAYMENT_REQ_DETAIL_TB D
+              JOIN GFC.PAYMENT_REQ_TB M ON M.REQ_ID = D.REQ_ID
+             WHERE M.THE_MONTH = V_M
+               AND D.DETAIL_STATUS = C_REQ_STATUS_DRAFT
+               AND M.STATUS <> C_REQ_STATUS_CANCELLED), 0) AS TOTAL_DRAFT,
+        -- معتمد = APPROVED (1) + PARTIAL_APPROVED (3) + PARTIAL_PAID (4) — يشمل "محتسب في دفعة"
+        NVL((SELECT SUM(CASE
+                          WHEN M.REQ_TYPE = C_REQ_TYPE_PART_SALARY  THEN NVL(D.REQ_AMOUNT, 0) + NVL(D.DUES_AMOUNT, 0)
+                          WHEN M.REQ_TYPE = C_REQ_TYPE_FULL_SALARY  THEN NVL(D.REQ_AMOUNT, 0)
+                          ELSE 0 END)
+              FROM GFC.PAYMENT_REQ_DETAIL_TB D
+              JOIN GFC.PAYMENT_REQ_TB M ON M.REQ_ID = D.REQ_ID
+             WHERE M.THE_MONTH = V_M
+               AND D.DETAIL_STATUS IN (C_REQ_STATUS_APPROVED, C_REQ_STATUS_PARTIAL_APPROVED, C_REQ_STATUS_PARTIAL_PAID)
+               AND M.STATUS <> C_REQ_STATUS_CANCELLED), 0) AS TOTAL_APPROVED,
+        -- منفّذ:
+        NVL((SELECT SUM(CASE
+                          WHEN M.REQ_TYPE = C_REQ_TYPE_PART_SALARY  THEN NVL(D.REQ_AMOUNT, 0) + NVL(D.DUES_AMOUNT, 0)
+                          WHEN M.REQ_TYPE = C_REQ_TYPE_FULL_SALARY  THEN NVL(D.REQ_AMOUNT, 0)
+                          ELSE 0 END)
+              FROM GFC.PAYMENT_REQ_DETAIL_TB D
+              JOIN GFC.PAYMENT_REQ_TB M ON M.REQ_ID = D.REQ_ID
+             WHERE M.THE_MONTH = V_M
+               AND D.DETAIL_STATUS = C_REQ_STATUS_PAID
+               AND M.STATUS <> C_REQ_STATUS_CANCELLED), 0) AS TOTAL_PAID,
         (SELECT COUNT(DISTINCT M.REQ_ID) FROM GFC.PAYMENT_REQ_TB M
            JOIN GFC.PAYMENT_REQ_DETAIL_TB D ON D.REQ_ID = M.REQ_ID
           WHERE M.THE_MONTH = V_M
@@ -1899,6 +2117,34 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
   -- ============================================================
   -- كشف حساب موظف
   -- ============================================================
+  -- ============================================================
+  -- GET_EMP_INFO — معلومات أساسية + الحالة المركّبة لكشف الحساب
+  -- ============================================================
+  PROCEDURE GET_EMP_INFO (
+      P_EMP_NO       NUMBER,
+      P_REF_CUR_OUT  OUT SYS_REFCURSOR,
+      P_MSG_OUT      OUT VARCHAR2
+  ) IS
+  BEGIN
+    OPEN P_REF_CUR_OUT FOR
+      SELECT E.NO                                       AS EMP_NO,
+             E.NAME                                     AS EMP_NAME,
+             TO_CHAR(E.ID)                              AS NAT_ID,
+             EMP_PKG.GET_EMP_BRANCH(E.NO)               AS BRANCH_NO,
+             EMP_PKG.GET_EMP_BRANCH_NAME(E.NO)          AS BRANCH_NAME,
+             NVL(E.IS_ACTIVE, 0)                        AS IS_ACTIVE,
+             GET_EMP_DISPLAY_STATUS(E.NO)               AS DISPLAY_STATUS,
+             E.TEL                                      AS TEL,
+             GET_MASTER_BANK_NAME(E.NO)                 AS HR_BANK_NAME,
+             E.HIRE_YEARS                               AS HIRE_YEARS,
+             E.PRICE_CODE                               AS PRICE_CODE
+        FROM DATA.EMPLOYEES E
+       WHERE E.NO = P_EMP_NO AND ROWNUM = 1;
+    P_MSG_OUT := '1';
+  EXCEPTION WHEN OTHERS THEN P_MSG_OUT := SQLERRM;
+  END;
+
+
   PROCEDURE EMP_STATEMENT (
       P_EMP_NO NUMBER, P_MONTH_FROM NUMBER DEFAULT NULL, P_MONTH_TO NUMBER DEFAULT NULL,
       P_REF_CUR_OUT OUT SYS_REFCURSOR, P_MSG_OUT OUT VARCHAR2
@@ -2085,4 +2331,3 @@ CREATE OR REPLACE PACKAGE BODY GFC_PAK.DISBURSEMENT_PKG AS
 
 
 END DISBURSEMENT_PKG;
-/

@@ -12,7 +12,11 @@
 
 
 -- ============================================================
--- الخطوة 1: إضافة الصفحة الرئيسية
+-- ⚠️ idempotent — يتخطّى أي MENU موجود مسبقاً (يمنع التكرار)
+-- ============================================================
+
+-- ============================================================
+-- الخطوة 1: إضافة الصفحة الرئيسية (لو غير موجودة)
 -- ============================================================
 INSERT INTO GFC.SYSTEM_MENU_TB (
     MENU_NO, MENU_PARENT_NO, MENU_ADD,
@@ -34,7 +38,11 @@ SELECT SYSTEM_MENU_TB_SEQ.NEXTVAL,
        || 'I_PAYMENT_BANK_BRANCHES_TB;U_PAYMENT_BANK_BRANCHES_TB;'
        || 'I_PAYMENT_REQ_DETAIL_SPLIT_TB;U_PAYMENT_REQ_DETAIL_SPLIT_TB;D_PAYMENT_REQ_DETAIL_SPLIT_TB'
   FROM GFC.SYSTEM_MENU_TB
- WHERE MENU_FULL_CODE = 'payment_req/payment_req';
+ WHERE MENU_FULL_CODE = 'payment_req/payment_req'
+   AND NOT EXISTS (
+       SELECT 1 FROM GFC.SYSTEM_MENU_TB
+        WHERE MENU_FULL_CODE = 'payment_accounts/payment_accounts'
+   );
 
 COMMIT;
 
@@ -161,6 +169,77 @@ INSERT ALL
   VALUES (SYSTEM_MENU_TB_SEQ.NEXTVAL, P_ID, 'إرجاع للتلقائي',
           'payment_accounts/payment_accounts/split_reset_auto',   'payment_accounts/payment_accounts/split_reset_auto',
           M, 0, 17, '', S, 'U_PAYMENT_REQ_DETAIL_SPLIT_TB')
+
+  -- ─── الشاشات الجديدة: لوحة تحكم + فحص صحة + استيراد + ربط تلقائي ───
+  INTO GFC.SYSTEM_MENU_TB (MENU_NO, MENU_PARENT_NO, MENU_ADD,
+                           MENU_CODE, MENU_FULL_CODE,
+                           MAIN_MENU, VIEW_MENU, SORT, ICON, ID_SYSTEM, RELATED_OBJECT)
+  VALUES (SYSTEM_MENU_TB_SEQ.NEXTVAL, P_ID, 'لوحة التحكم',
+          'payment_accounts/payment_accounts/dashboard',          'payment_accounts/payment_accounts/dashboard',
+          M, 1, 18, 'fa-tachometer', S, NULL)
+
+  INTO GFC.SYSTEM_MENU_TB (MENU_NO, MENU_PARENT_NO, MENU_ADD,
+                           MENU_CODE, MENU_FULL_CODE,
+                           MAIN_MENU, VIEW_MENU, SORT, ICON, ID_SYSTEM, RELATED_OBJECT)
+  VALUES (SYSTEM_MENU_TB_SEQ.NEXTVAL, P_ID, 'فحص الصحة',
+          'payment_accounts/payment_accounts/health_check',       'payment_accounts/payment_accounts/health_check',
+          M, 1, 19, 'fa-heartbeat', S, NULL)
+
+  INTO GFC.SYSTEM_MENU_TB (MENU_NO, MENU_PARENT_NO, MENU_ADD,
+                           MENU_CODE, MENU_FULL_CODE,
+                           MAIN_MENU, VIEW_MENU, SORT, ICON, ID_SYSTEM, RELATED_OBJECT)
+  VALUES (SYSTEM_MENU_TB_SEQ.NEXTVAL, P_ID, 'فحص الصحة (overview)',
+          'payment_accounts/payment_accounts/health_overview_json','payment_accounts/payment_accounts/health_overview_json',
+          M, 0, 20, '', S, NULL)
+
+  INTO GFC.SYSTEM_MENU_TB (MENU_NO, MENU_PARENT_NO, MENU_ADD,
+                           MENU_CODE, MENU_FULL_CODE,
+                           MAIN_MENU, VIEW_MENU, SORT, ICON, ID_SYSTEM, RELATED_OBJECT)
+  VALUES (SYSTEM_MENU_TB_SEQ.NEXTVAL, P_ID, 'فحص الصحة (list)',
+          'payment_accounts/payment_accounts/health_list_json',   'payment_accounts/payment_accounts/health_list_json',
+          M, 0, 21, '', S, NULL)
+
+  INTO GFC.SYSTEM_MENU_TB (MENU_NO, MENU_PARENT_NO, MENU_ADD,
+                           MENU_CODE, MENU_FULL_CODE,
+                           MAIN_MENU, VIEW_MENU, SORT, ICON, ID_SYSTEM, RELATED_OBJECT)
+  VALUES (SYSTEM_MENU_TB_SEQ.NEXTVAL, P_ID, 'استيراد حسابات Excel',
+          'payment_accounts/payment_accounts/bulk_import',        'payment_accounts/payment_accounts/bulk_import',
+          M, 1, 22, 'fa-upload', S, 'I_PAYMENT_ACCOUNTS_TB')
+
+  INTO GFC.SYSTEM_MENU_TB (MENU_NO, MENU_PARENT_NO, MENU_ADD,
+                           MENU_CODE, MENU_FULL_CODE,
+                           MAIN_MENU, VIEW_MENU, SORT, ICON, ID_SYSTEM, RELATED_OBJECT)
+  VALUES (SYSTEM_MENU_TB_SEQ.NEXTVAL, P_ID, 'تحميل قالب الاستيراد',
+          'payment_accounts/payment_accounts/bulk_import_template','payment_accounts/payment_accounts/bulk_import_template',
+          M, 0, 23, '', S, NULL)
+
+  INTO GFC.SYSTEM_MENU_TB (MENU_NO, MENU_PARENT_NO, MENU_ADD,
+                           MENU_CODE, MENU_FULL_CODE,
+                           MAIN_MENU, VIEW_MENU, SORT, ICON, ID_SYSTEM, RELATED_OBJECT)
+  VALUES (SYSTEM_MENU_TB_SEQ.NEXTVAL, P_ID, 'معاينة الاستيراد',
+          'payment_accounts/payment_accounts/bulk_import_preview','payment_accounts/payment_accounts/bulk_import_preview',
+          M, 0, 24, '', S, NULL)
+
+  INTO GFC.SYSTEM_MENU_TB (MENU_NO, MENU_PARENT_NO, MENU_ADD,
+                           MENU_CODE, MENU_FULL_CODE,
+                           MAIN_MENU, VIEW_MENU, SORT, ICON, ID_SYSTEM, RELATED_OBJECT)
+  VALUES (SYSTEM_MENU_TB_SEQ.NEXTVAL, P_ID, 'تنفيذ الاستيراد',
+          'payment_accounts/payment_accounts/bulk_import_execute','payment_accounts/payment_accounts/bulk_import_execute',
+          M, 0, 25, '', S, 'I_PAYMENT_ACCOUNTS_TB')
+
+  INTO GFC.SYSTEM_MENU_TB (MENU_NO, MENU_PARENT_NO, MENU_ADD,
+                           MENU_CODE, MENU_FULL_CODE,
+                           MAIN_MENU, VIEW_MENU, SORT, ICON, ID_SYSTEM, RELATED_OBJECT)
+  VALUES (SYSTEM_MENU_TB_SEQ.NEXTVAL, P_ID, 'ربط حسابات تلقائي (موظف)',
+          'payment_accounts/payment_accounts/account_link_auto',  'payment_accounts/payment_accounts/account_link_auto',
+          M, 0, 26, '', S, 'U_PAYMENT_ACCOUNTS_TB')
+
+  INTO GFC.SYSTEM_MENU_TB (MENU_NO, MENU_PARENT_NO, MENU_ADD,
+                           MENU_CODE, MENU_FULL_CODE,
+                           MAIN_MENU, VIEW_MENU, SORT, ICON, ID_SYSTEM, RELATED_OBJECT)
+  VALUES (SYSTEM_MENU_TB_SEQ.NEXTVAL, P_ID, 'ربط حسابات تلقائي (الكل)',
+          'payment_accounts/payment_accounts/accounts_link_bulk_auto','payment_accounts/payment_accounts/accounts_link_bulk_auto',
+          M, 0, 27, '', S, 'U_PAYMENT_ACCOUNTS_TB')
 
 SELECT MENU_NO AS P_ID, MAIN_MENU AS M, ID_SYSTEM AS S
   FROM GFC.SYSTEM_MENU_TB

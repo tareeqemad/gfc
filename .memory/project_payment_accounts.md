@@ -299,3 +299,177 @@ application/modules/payment_accounts/
     └── payment_accounts_providers.php ← modal toolbar + Excel export + sticky header
                                        + رقم الفرع في table + modal الفرع
 ```
+
+---
+
+## تحسينات (2026-05-03) — Split-aware Batch + Beneficiary Linking
+
+### 1. `AUTO_FILL_SPLIT` — تقسيم "كامل الباقي" بالتساوي
+**المشكلة:** الـ procedure كانت تعطي كل المتبقي لأول حساب بـ `SPLIT_TYPE=3` (`EXIT` بعد أول صف). الموظف عنده ٢ حسابات لورث → الأول يأخذ كل المبلغ، الثاني صفر.
+
+**الحل:** `V_REM_CNT = COUNT(*)` ثم تقسيم بالتساوي. آخر حساب يأخذ ما تبقى لتفادي أخطاء التقريب.
+
+### 2. `PAYMENT_REQ_BATCH_CONFIRM` — نفس الإصلاح
+الـ procedure في `DISBURSEMENT_BATCH_PKG` كانت تستخدم `WHERE ROWNUM = 1` للـ "كامل الباقي" — نفس مشكلة `EXIT`. الإصلاح متطابق: تقسيم بالتساوي.
+
+### 3. `BATCH_HISTORY_GET` — GROUP BY + counts
+**المشكلة:** في `method=2` (الجديدة)، الموظف يولّد سطر لكل حساب في `PAYMENT_BATCH_DETAIL_TB` → الـ procedure القديمة كانت ترجع صفوف متكررة.
+
+**الحل:**
+- `GROUP BY BD.BATCH_ID, BD.EMP_NO`
+- `SUM(TOTAL_AMOUNT)` للمجموع
+- `LISTAGG(SNAP_PROVIDER_NAME)` للبنوك مع `REGEXP_REPLACE('([^|]+)(\|\1)+','\1')` لإزالة التكرار + `REPLACE` لتحويل الـ separator
+- أعمدة جديدة: `BENEF_COUNT`, `ACTIVE_ACC_COUNT`, `INACTIVE_ACC_COUNT`, `SPLIT_COUNT`
+
+⚠️ **Pitfall:** Oracle لا يدعم correlation داخل nested inline view بعمق 2. لازم alias صريح للجدول الداخلي (`BD3`) أو aggregate function عادية بدل subquery.
+
+### 4. `BATCH_EMP_ACCOUNTS_GET` (جديد)
+ترجع لكل موظف داخل دفعة:
+- كل حساباته (نشطة/موقوفة) من `PAYMENT_ACCOUNTS_TB`
+- بيانات المستفيد لو الحساب لورث (`B.NAME, REL_TYPE, REL_NAME, PCT_SHARE`)
+- `BATCH_AMOUNT` = المبلغ المُوزع على هذا الحساب من `PAYMENT_BATCH_DETAIL_TB`
+
+تُستدعى من `payment_req_batch_detail` عند الضغط على زر `[+]`.
+
+### 5. `LINK_ACCOUNTS_TO_BENEF_AUTO` (جديد)
+يربط الحسابات الموجودة (بدون `BENEFICIARY_ID`) بالمستفيدين عبر:
+- مرحلة ١: مطابقة `OWNER_ID_NO` = `BENEFICIARIES.ID_NO` (الأدق)
+- مرحلة ٢: مطابقة `OWNER_NAME` = `BENEFICIARIES.NAME` (للمتبقّين)
+
+يستثني الحسابات على اسم الموظف نفسه. يُستدعى من زر "ربط تلقائي" في رأس قسم الحسابات.
+
+### 6. `payment_req_batch_detail.php` — Badges + Expand
+- **badges على الصف:** `🧑‍🤝‍🧑 N ورث` / `🏦 N حسابات` / `⏸ N موقوف`
+- **عمود "حالة الحساب":** `⚠ على الحساب القديم` (أحمر) أو `✓ توزيع (N)` (أخضر)
+- **صف أصفر** لو في حالة تستدعي انتباه
+- **زر `[+]`** يفتح صف فرعي بـ AJAX → بطاقات لكل حساب فيها: اسم البنك، المبلغ، رقم الحساب، IBAN، صاحب الحساب + صلة القرابة + الهوية
+- **ملخص رأس البنك:** `12 بورث · 5 بحسابات متعددة · ⚠ 3 بدون توزيع`
+
+### 7. `PAYMENT_BATCH_BANK_VW` — snapshot-aware (موجود مسبقاً)
+الـ view تقرأ `SNAP_*` fields من `PAYMENT_BATCH_DETAIL_TB` أولاً، ثم fallback للـ live joins. هذا يضمن:
+- التصدير للبنك يحترم الـ split (موظف ١٠٩٠ → سطرين: حنين ٧٥٠ + منار ٧٥٠)
+- IBAN/OWNER من بيانات المستفيد، مش الموظف
+- Audit-safe — أي تعديل على الحسابات بعد الـ batch لا يغيّر الـ snapshot
+
+### 8. `Disburse_Method` — اختيار الطريقة
+عند `BATCH_CONFIRM`، modal يسأل المحاسب:
+- **١ — قديمة:** صف واحد لكل موظف، بنك من `DATA.EMPLOYEES`
+- **٢ — جديدة:** صف لكل حساب من `PAYMENT_ACCOUNTS_TB` مع snapshot
+
+### 9. الـ Pitfall الجديد — nested correlation
+**ORA-00904:** `("BD"."EMP_NO": invalid identifier)` عند subquery داخل LISTAGG داخل SELECT.
+
+**السبب:** Oracle لا يحل الـ correlation للـ outer alias من inline view على عمق ٢.
+
+**الحل:** إما alias صريح للـ inner table (`BD3`) أو استخدام aggregate function (`LISTAGG` مع `GROUP BY`) بدل subquery.
+
+### 10. الملفات المُعدَّلة (2026-05-03)
+
+```
+database/payment_req/
+├── 04_batch_pkg_spec.sql       ← + BATCH_EMP_ACCOUNTS_GET
+└── 04_batch_pkg_body.sql        ← + BATCH_EMP_ACCOUNTS_GET
+                                  + BATCH_HISTORY_GET (GROUP BY + counts + LISTAGG)
+                                  + BATCH_CONFIRM (equal-share for SPLIT_TYPE=3)
+
+database/payment_accounts/
+├── 03_pkg_spec.sql              ← + LINK_ACCOUNTS_TO_BENEF_AUTO
+└── 04_pkg_body.sql              ← + LINK_ACCOUNTS_TO_BENEF_AUTO
+                                   + AUTO_FILL_SPLIT (equal-share fix)
+
+application/modules/payment_req/
+├── controllers/Payment_req.php  ← + batch_emp_accounts_json
+├── models/Payment_req_model.php ← + batch_emp_accounts
+└── views/payment_req_batch_detail.php ← badges + expand AJAX
+
+application/modules/payment_accounts/
+├── controllers/Payment_accounts.php ← + account_link_auto
+├── models/Payment_accounts_model.php ← + link_accounts_to_benef_auto
+└── views/payment_accounts_emp.php   ← + زر "ربط تلقائي" + linkAccountsAuto()
+```
+
+### 11. الفلو الكامل للصرف (موظف ١٠٩٠ مع ٢ ورث)
+
+```
+1. المحاسب يحتسب دفعة بـ DISBURSE_METHOD=2
+   ↓
+2. BATCH_CONFIRM يقرأ PAYMENT_ACCOUNTS_TB:
+   - يتجاهل الموقوف
+   - حنين: SPLIT_TYPE=3 → 750 ₪
+   - منار: SPLIT_TYPE=3 → 750 ₪ (تقسيم بالتساوي)
+   ↓
+3. PAYMENT_BATCH_DETAIL_TB يُكتب فيه ٢ سجل (سنابشوت IBAN/OWNER لكل حساب)
+   ↓
+4. payment_req_batch_detail يعرض الموظف بصف واحد:
+   1090 محمد رفيق صافي  [٢ ورث] [٢ حسابات]  1,500.00  [+]
+   عند الضغط [+]: AJAX → بطاقتين (حنين 750 + منار 750)
+   ↓
+5. التصدير للبنك (PAYMENT_BATCH_BANK_VW):
+   صف لحنين بـ IBAN حنين، صف لمنار بـ IBAN منار
+```
+
+---
+
+## تحسينات شاملة (2026-05-03 ج٢) — Health Check + Dashboard + Bulk Import + Smart Alerts
+
+### Procedures الجديدة في `PAYMENT_ACCOUNTS_PKG`
+- `LINK_ACCOUNTS_BULK_AUTO` — ربط جماعي تلقائي لكل الموظفين بمستفيديهم
+- `HEALTH_OVERVIEW` — counts ل ٧ فئات مشاكل في النظام كله
+- `HEALTH_LIST(category)` — قائمة تفصيلية لفئة محددة (paginated)
+
+### Procedures الجديدة في `DISBURSEMENT_BATCH_PKG`
+- `BATCH_BANK_SUMMARY_GET` — ملخص الدفعة حسب الـ snapshot (يعكس البنوك الفعلية)
+- `BATCH_REFRESH_SPLIT` — تحديث توزيع دفعة محتسبة بدون فك الاحتساب
+- `BATCH_PREVIEW` — معاينة قبل الاحتساب مع `STATUS=OK/WARN/ERR` لكل موظف
+- `EMP_PENDING_BATCHES` — الدفعات المحتسبة (غير منفّذة) لموظف معين
+
+### الشاشات الجديدة
+
+| الشاشة | URL | الاستخدام |
+|--------|-----|-----------|
+| 📊 **Dashboard** | `/payment_accounts/dashboard` | إحصائيات + حالة + آخر دفعات + روابط سريعة |
+| 🩺 **Health Check** | `/payment_accounts/health_check` | فحص شامل لـ ٧ فئات مشاكل + actions مخصصة |
+| 📥 **Bulk Import** | `/payment_accounts/bulk_import` | استيراد حسابات من Excel (قالب + معاينة + تنفيذ) |
+
+### الفئات في Health Check
+- 🔴 ERR: `EMP_NO_ACC`, `ACC_NO_IBAN`, `PROV_INCOMPLETE`
+- 🟡 WARN: `BENEF_UNLINKED`, `ACC_INACTIVE_ONLY`, `BENEF_EXPIRED`
+- 🔵 INFO: `EMP_DUP_DEFAULT`
+
+### تنبيه ذكي
+في `payment_accounts_emp.php` — banner أصفر علوي يظهر تلقائياً لو فيه دفعات محتسبة للموظف، مع روابط لـ batch_detail.
+
+### حماية BATCH_CONFIRM
+يرفض الموظفين بحالات:
+- لا توجد حسابات نشطة
+- مجموع المبالغ الثابتة > المستحق
+- مجموع النسب > 100%
+- (الثابت + النسب × المستحق) > المستحق
+
+### Modal Preview قبل الاحتساب
+- زر "اعتماد الاحتساب" → Modal فيه إجماليات (OK/WARN/ERR) + روابط للإصلاح
+- زر مُعطّل لو في أخطاء، checkbox "أؤكد المتابعة" للتحذيرات
+
+### Permissions جديدة
+أُضيفت في `05_permissions.sql`: dashboard, health_check, bulk_import (+ AJAX endpoints).
+ولـ payment_req: ملف منفصل `11_new_endpoints_permissions.sql`.
+
+### الـ Pitfall المُكتشف
+**Oracle nested correlation depth 2** — `ORA-00904: invalid identifier`. الحل: alias صريح للجدول الداخلي أو استخدام aggregate function في outer query.
+موثق في [feedback_php_oracle_gotchas.md](feedback_php_oracle_gotchas.md) النقطة 11.
+
+### الفلو المتكامل للمحاسب
+```
+1. صباح يوم العمل → /payment_accounts/dashboard
+   ↓ يشوف "5 مشاكل تحتاج مراجعة"
+2. /payment_accounts/health_check
+   ↓ "ربط تلقائي للكل" يحل البلك
+3. يفتح موظفين بمشاكل، يصلح يدوياً
+4. /payment_req/batch → اختيار طلبات
+5. "اعتماد الاحتساب" → Modal Preview
+   ↓ كل OK → يضغط اعتماد
+6. /payment_req/batch_detail/N → مراجعة التوزيع
+   ↓ تعديل بسيط على حساب → "تحديث التوزيع"
+7. "تنفيذ الصرف" → ترحيل
+8. تصدير ملف البنك (PAYMENT_BATCH_BANK_VW snapshot-aware)
+```

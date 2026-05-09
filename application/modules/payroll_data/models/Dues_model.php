@@ -73,11 +73,13 @@ class Dues_model extends MY_Model
         return $result['MSG_OUT'];
     }
 
-    function delete($serial)
+    function delete($serial, $note = null)
     {
         $params = array(
-            array('name' => ':SERIAL_IN', 'value' => $serial, 'type' => SQLT_INT, 'length' => -1),
-            array('name' => ':MSG_OUT',   'value' => 'MSG_OUT', 'type' => SQLT_CHR, 'length' => -1),
+            array('name' => ':SERIAL_IN', 'value' => $serial,    'type' => SQLT_INT, 'length' => -1),
+            // 🆕 NOTE_IN — اختياري في الـ procedure لكن لازم نمرّره صراحةً (positional binding)
+            array('name' => ':NOTE_IN',   'value' => $note,      'type' => SQLT_CHR, 'length' => 500),
+            array('name' => ':MSG_OUT',   'value' => 'MSG_OUT',  'type' => SQLT_CHR, 'length' => -1),
         );
         $result = $this->conn->excuteProcedures($this->PKG_NAME, $this->TABLE_NAME . '_DELETE', $params);
         return $result['MSG_OUT'];

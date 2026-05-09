@@ -190,6 +190,34 @@ echo AntiForgeryToken();
         </div>
     </div>
 
+    <!-- ═══ 🆕 Modal: تأكيد إلغاء الدفعة + سبب الإلغاء ═══ -->
+    <div class="modal fade" id="cancelDueModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border:0;border-radius:12px;overflow:hidden">
+                <div class="modal-header py-2" style="background:#b91c1c">
+                    <h6 class="modal-title text-white fw-bold"><i class="fa fa-times-circle me-2"></i> إلغاء الدفعة</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="cancel_serial">
+                    <div class="alert alert-warning py-2 mb-3" style="font-size:.82rem">
+                        <i class="fa fa-exclamation-triangle me-1"></i>
+                        إلغاء الدفعة لا يحذف السجل — يبقى محفوظاً للسجل التاريخي مع سبب الإلغاء.
+                    </div>
+                    <label class="fw-bold mb-1" style="font-size:.85rem">سبب الإلغاء <small class="text-muted">(اختياري)</small></label>
+                    <textarea id="cancel_note" class="form-control" rows="3"
+                              placeholder="مثال: خطأ في إدخال المبلغ، تكرار، تصحيح..."></textarea>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">تراجع</button>
+                    <button type="button" class="btn btn-danger btn-sm" id="cancelDueConfirmBtn">
+                        <i class="fa fa-times me-1"></i> تأكيد الإلغاء
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ═══ Modal ترحيل المستحقات من الرواتب ═══ -->
     <div class="modal fade" id="migrateModal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
@@ -760,21 +788,39 @@ $scripts = <<<SCRIPT
              + '<div style="font-size:1.1rem; font-weight:800; color:' + color + ';">' + value + '</div></div>';
     }
 
-    // صار Cancel وليس Delete
-    function delete_prototype(a,serial){
-        if(confirm('هل متأكد من عملية إلغاء الدفعة؟')){
-            get_data('{$delete_url}',{serial:serial},function(data){
-                if(data == '1' || parseInt(data) > 0){
-                    success_msg('رسالة','تم الإلغاء بنجاح.');
-                    $(a).closest('tr').fadeOut(300, function(){
-                        $(this).remove();
-                    });
-                }else{
-                    danger_msg('تحذير.',data);
-                }
-            },'html');
-        }
+    // 🆕 صار Cancel وليس Delete — يفتح modal لطلب سبب الإلغاء
+    var _cancelTriggerEl = null;   // الزر اللي ضغط عليه (للـ fadeOut بعد النجاح)
+
+    function delete_prototype(a, serial){
+        _cancelTriggerEl = a;
+        $('#cancel_serial').val(serial);
+        $('#cancel_note').val('');
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('cancelDueModal')).show();
+        setTimeout(function(){ $('#cancel_note').focus(); }, 250);
     }
+
+    // 🆕 confirm handler للـ modal
+    $(document).on('click', '#cancelDueConfirmBtn', function(){
+        var serial = $('#cancel_serial').val();
+        var note   = $('#cancel_note').val() || '';
+        if(!serial) return;
+
+        var \$btn = $(this);
+        \$btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> جاري الإلغاء...');
+
+        get_data('{$delete_url}', {serial: serial, note: note}, function(data){
+            \$btn.prop('disabled', false).html('<i class="fa fa-times me-1"></i> تأكيد الإلغاء');
+            if(data == '1' || parseInt(data) > 0){
+                bootstrap.Modal.getInstance(document.getElementById('cancelDueModal')).hide();
+                success_msg('رسالة','تم الإلغاء بنجاح.');
+                // 🆕 إعادة تحميل القائمة + ملخص الموظف (المتبقي/الإجمالي يتحدّث)
+                if(typeof search === 'function'){ search(); }
+                else { location.reload(); }
+            } else {
+                danger_msg('تحذير.', data);
+            }
+        }, 'html');
+    });
 </script>
 SCRIPT;
 

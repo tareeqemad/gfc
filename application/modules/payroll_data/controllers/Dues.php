@@ -154,7 +154,9 @@ class Dues extends MY_Controller
     public function delete()
     {
         $serial = $this->p_serial ? $this->p_serial : $this->input->post('serial');
-        $result = $this->{$this->MODEL_NAME}->delete($serial);
+        // 🆕 سبب الإلغاء (اختياري) — يُحفظ في CANCEL_NOTE للـ audit
+        $note   = $this->input->post('note');
+        $result = $this->{$this->MODEL_NAME}->delete($serial, $note);
         echo $result;
     }
 

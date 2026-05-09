@@ -225,6 +225,15 @@ CREATE OR REPLACE PACKAGE GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
       P_MSG_OUT         OUT VARCHAR2
   );
 
+  -- معاينة التوزيع المتوقّع لكل موظفي طلب الصرف
+  -- يرجع لكل موظف+حساب: المبلغ المخصّص بناءً على REQ_AMOUNT الفعلي للموظف
+  -- يستخدم في شاشة تفاصيل الطلب لعرض التوزيع inline
+  PROCEDURE ACCOUNTS_PREVIEW_BY_REQ (
+      P_REQ_ID          NUMBER,
+      P_REF_CUR_OUT     OUT SYS_REFCURSOR,
+      P_MSG_OUT         OUT VARCHAR2
+  );
+
   PROCEDURE ACCOUNT_GET (
       P_ACC_ID      NUMBER,
       P_REF_CUR_OUT OUT SYS_REFCURSOR,
@@ -253,10 +262,13 @@ CREATE OR REPLACE PACKAGE GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
       P_MSG_OUT        OUT VARCHAR2
   );
 
-  -- إيقاف حساب مع سبب
+  -- إيقاف حساب مع سبب + شهر بدء الإيقاف (P_INACTIVE_MONTH = YYYYMM, NULL → الشهر الحالي)
   PROCEDURE ACCOUNT_DEACTIVATE (
-      P_ACC_ID  NUMBER, P_REASON NUMBER, P_NOTES VARCHAR2,
-      P_MSG_OUT OUT VARCHAR2
+      P_ACC_ID            NUMBER,
+      P_REASON            NUMBER,
+      P_NOTES             VARCHAR2,
+      P_INACTIVE_MONTH    NUMBER DEFAULT NULL,
+      P_MSG_OUT       OUT VARCHAR2
   );
 
   -- إعادة تفعيل حساب
@@ -372,6 +384,52 @@ CREATE OR REPLACE PACKAGE GFC_PAK.PAYMENT_ACCOUNTS_PKG AS
       P_THE_MONTH   NUMBER DEFAULT NULL,   -- YYYYMM
       P_CNT_OUT     OUT NUMBER,
       P_MSG_OUT     OUT VARCHAR2
+  );
+
+  -- ربط تلقائي للحسابات الموجودة بالمستفيدين عبر مطابقة OWNER_ID_NO أو OWNER_NAME
+  PROCEDURE LINK_ACCOUNTS_TO_BENEF_AUTO (
+      P_EMP_NO       NUMBER,
+      P_LINKED_OUT   OUT NUMBER,    -- عدد الحسابات اللي رُبطت
+      P_MSG_OUT      OUT VARCHAR2
+  );
+
+  -- ربط تلقائي لكل الموظفين دفعة واحدة
+  PROCEDURE LINK_ACCOUNTS_BULK_AUTO (
+      P_LINKED_OUT       OUT NUMBER,    -- عدد الحسابات اللي رُبطت
+      P_EMPS_AFFECTED_OUT OUT NUMBER,   -- عدد الموظفين المتأثرين
+      P_MSG_OUT          OUT VARCHAR2
+  );
+
+  -- ============================================================
+  -- HEALTH CHECK — فحص صحة البيانات قبل بدء أي صرف
+  -- ============================================================
+
+  -- إحصائيات سريعة (لرأس الشاشة)
+  PROCEDURE HEALTH_OVERVIEW (
+      P_EMP_NO_ACC_OUT          OUT NUMBER,  -- موظفون بدون حسابات
+      P_ACC_NO_IBAN_OUT         OUT NUMBER,  -- حسابات بنكية بدون IBAN صحيح
+      P_BENEF_UNLINKED_OUT      OUT NUMBER,  -- موظفون عندهم مستفيدون بدون ربط
+      P_ACC_INACTIVE_ONLY_OUT   OUT NUMBER,  -- موظفون بحسابات موقوفة فقط
+      P_PROV_INCOMPLETE_OUT     OUT NUMBER,  -- مزودون بدون IBAN/EXPORT_FORMAT
+      P_BENEF_EXPIRED_OUT       OUT NUMBER,  -- مستفيدون منتهون (TO_DATE < اليوم)
+      P_EMP_DUP_DEFAULT_OUT     OUT NUMBER,  -- موظفون بأكثر من حساب افتراضي
+      P_TOTAL_EMPS_OUT          OUT NUMBER,  -- إجمالي الموظفين
+      P_TOTAL_ACCOUNTS_OUT      OUT NUMBER,  -- إجمالي الحسابات
+      P_TOTAL_BENEF_OUT         OUT NUMBER,  -- إجمالي المستفيدين
+      P_MSG_OUT                 OUT VARCHAR2
+  );
+
+  -- قائمة مفصلة لفئة معينة
+  -- P_CATEGORY: EMP_NO_ACC | ACC_NO_IBAN | BENEF_UNLINKED | ACC_INACTIVE_ONLY
+  --             | PROV_INCOMPLETE | BENEF_EXPIRED | EMP_DUP_DEFAULT
+  PROCEDURE HEALTH_LIST (
+      P_CATEGORY     VARCHAR2,
+      P_BRANCH_NO    NUMBER DEFAULT NULL,
+      P_IS_ACTIVE    NUMBER DEFAULT NULL,
+      P_OFFSET       NUMBER DEFAULT 0,
+      P_LIMIT        NUMBER DEFAULT 200,
+      P_REF_CUR_OUT  OUT SYS_REFCURSOR,
+      P_MSG_OUT      OUT VARCHAR2
   );
 
   -- إجمالي الإحصائيات بنفس الفلاتر (لبطاقات الواجهة)

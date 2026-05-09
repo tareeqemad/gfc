@@ -5,6 +5,19 @@ $count       = $offset;
 $emp_url     = base_url("$MODULE_NAME/$TB_NAME/emp");
 $colspan     = 10;
 $tot         = $totals ?? ['total'=>0,'bank'=>0,'wallet'=>0,'benef'=>0];
+
+// 🆕 عرض تاريخي: لو حدد المستخدم شهراً، نعرض الحالة التاريخية (IS_ACTIVE من EMPLOYEES_MONTH)
+//     ولا نطغّي عليها بـ HAS_DECEASED/HAS_FROZEN (الحالة الحالية للحساب)
+$is_historical = !empty($the_month);
+$the_month_lbl = '';
+if ($is_historical) {
+    $tm = (string)$the_month;
+    if (strlen($tm) === 6) {
+        $the_month_lbl = substr($tm, 4, 2) . '/' . substr($tm, 0, 4);
+    } else {
+        $the_month_lbl = $tm;
+    }
+}
 ?>
 
 <div id="paTotals"
@@ -41,6 +54,9 @@ $tot         = $totals ?? ['total'=>0,'bank'=>0,'wallet'=>0,'benef'=>0];
     .acc-no   { font-family:monospace;font-size:.85rem;color:#1e293b;direction:ltr;text-align:left;font-weight:600 }
     .acc-iban { font-family:monospace;font-size:.78rem;color:#475569;direction:ltr;text-align:left;letter-spacing:.5px }
     .acc-owner{ font-size:.7rem;color:#94a3b8;display:block;margin-top:.15rem }
+    .reasons-box { display:inline-block;margin-top:.3rem;padding:2px 8px;border-radius:4px;background:#fef3c7;color:#92400e;font-size:.7rem;border:1px dashed #fcd34d }
+    .reasons-box i { margin-left:3px;opacity:.7 }
+    .acc-mix { margin-top:.25rem;display:flex;gap:.25rem;flex-wrap:wrap }
     tr.emp-row:hover td { background:#f8fafc }
 </style>
 
@@ -85,13 +101,24 @@ $tot         = $totals ?? ['total'=>0,'bank'=>0,'wallet'=>0,'benef'=>0];
                 $has_frozen = (int)($row['HAS_FROZEN'] ?? 0);
                 $acc_cnt    = (int)($row['ACC_COUNT'] ?? 0);
                 $active_cnt = (int)($row['ACTIVE_COUNT'] ?? 0);
+                $bank_cnt   = (int)($row['BANK_COUNT'] ?? 0);
+                $wallet_cnt = (int)($row['WALLET_COUNT'] ?? 0);
                 $benef_cnt  = (int)($row['BENEF_COUNT'] ?? 0);
                 $def_prov   = $row['DEF_PROVIDER_NAME'] ?? '';
                 $def_type   = (int)($row['DEF_PROVIDER_TYPE'] ?? 0);
                 $def_acc    = $row['DEF_ACCOUNT_NO'] ?? '';
                 $def_iban   = $row['DEF_IBAN'] ?? '';
                 $def_owner  = $row['DEF_OWNER_NAME'] ?? '';
+                $reasons    = trim((string)($row['INACTIVE_REASONS_TEXT'] ?? ''));
+                $dec_month  = (int)($row['DECEASED_FROM_MONTH'] ?? 0);   // YYYYMM
+                $frz_month  = (int)($row['FROZEN_FROM_MONTH'] ?? 0);     // YYYYMM
                 $more_cnt   = max(0, $active_cnt - 1);
+
+                // 🛠 helper مختصر: يحوّل 202509 → "09/2025"
+                $fmt_month = function($yyyymm) {
+                    $s = (string)$yyyymm;
+                    return (strlen($s) === 6) ? substr($s, 4, 2) . '/' . substr($s, 0, 4) : $s;
+                };
                 $count++;
             ?>
             <tr class="emp-row" data-emp-no="<?= $emp_no ?>">
@@ -109,10 +136,39 @@ $tot         = $totals ?? ['total'=>0,'bank'=>0,'wallet'=>0,'benef'=>0];
                 </td>
                 <td><?= $branch ?></td>
                 <td class="text-center">
-                    <?php if ($has_dead): ?>
-                        <span class="b-status s-deceased" title="عنده حساب بسبب وفاة">⚰ متوفى</span>
+                    <?php if ($is_historical): ?>
+                        <?php
+                            // عرض الحالة التاريخية في الشهر المحدد (من EMPLOYEES_MONTH)
+                            $hist_label = $is_active == 1 ? 'فعّال' : 'متقاعد';
+                            $hist_class = $is_active == 1 ? 's-active' : 's-retired';
+                            // لو فيه فرق بين الحالة الحالية والتاريخية، نضيف ملاحظة
+                            $now_note = '';
+                            if ($has_dead)        $now_note = 'حالياً: متوفى';
+                            elseif ($has_frozen)  $now_note = 'حالياً: حساب مغلق';
+                        ?>
+                        <span class="b-status <?= $hist_class ?>" title="الحالة في <?= $the_month_lbl ?><?= $now_note ? ' • ' . $now_note : '' ?>">
+                            <?= $hist_label ?>
+                            <small style="font-weight:500;opacity:.75;margin-right:3px">· <?= $the_month_lbl ?></small>
+                        </span>
+                        <?php if ($now_note): ?>
+                            <div style="font-size:.65rem;color:#94a3b8;margin-top:2px">
+                                <i class="fa fa-clock-o"></i> <?= $now_note ?>
+                            </div>
+                        <?php endif; ?>
+                    <?php elseif ($has_dead): ?>
+                        <span class="b-status s-deceased" title="عنده حساب بسبب وفاة<?= $dec_month ? ' — منذ ' . $fmt_month($dec_month) : '' ?>">
+                            ⚰ متوفى
+                            <?php if ($dec_month): ?>
+                                <small style="font-weight:500;opacity:.85;margin-right:3px">· <?= $fmt_month($dec_month) ?></small>
+                            <?php endif; ?>
+                        </span>
                     <?php elseif ($has_frozen): ?>
-                        <span class="b-status s-frozen" title="حسابه البنكي مغلق/مجمد">🔒 حساب مغلق</span>
+                        <span class="b-status s-frozen" title="حسابه البنكي مغلق/مجمد<?= $frz_month ? ' — منذ ' . $fmt_month($frz_month) : '' ?>">
+                            🔒 حساب مغلق
+                            <?php if ($frz_month): ?>
+                                <small style="font-weight:500;opacity:.85;margin-right:3px">· <?= $fmt_month($frz_month) ?></small>
+                            <?php endif; ?>
+                        </span>
                     <?php elseif ($is_active == 1): ?>
                         <span class="b-status s-active">فعّال</span>
                     <?php else: ?>
@@ -122,6 +178,11 @@ $tot         = $totals ?? ['total'=>0,'bank'=>0,'wallet'=>0,'benef'=>0];
                 <?php if ($active_cnt == 0): ?>
                     <td colspan="3" class="text-center">
                         <span class="b-acc none"><i class="fa fa-exclamation-triangle"></i> لا يوجد حساب نشط</span>
+                        <?php if ($reasons !== ''): ?>
+                            <div class="reasons-box" title="أسباب الإغلاق على الحسابات الموجودة">
+                                <i class="fa fa-info-circle"></i> <?= htmlspecialchars($reasons) ?>
+                            </div>
+                        <?php endif; ?>
                     </td>
                 <?php elseif (!$def_prov): ?>
                     <td colspan="3" class="text-center">
@@ -136,6 +197,16 @@ $tot         = $totals ?? ['total'=>0,'bank'=>0,'wallet'=>0,'benef'=>0];
                         <?php endif; ?>
                         <?php if ($more_cnt > 0): ?>
                             <span class="b-acc more" title="حسابات إضافية للموظف">+<?= $more_cnt ?> آخر</span>
+                        <?php endif; ?>
+                        <?php if ($bank_cnt > 0 || $wallet_cnt > 0): ?>
+                            <div class="acc-mix">
+                                <?php if ($bank_cnt > 0): ?>
+                                    <span class="b-acc bank" title="عدد البنوك النشطة"><i class="fa fa-bank"></i> <?= $bank_cnt ?></span>
+                                <?php endif; ?>
+                                <?php if ($wallet_cnt > 0): ?>
+                                    <span class="b-acc wallet" title="عدد المحافظ النشطة"><i class="fa fa-mobile"></i> <?= $wallet_cnt ?></span>
+                                <?php endif; ?>
+                            </div>
                         <?php endif; ?>
                     </td>
                     <td class="acc-no-cell">

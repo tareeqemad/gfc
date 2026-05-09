@@ -161,6 +161,38 @@ $template_url       = base_url("payment_req/payment_req/download_template");
                             <div class="imp-stat-val" style="color:#d97706" id="imp-sum-amount">0</div>
                             <div class="imp-stat-lbl">مجموع المبالغ</div>
                         </div>
+                        <!-- 🆕 card تم الدمج -->
+                        <div class="imp-stat-card" id="imp-stat-merge" style="display:none;border-color:#c7d2fe;background:#eef2ff">
+                            <div class="imp-stat-val" style="color:#4338ca" id="imp-cnt-merged">0</div>
+                            <div class="imp-stat-lbl">موظف مكرر <small style="opacity:.7">(تم دمجهم)</small></div>
+                        </div>
+                    </div>
+
+                    <!-- 🆕 ملخص الدمج (يظهر لو فيه تكرار) -->
+                    <div id="imp-merge-info" style="display:none;margin-bottom:.75rem;
+                        background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:.7rem 1rem">
+                        <div style="display:flex;align-items:flex-start;gap:.6rem">
+                            <i class="fa fa-info-circle" style="color:#4338ca;font-size:1.1rem;margin-top:2px"></i>
+                            <div style="flex:1">
+                                <div style="font-size:.82rem;font-weight:700;color:#3730a3;margin-bottom:.25rem">
+                                    تم اكتشاف موظفين متكررين — تم دمج المبالغ تلقائياً
+                                </div>
+                                <div style="font-size:.74rem;color:#4338ca" id="imp-merge-summary"></div>
+                                <div style="font-size:.7rem;color:#6366f1;margin-top:.3rem">
+                                    <i class="fa fa-lock"></i>
+                                    سيتم حفظ ملف Excel الأصلي مع الطلب — ستجده في صفحة الطلب لاحقاً.
+                                </div>
+                                <div style="margin-top:.4rem">
+                                    <button type="button" class="imp-btn-link" onclick="imp_toggleMergedList()"
+                                            style="background:none;border:none;color:#4338ca;font-size:.74rem;cursor:pointer;padding:0;text-decoration:underline">
+                                        <i class="fa fa-chevron-down" id="imp-merge-chev"></i>
+                                        <span id="imp-merge-toggle-lbl">عرض القائمة</span>
+                                    </button>
+                                </div>
+                                <div id="imp-merged-list" style="display:none;margin-top:.5rem;max-height:180px;overflow-y:auto;
+                                    background:#fff;border:1px solid #c7d2fe;border-radius:6px;padding:.5rem"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Parse errors -->
@@ -525,32 +557,77 @@ $template_url       = base_url("payment_req/payment_req/download_template");
         $('#imp-cnt-err').text(d.error_count || 0);
         $('#imp-cnt-total').text(d.total_rows || 0);
 
-        // Update table header
-        var thHtml = '<tr><th class="imp-th">صف</th><th class="imp-th">رقم الموظف</th>';
+        // Update table header (🆕 عمود "صفوف Excel" لو فيه دمج)
+        var thHtml = '<tr><th class="imp-th">رقم الموظف</th>';
         if (isFullSalary) thHtml += '<th class="imp-th">اسم الموظف</th><th class="imp-th" style="text-align:end">صافي الراتب</th>';
         else thHtml += '<th class="imp-th" style="text-align:end">المبلغ</th>';
-        thHtml += '<th class="imp-th">ملاحظة</th></tr>';
+        thHtml += '<th class="imp-th">صفوف Excel</th><th class="imp-th">ملاحظة</th></tr>';
         $('#imp-preview-table thead').html(thHtml);
 
         var totalAmt = 0;
         var $tbody = $('#imp-preview-body').empty();
         $.each(d.items || [], function(i, it) {
-            var amt = parseFloat(it.REQ_AMOUNT) || 0;
+            var amt    = parseFloat(it.REQ_AMOUNT) || 0;
+            var merged = parseInt(it.merged) === 1;
             totalAmt += amt;
-            var $tr = $('<tr>').append(
-                $('<td>', { class:'imp-td', css:{color:'#94a3b8'}, text: it.row }),
-                $('<td>', { class:'imp-td', css:{fontWeight:600}, text: it.EMP_NO })
-            );
+            var $tr = $('<tr>');
+            if (merged) $tr.css({background:'#eef2ff'});
+
+            $tr.append($('<td>', { class:'imp-td', css:{fontWeight:600}, text: it.EMP_NO }));
             if (isFullSalary) {
                 $tr.append($('<td>', { class:'imp-td', text: it.EMP_NAME || '—' }));
                 $tr.append($('<td>', { class:'imp-td', css:{textAlign:'end'}, text: _impFmtA(amt) }));
             } else {
                 $tr.append($('<td>', { class:'imp-td', css:{textAlign:'end'}, text: _impFmtA(amt) }));
             }
+
+            // 🆕 خلية صفوف Excel + badge "دمج N"
+            var rowsCell = '';
+            if (merged) {
+                var rows = (it.merge_rows || []).slice(0, 7).join('، ');
+                if ((it.merge_rows || []).length > 7) rows += '...';
+                rowsCell = '<span style="background:#c7d2fe;color:#3730a3;padding:1px 6px;border-radius:4px;font-size:.7rem;font-weight:700">'
+                         + 'دمج ' + it.merge_cnt + '</span> '
+                         + '<span style="color:#64748b;font-size:.7rem">' + rows + '</span>';
+            } else {
+                rowsCell = '<span style="color:#94a3b8;font-size:.72rem">' + (it.row || '') + '</span>';
+            }
+            $tr.append($('<td>', { class:'imp-td', html: rowsCell }));
+
             $tr.append($('<td>', { class:'imp-td', css:{color:'#64748b',maxWidth:'180px',overflow:'hidden',textOverflow:'ellipsis'}, text: it.NOTE || '—' }));
             $tbody.append($tr);
         });
         $('#imp-sum-amount').text(_impFmtA(totalAmt));
+
+        // 🆕 ملخص الدمج
+        var mi = d.merge_info || {};
+        var mergedEmps = parseInt(mi.merged_emps) || 0;
+        if (mergedEmps > 0) {
+            $('#imp-cnt-merged').text(mergedEmps);
+            $('#imp-stat-merge').show();
+            $('#imp-merge-summary').html(
+                'تم دمج <b>' + mi.merged_rows + '</b> صف من Excel ضمن <b>' + mergedEmps + '</b> موظف. ' +
+                'إجمالي الموظفين الفريدين: <b>' + mi.total_emps + '</b> من أصل <b>' + mi.total_raw + '</b> صف.'
+            );
+            // قائمة المدموجين (للـ toggle)
+            var listHtml = '<div style="font-size:.72rem">';
+            $.each(d.items || [], function(i, it){
+                if (parseInt(it.merged) !== 1) return;
+                var rows = (it.merge_rows || []).join('، ');
+                listHtml += '<div style="padding:3px 0;border-bottom:1px solid #f1f5f9">'
+                         +  '<b>' + it.EMP_NO + '</b> ' + (it.EMP_NAME || '')
+                         +  ' — <span style="color:#4338ca">' + it.merge_cnt + ' صفوف</span> '
+                         +  '<span style="color:#94a3b8">(الصفوف: ' + rows + ')</span>'
+                         +  ' = <b style="color:#059669">' + _impFmtA(parseFloat(it.REQ_AMOUNT) || 0) + '</b>'
+                         +  '</div>';
+            });
+            listHtml += '</div>';
+            $('#imp-merged-list').html(listHtml);
+            $('#imp-merge-info').show();
+        } else {
+            $('#imp-stat-merge').hide();
+            $('#imp-merge-info').hide();
+        }
 
         // Parse errors
         if (d.parse_errors && d.parse_errors.length > 0) {
@@ -565,6 +642,21 @@ $template_url       = base_url("payment_req/payment_req/download_template");
         $('#imp-preview-content').show();
         $('#imp-btn-send').toggle(IMP.validCount > 0);
         $('#imp-btn-send-text').text('إنشاء ' + IMP.validCount + ' طلب');
+    }
+
+    // 🆕 toggle قائمة المدموجين
+    function imp_toggleMergedList() {
+        var $list = $('#imp-merged-list');
+        var $chev = $('#imp-merge-chev');
+        if ($list.is(':visible')) {
+            $list.slideUp(150);
+            $chev.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+            $('#imp-merge-toggle-lbl').text('عرض القائمة');
+        } else {
+            $list.slideDown(150);
+            $chev.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+            $('#imp-merge-toggle-lbl').text('إخفاء القائمة');
+        }
     }
 
     /* =====================================================

@@ -658,16 +658,16 @@ $scripts = <<<SCRIPT
     // البحث المحلي: يفلتر الصفوف بدون round-trip للسيرفر
     function _filterProvList(){
         var q = ($('#provListSearch').val() || '').trim().toLowerCase();
-        var $rows = $('#provListBody table.acc-list-tbl tbody tr');
+        var rows = $('#provListBody table.acc-list-tbl tbody tr');
         if (!q) {
-            $rows.removeClass('row-hidden');
+            rows.removeClass('row-hidden');
             // أعد ترقيم الصفوف 1..N
-            $rows.each(function(i){ $(this).find('.row-num').text(i+1); });
-            $('#provListCountVisible').text($rows.length);
+            rows.each(function(i){ $(this).find('.row-num').text(i+1); });
+            $('#provListCountVisible').text(rows.length);
             return;
         }
         var visible = 0;
-        $rows.each(function(){
+        rows.each(function(){
             var match = ($(this).attr('data-search') || '').indexOf(q) !== -1;
             if (match) {
                 $(this).removeClass('row-hidden');

@@ -48,7 +48,7 @@
 $active_group = 'default';
 $active_record = TRUE;
 
-$db['default']['hostname'] = '213.244.76.204:1521/HR';
+$db['default']['hostname'] = '10.184.3.204:1521/HR';
 $db['default']['username'] = 'GFC_PAK';
 $db['default']['password'] = 'pNCSFuxMArxf';
 $db['default']['database'] = '';

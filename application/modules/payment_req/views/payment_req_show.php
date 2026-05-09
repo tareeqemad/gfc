@@ -50,6 +50,156 @@ echo AntiForgeryToken();
 .detail-tbl td,.detail-tbl th{vertical-align:middle;font-size:.82rem}
 .detail-tbl .amt{font-weight:700;color:#1e293b}
 .detail-total{background:#f0fdf4;font-weight:800}
+/* Badges على صف الموظف */
+.b-tag{font-size:.62rem;padding:.1em .42em;border-radius:4px;font-weight:700;margin-inline-start:.3rem;display:inline-block;vertical-align:middle}
+.b-tag i{margin-left:2px}
+.b-tag.b-multi{background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc}
+.b-tag.b-benef{background:#f5f3ff;color:#6d28d9;border:1px solid #c4b5fd}
+.b-tag.b-warn{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.b-tag.b-retired{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1}
+.b-tag.b-pause{background:#f5f3ff;color:#6d28d9;border:1px solid #c4b5fd}
+.b-tag.b-blocked{background:#7f1d1d;color:#fff;border:1px solid #991b1b;animation:b-pulse 1.5s ease-in-out infinite}
+@keyframes b-pulse{0%,100%{opacity:1}50%{opacity:.65}}
+
+/* Legend ألوان حالات الموظفين */
+.emp-legend{display:flex;flex-wrap:wrap;align-items:center;gap:1rem;padding:.55rem .9rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:.78rem}
+.emp-legend-title{font-weight:700;color:#475569}
+.emp-legend-item{display:inline-flex;align-items:center;gap:.4rem}
+.emp-legend-item small{color:#64748b;font-size:.7rem}
+.emp-legend-swatch{display:inline-block;width:18px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.05)}
+/* صف التوزيع المدمج */
+.distrib-row td{border-top:0!important;border-bottom:1px solid #e2e8f0}
+.distrib-row.distrib-single td{padding:.15rem .75rem!important}
+.distrib-warns{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.3rem;font-size:.7rem}
+.distrib-warns .d-warn{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;padding:.15em .5em;border-radius:4px;font-weight:600}
+.distrib-warns .d-info{background:#f5f3ff;color:#6d28d9;border:1px solid #c4b5fd;padding:.15em .5em;border-radius:4px;font-weight:600}
+.distrib-warns .d-block{background:#7f1d1d;color:#fff;border:1px solid #991b1b;padding:.3em .6em;border-radius:4px;font-weight:600;display:block;width:100%;font-size:.74rem}
+.distrib-warns .d-block i{margin-left:4px}
+.distrib-warns i{margin-left:3px}
+
+/* Tabs styling */
+#detailTabs .nav-link{font-size:.85rem;font-weight:600;color:#64748b;padding:.5rem 1.1rem}
+#detailTabs .nav-link.active{color:#1e40af;background:#eff6ff;border-color:#bfdbfe #bfdbfe #fff}
+#detailTabs .nav-link .badge{font-size:.7rem;font-weight:700}
+
+/* 🆕 أزرار override toggle مدمجة — تضمن تظهر كلها في صف واحد */
+.ovr-toggle{display:inline-flex;flex-wrap:nowrap;vertical-align:middle}
+.ovr-toggle .btn,.ovr-tog{padding:.18rem .38rem !important;font-size:.7rem !important;line-height:1.1;min-width:auto}
+.ovr-toggle .btn i,.ovr-tog i{font-size:.78rem;margin:0}
+/* العمود نفسه: لا wrap + لا overflow مزعج */
+td.actions-cell{white-space:nowrap;min-width:170px}
+
+/* Tab 2: Recipients */
+.rcp-stats{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.6rem}
+.rcp-stat{flex:1;min-width:130px;text-align:center;padding:.5rem .6rem;background:#fff;border:1px solid #e2e8f0;border-radius:8px}
+.rcp-stat .rs-lbl{font-size:.65rem;color:#64748b;font-weight:600;margin-bottom:.15rem}
+.rcp-stat .rs-lbl i{margin-left:3px}
+.rcp-stat .rs-val{font-size:1.05rem;font-weight:800;color:#1e293b;direction:ltr}
+.rcp-stat.c-self{background:#f0fdf4;border-color:#bbf7d0}
+.rcp-stat.c-self .rs-val{color:#15803d}
+.rcp-stat.c-benef{background:#faf5ff;border-color:#c4b5fd}
+.rcp-stat.c-benef .rs-val{color:#6d28d9}
+.rcp-stat.c-owner{background:#fff7ed;border-color:#fed7aa}
+.rcp-stat.c-owner .rs-val{color:#9a3412}
+.rcp-stat.c-amt{background:#1e293b;border-color:#1e293b}
+.rcp-stat.c-amt .rs-lbl{color:#cbd5e1}
+.rcp-stat.c-amt .rs-val{color:#fff}
+.rcp-stat.c-warn{background:#fef2f2;border-color:#fca5a5}
+.rcp-stat.c-warn .rs-val{color:#991b1b}
+.rcp-stat.c-split{background:#e0f2fe;border-color:#7dd3fc}
+.rcp-stat.c-split .rs-val{color:#0369a1}
+.rcp-stat.c-dues{background:#faf5ff;border-color:#c4b5fd}
+.rcp-stat.c-dues .rs-val{color:#6b21a8}
+.rcp-stat.c-net{background:#f0fdf4;border-color:#bbf7d0}
+.rcp-stat.c-net .rs-val{color:#15803d}
+.rcp-stat .rs-sub{font-size:.62rem;color:#64748b;font-weight:600;margin-top:.1rem}
+.rcp-split-pill{display:inline-block;font-size:.65rem;padding:.15em .5em;border-radius:4px;font-weight:700;white-space:nowrap}
+.rcp-split-tag{display:inline-block;font-size:.6rem;padding:.05em .35em;border-radius:3px;background:#e0f2fe;color:#0369a1;font-weight:700;margin-inline-start:.3rem}
+.rcp-split-tag i{margin-left:2px}
+
+/* 🏦 زر تصدير الملف البنكي — مميّز ومحترف */
+.btn-bank-csv{
+    display:inline-flex;
+    align-items:center;
+    gap:.55rem;
+    padding:.4rem .9rem;
+    background:linear-gradient(135deg,#0f766e 0%,#115e59 100%);
+    color:#fff!important;
+    border:0;
+    border-radius:8px;
+    font-size:.78rem;
+    font-weight:700;
+    text-decoration:none!important;
+    box-shadow:0 2px 4px rgba(15,118,110,.25), 0 1px 2px rgba(0,0,0,.08);
+    transition:all .15s ease;
+    position:relative;
+    overflow:hidden;
+}
+.btn-bank-csv:hover{
+    background:linear-gradient(135deg,#0d9488 0%,#0f766e 100%);
+    transform:translateY(-1px);
+    box-shadow:0 4px 8px rgba(15,118,110,.35), 0 2px 4px rgba(0,0,0,.1);
+    color:#fff!important;
+}
+.btn-bank-csv:active{transform:translateY(0)}
+.btn-bank-csv .bcsv-icon{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;height:28px;
+    background:rgba(255,255,255,.18);
+    border-radius:6px;
+    font-size:.95rem;
+}
+.btn-bank-csv .bcsv-text{
+    display:flex;
+    flex-direction:column;
+    line-height:1.15;
+    text-align:start;
+}
+.btn-bank-csv .bcsv-title{font-weight:800;font-size:.82rem}
+.btn-bank-csv .bcsv-sub{font-size:.62rem;opacity:.85;font-weight:500}
+.btn-bank-csv .bcsv-dl{
+    font-size:.75rem;
+    margin-inline-start:.2rem;
+    opacity:.75;
+}
+.btn-bank-csv:hover .bcsv-dl{
+    opacity:1;
+    animation:bcsv-bounce .6s ease infinite;
+}
+@keyframes bcsv-bounce{
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(2px)}
+}
+.rcp-toolbar{display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap}
+.rcp-tbl{font-size:.82rem}
+.rcp-tbl th{background:#f8fafc;font-size:.75rem;color:#475569;font-weight:700}
+.rcp-tbl tr.row-hidden{display:none}
+.rcp-tbl tr:hover{background:#fffbeb}
+.rcp-type{display:inline-block;font-size:.65rem;padding:.15em .5em;border-radius:4px;font-weight:700;white-space:nowrap}
+.rcp-type i{margin-left:3px}
+.rcp-def{font-size:.6rem;background:#fef3c7;color:#92400e;padding:.05em .35em;border-radius:3px;font-weight:600;margin-inline-start:.3rem}
+
+/* Pills مدمجة (تصميم جديد) */
+.dist-mini{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
+.dist-pill{display:inline-flex;align-items:center;gap:.35rem;padding:.18em .55em;background:#fff;border:1px solid #e2e8f0;border-radius:14px;font-size:.7rem;line-height:1.4;color:#475569;white-space:nowrap}
+.dist-pill.compact{background:transparent;border:0;padding:.1em .25em;color:#64748b;font-size:.72rem}
+.dist-pill i{font-size:.78rem;color:#1e40af}
+.dist-pill .dp-prov{font-weight:700;color:#1e293b}
+.dist-pill .dp-branch{color:#64748b;font-size:.68rem}
+.dist-pill .dp-st{font-size:.62rem;color:#475569;background:#f1f5f9;padding:.05em .35em;border-radius:3px;font-weight:600}
+.dist-pill .dp-amt{font-weight:800;color:#059669;direction:ltr;font-size:.78rem;margin-inline-start:.15rem}
+.dist-pill .dp-amt.blocked{color:#991b1b;text-decoration:line-through}
+.dist-pill .dp-def{font-size:.6rem;background:#fef3c7;color:#92400e;padding:.05em .3em;border-radius:3px;font-weight:600}
+.dist-pill .dp-benef{background:#f5f3ff;color:#6d28d9;padding:.05em .35em;border-radius:3px;font-weight:600}
+.dist-pill .dp-benef small{color:#7c3aed;margin-inline-start:.15em;font-size:.95em}
+.dist-pill .dp-owner{background:#fff7ed;color:#9a3412;padding:.05em .35em;border-radius:3px;font-weight:600}
+.dist-pill.is-benef{background:#faf5ff;border-color:#c4b5fd}
+.dist-pill.is-inactive{opacity:.6;background:#f1f5f9;border-style:dashed}
+.dist-pill.is-inactive .dp-prov{text-decoration:line-through;color:#64748b}
+.dist-pill.is-inactive i{color:#94a3b8}
+.dist-pill.is-blocked{background:#fef2f2;border-color:#fca5a5}
 .info-row{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:.75rem}
 .info-item{flex:1;min-width:140px;padding:.5rem .75rem;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc}
 .info-item .lbl{font-size:.65rem;color:#94a3b8;margin-bottom:.1rem}.info-item .val{font-size:.9rem;font-weight:700;color:#1e293b}
@@ -109,6 +259,43 @@ echo AntiForgeryToken();
             <?php if (!$isCreate && $HaveRs && $emp_count > 0): ?>
                 <button type="button" onclick="exportDetailExcel();" class="btn btn-info btn-sm text-white"><i class="fa fa-file-excel-o me-1"></i> Excel</button>
             <?php endif; ?>
+            <?php
+            // 🆕 ملفات الإكسل الأصلية المستوردة (في حال الطلب أُنشئ عبر استيراد)
+            $import_files = $import_files ?? [];
+            if (!$isCreate && !empty($import_files)):
+                $req_id_dl = (int)($rs['REQ_ID'] ?? 0);
+            ?>
+                <?php if (count($import_files) === 1):
+                    $f = $import_files[0];
+                    $fp = $f['FILE_PATH'] ?? '';
+                ?>
+                    <a class="btn btn-outline-secondary btn-sm"
+                       href="<?= base_url("$MODULE_NAME/$TB_NAME/public_download_import_file/{$req_id_dl}/" . rawurlencode($fp)) ?>"
+                       title="تنزيل ملف الإكسل الأصلي المستورد (قبل دمج المكررين)">
+                        <i class="fa fa-download me-1"></i> Excel الأصلي
+                    </a>
+                <?php else: ?>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                                title="ملفات الإكسل الأصلية المستوردة">
+                            <i class="fa fa-download me-1"></i> Excel الأصلي (<?= count($import_files) ?>)
+                        </button>
+                        <ul class="dropdown-menu" style="font-size:.82rem">
+                            <?php foreach ($import_files as $f): $fp = $f['FILE_PATH'] ?? ''; ?>
+                                <li>
+                                    <a class="dropdown-item" href="<?= base_url("$MODULE_NAME/$TB_NAME/public_download_import_file/{$req_id_dl}/" . rawurlencode($fp)) ?>">
+                                        <i class="fa fa-file-excel-o text-success me-1"></i>
+                                        <?= htmlspecialchars($f['FILE_NAME'] ?? $fp) ?>
+                                        <?php if (!empty($f['NOTE'])): ?>
+                                            <small class="d-block text-muted" style="font-size:.7rem"><?= htmlspecialchars($f['NOTE']) ?></small>
+                                        <?php endif; ?>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
             <?php if ($can_edit_form): ?>
                 <button type="button" id="btnSave" onclick="saveMaster(this);" class="btn btn-primary btn-sm"><i class="fa fa-save me-1"></i> حفظ</button>
             <?php endif; ?>
@@ -132,8 +319,12 @@ echo AntiForgeryToken();
     </div>
     <div class="card-body">
 
+<?php
+// 🆕 نُعرّف $req_type_val بقيمة افتراضية (0) عشان يكون متاح في أي مكان
+//     (مثل JS heredoc اللي يُولَّد دائماً، حتى في وضع الإنشاء)
+$req_type_val = (!$isCreate && $HaveRs) ? (int)($rs['REQ_TYPE'] ?? 0) : 0;
+?>
 <?php if (!$isCreate && $HaveRs): ?>
-<?php $req_type_val = (int)($rs['REQ_TYPE'] ?? 0); ?>
 
 <!-- STATUS BAR -->
 <div class="pr2-status s<?= $cur_status ?>" id="masterStatusBar">
@@ -153,7 +344,9 @@ echo AntiForgeryToken();
 <!-- بيانات الطلب — شريط متراص -->
 <div class="info-bar">
     <div class="info-chips">
-        <span class="chip"><i class="fa fa-calendar"></i> الشهر: <b><?php $thm=$rs['THE_MONTH']??''; echo strlen($thm)==6 ? substr($thm,4,2).'/'.substr($thm,0,4) : $thm; ?></b></span>
+        <?php if ($req_type_val != 3): ?>
+            <span class="chip"><i class="fa fa-calendar"></i> الشهر: <b><?php $thm=$rs['THE_MONTH']??''; echo strlen($thm)==6 ? substr($thm,4,2).'/'.substr($thm,0,4) : $thm; ?></b></span>
+        <?php endif; ?>
         <span class="chip"><i class="fa fa-tag"></i> نوع الطلب: <b><?= $rs['REQ_TYPE_NAME'] ?? '' ?></b></span>
         <?php if (in_array($req_type_val, [2, 3]) && !empty($rs['PERCENT_VAL'])): ?>
             <span class="chip pct"><i class="fa fa-percent"></i> النسبة: <b><?= $rs['PERCENT_VAL'] ?>%</b></span>
@@ -163,6 +356,14 @@ echo AntiForgeryToken();
         <?php endif; ?>
         <?php if (in_array($req_type_val, [3, 4, 5]) && !empty($rs['PAY_TYPE_NAME'])): ?>
             <span class="chip pay"><i class="fa fa-bookmark-o"></i> <?= $req_type_val == 5 ? 'بند الاستحقاق' : 'بند التسديد' ?>: <b><?= $rs['PAY_TYPE_NAME'] ?></b></span>
+        <?php endif; ?>
+        <?php if ($req_type_val == 3 && !empty($rs['FILTER_MONTH'])):
+            $fm = $rs['FILTER_MONTH'];
+            $fm_disp = strlen($fm) == 6 ? substr($fm, 4, 2) . '/' . substr($fm, 0, 4) : $fm;
+        ?>
+            <span class="chip" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af" title="فلتر اختياري — جلب الموظفين المحتسبين في هذا الشهر فقط (بدون أي ربط مالي)">
+                <i class="fa fa-filter"></i> فلتر شهر: <b><?= $fm_disp ?></b>
+            </span>
         <?php endif; ?>
         <span class="chip"><i class="fa fa-users"></i> <b id="empCountVal"><?= $emp_count ?></b> موظف</span>
     </div>
@@ -287,13 +488,35 @@ echo AntiForgeryToken();
             <select name="benefit_con" id="show_benefit_con" class="form-control sel2" onchange="$('#pay_type').val(this.value)"></select>
         </div>
 
-        <!-- طريقة المبلغ — نوع 5 -->
+        <!-- طريقة المبلغ — أنواع 3 (مبلغ ثابت)، 4، 5 -->
         <div class="form-group col-sm-6 col-md-3" id="show_amount_mode_grp" style="display:none">
             <label>طريقة المبلغ <span class="text-danger">*</span></label>
-            <select id="show_amount_mode" class="form-select" onchange="showOnAmountModeChange()">
+            <select id="show_amount_mode" name="amount_mode" class="form-select" onchange="showOnAmountModeChange()">
                 <option value="same">نفس المبلغ لكل الموظفين</option>
                 <option value="diff">مبلغ مختلف لكل موظف</option>
             </select>
+        </div>
+    </div>
+
+    <!-- ═══ شهر فلتر اختياري — نوع 3 فقط ═══ -->
+    <div class="row g-3 mt-2" id="show_filter_month_grp" style="display:none">
+        <div class="col-12">
+            <div class="alert alert-info py-2 mb-1" style="border-radius:8px;font-size:.78rem">
+                <i class="fa fa-info-circle me-1"></i>
+                <b>شهر الاحتساب (اختياري):</b> لجلب الموظفين المحتسبين في شهر معيّن فقط — <b>بدون أي ربط مالي</b>.
+                المبلغ يُخصم من رصيد المستحقات العام.
+            </div>
+        </div>
+        <div class="col-md-3">
+            <label class="fw-bold mb-1" style="font-size:.78rem">
+                <i class="fa fa-filter text-info"></i> شهر الاحتساب
+            </label>
+            <div class="input-group">
+                <input type="text" name="filter_month" id="filter_month" class="form-control" placeholder="YYYYMM" autocomplete="off">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="$('#filter_month').val('')" title="مسح الفلتر">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -455,22 +678,54 @@ $status_badges = [0 => ['مسودة','#fef3c7','#92400e'], 1 => ['معتمد','#
 <!-- DETAIL TABLE -->
 <?php if (!$isCreate && $HaveRs): ?>
 <!-- Hidden inputs لبيانات الماستر — يستخدمها JS في addToQueue/detail_preview/submitQueue -->
-<input type="hidden" id="the_month"   value="<?= htmlspecialchars($rs['THE_MONTH']   ?? '') ?>">
-<input type="hidden" id="req_type"    value="<?= htmlspecialchars($rs['REQ_TYPE']    ?? '') ?>">
-<input type="hidden" id="calc_method" value="<?= htmlspecialchars($rs['CALC_METHOD'] ?? '') ?>">
-<input type="hidden" id="percent_val" value="<?= htmlspecialchars($rs['PERCENT_VAL'] ?? '') ?>">
-<input type="hidden" id="show_l_value" value="<?= htmlspecialchars($rs['L_VALUE']    ?? '') ?>">
-<input type="hidden" id="show_h_value" value="<?= htmlspecialchars($rs['H_VALUE']    ?? '') ?>">
+<input type="hidden" id="the_month"    value="<?= htmlspecialchars($rs['THE_MONTH']    ?? '') ?>">
+<input type="hidden" id="req_type"     value="<?= htmlspecialchars($rs['REQ_TYPE']     ?? '') ?>">
+<input type="hidden" id="calc_method"  value="<?= htmlspecialchars($rs['CALC_METHOD']  ?? '') ?>">
+<input type="hidden" id="percent_val"  value="<?= htmlspecialchars($rs['PERCENT_VAL']  ?? '') ?>">
+<input type="hidden" id="show_l_value" value="<?= htmlspecialchars($rs['L_VALUE']     ?? '') ?>">
+<input type="hidden" id="show_h_value" value="<?= htmlspecialchars($rs['H_VALUE']     ?? '') ?>">
+<input type="hidden" id="filter_month" value="<?= htmlspecialchars($rs['FILTER_MONTH'] ?? '') ?>">
 <div class="card mt-3" id="detailCard">
     <div class="card-header d-flex align-items-center">
         <h3 class="card-title"><i class="fa fa-users me-2"></i> الموظفين</h3>
         <?php if ($can_partial && $emp_count > 0): ?>
-        <div class="ms-auto d-flex gap-1">
+        <div class="ms-auto d-flex gap-2 flex-wrap align-items-center">
+            <?php if ($can_add): ?>
+                <!-- 🆕 Bulk override للمحدّدين — بارز وواضح -->
+                <div class="bulk-ovr-bar d-flex align-items-center gap-1"
+                     style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:.25rem .5rem">
+                    <span style="font-size:.72rem;color:#475569;font-weight:700;white-space:nowrap">
+                        <i class="fa fa-magic"></i> تطبيق على المحدّدين:
+                    </span>
+                    <button type="button" class="btn btn-sm btn-secondary fw-bold"
+                            onclick="bulkSetOverride('default')"
+                            title="إرجاع للتوزيع الافتراضي">
+                        <i class="fa fa-cog me-1"></i> افتراضي
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary fw-bold"
+                            onclick="bulkSetOverride('bank')"
+                            title="تحويل المحدّدين للبنك فقط">
+                        <i class="fa fa-bank me-1"></i> بنك
+                    </button>
+                    <button type="button" class="btn btn-sm btn-info text-white fw-bold"
+                            onclick="bulkSetOverride('wallet')"
+                            title="تحويل المحدّدين للمحفظة فقط">
+                        <i class="fa fa-mobile me-1"></i> محفظة
+                    </button>
+                </div>
+            <?php endif; ?>
             <?php if (($is_draft || $cur_status == 3) && HaveAccess($approve_url)): ?>
                 <button type="button" class="btn btn-info btn-sm text-white" onclick="doPartialApprove()"><i class="fa fa-check-circle"></i> اعتماد المحددين</button>
             <?php endif; ?>
             <?php if ($is_paid || $cur_status == 4): ?>
-                <a class="btn btn-outline-dark btn-sm" href="<?= $bank_csv_url ?>?req_id=<?= $req_id_val ?>"><i class="fa fa-download"></i> CSV بنكي</a>
+                <a class="btn-bank-csv" href="<?= $bank_csv_url ?>?req_id=<?= $req_id_val ?>" title="تصدير ملف الحوالات البنكية الجاهز للإرسال للبنك">
+                    <span class="bcsv-icon"><i class="fa fa-bank"></i></span>
+                    <span class="bcsv-text">
+                        <span class="bcsv-title">ملف بنكي</span>
+                        <span class="bcsv-sub">CSV — جاهز للإرسال</span>
+                    </span>
+                    <i class="fa fa-cloud-download bcsv-dl"></i>
+                </a>
             <?php endif; ?>
         </div>
         <?php endif; ?>
@@ -513,7 +768,12 @@ $status_badges = [0 => ['مسودة','#fef3c7','#92400e'], 1 => ['معتمد','#
     // 4 مستحقات شهر     → مقفل (حسب الشهر)
     // 5 نفس المبلغ      → معبّى بمبلغ الماستر + قابل للتعديل
     // 5 مبلغ مختلف      → فاضي + إجباري
-    $master_amt = (float)($rs['REQ_AMOUNT'] ?? 0);
+    //
+    // ⚠️ مهم: master.REQ_AMOUNT = إجمالي الطلب (SUM of details) — مش المبلغ الموحد!
+    // فمجرد ما يصير عندنا تفصيلة واحدة، الـ REQ_AMOUNT يصير مجموع كل المبالغ.
+    // الحلّ: نستخدمه كـ default فقط لما الطلب فاضي (ما فيه details).
+    $has_details_rows = !empty($detail_rows);
+    $master_amt = $has_details_rows ? 0 : (float)($rs['REQ_AMOUNT'] ?? 0);
     $calc_method_val = (int)($rs['CALC_METHOD'] ?? 0);
 
     $is_locked = false;
@@ -611,7 +871,257 @@ $status_badges = [0 => ['مسودة','#fef3c7','#92400e'], 1 => ['معتمد','#
         </div>
         <?php endif; ?>
 
-        <?php $is_type_2 = $HaveRs && (int)($rs['REQ_TYPE'] ?? 0) == 2; ?>
+        <?php
+        $is_type_2 = $HaveRs && (int)($rs['REQ_TYPE'] ?? 0) == 2;
+
+        // ═══════════════════════════════════════════════════════════
+        // بناء قائمة المستفيدين (recipients) لـ Tab 2 — بيانات غنية للمحاسب
+        // ═══════════════════════════════════════════════════════════
+        $recipients = [];
+        $stat_self = 0;       // الموظف يقبض لنفسه
+        $stat_benef = 0;      // وريث/مستفيد
+        $stat_other_owner = 0;// صاحب حساب مختلف
+        $stat_total_alloc = 0;
+        $stat_total_dues  = 0; // إجمالي ACCRUED_323 (سيُرحّل للمستحقات — لا يدخل في التحويلات البنكية)
+        $stat_blocked = 0;    // موظفون بـ overage (لن يُصرف)
+        $stat_no_acc = 0;     // موظفون بدون حسابات
+        $stat_split_emps = 0; // موظفون مبلغهم مقسّم على أكثر من حساب
+        $stat_wallet_count = 0; // عدد الحركات للمحافظ
+        $stat_bank_count = 0;   // عدد الحركات للبنوك
+        $accounts_map_for_tab2 = isset($accounts_map) && is_array($accounts_map) ? $accounts_map : [];
+        $emp_summary_for_tab2  = isset($emp_summary)  && is_array($emp_summary)  ? $emp_summary  : [];
+
+        // الـ pass الأول: نحسب emp_total_cash لكل موظف (قبل بناء الصفوف)
+        $emp_total_cash = []; // emp_no => sum of allocs across his accounts
+        foreach ($detail_rows as $d) {
+            $eno = (int)($d['EMP_NO'] ?? 0);
+            if (!$eno) continue;
+            $emp_accs = $accounts_map_for_tab2[$eno] ?? [];
+            $tot = 0;
+            foreach ($emp_accs as $a) {
+                if (empty($a['ACC_ID'])) continue;
+                if ((int)($a['ACC_IS_ACTIVE'] ?? 1) === 0) continue;
+                $tot += (float)($a['ALLOC_AMOUNT'] ?? 0);
+            }
+            $emp_total_cash[$eno] = $tot;
+        }
+        // إجمالي ACCRUED_323 (DUES) — للستات
+        if (isset($total_accrued_323)) $stat_total_dues = (float)$total_accrued_323;
+
+        foreach ($detail_rows as $d) {
+            $eno = (int)($d['EMP_NO'] ?? 0);
+            $emp_name = $d['EMP_NAME'] ?? '';
+            $branch_name = $d['BRANCH_NAME'] ?? '';
+            $emp_req_amount = (float)($d['REQ_AMOUNT'] ?? 0);
+            $emp_net_total  = (float)($d['NET_SALARY_CALC'] ?? 0);
+            $emp_dues       = (float)($d['ACCRUED_323_CALC'] ?? 0);
+            $emp_accs = $accounts_map_for_tab2[$eno] ?? [];
+            $es = $emp_summary_for_tab2[$eno] ?? null;
+            $emp_overage = $es ? (int)$es['is_overage'] : 0;
+            $emp_active_accs = array_filter($emp_accs, function($a){
+                return !empty($a['ACC_ID']) && (int)($a['ACC_IS_ACTIVE'] ?? 1) === 1;
+            });
+            $emp_acc_count = count($emp_active_accs);
+            $emp_is_split = $emp_acc_count > 1;
+
+            if ($emp_overage)         { $stat_blocked++; continue; }
+            if ($emp_acc_count === 0) { $stat_no_acc++; continue; }
+            if ($emp_is_split) $stat_split_emps++;
+
+            $emp_cash_total = $emp_total_cash[$eno] ?? 0;
+
+            foreach ($emp_active_accs as $a) {
+                $alloc = (float)($a['ALLOC_AMOUNT'] ?? 0);
+                if ($alloc <= 0) continue;
+
+                // تحديد نوع المستلم
+                $type = 'self';
+                $recipient_name = $emp_name;
+                $rel_label = 'الموظف نفسه';
+                $type_color = '#059669';
+                $type_bg = '#dcfce7';
+                $owner = trim($a['OWNER_NAME'] ?? '');
+                $emp_clean = trim($emp_name);
+
+                if (!empty($a['BENEFICIARY_ID'])) {
+                    $type = 'benef';
+                    $recipient_name = $a['BENEF_NAME'] ?? $owner;
+                    $rel_label = 'وريث - ' . ($a['BENEF_REL_NAME'] ?? '');
+                    $type_color = '#6d28d9';
+                    $type_bg = '#f5f3ff';
+                    $stat_benef++;
+                } elseif ($owner && $owner !== $emp_clean) {
+                    $type = 'other_owner';
+                    $recipient_name = $owner;
+                    $rel_label = 'صاحب حساب';
+                    $type_color = '#9a3412';
+                    $type_bg = '#fff7ed';
+                    $stat_other_owner++;
+                } else {
+                    $stat_self++;
+                }
+
+                // 🆕 طريقة التوزيع لهذا الحساب
+                $st = (int)($a['SPLIT_TYPE'] ?? 0);
+                $sv = (float)($a['SPLIT_VALUE'] ?? 0);
+                if (!$emp_is_split) {
+                    // حساب واحد → كامل
+                    $split_label = 'كامل';
+                    $split_color = '#059669';
+                    $split_bg    = '#f0fdf4';
+                } elseif ($st === 1) {
+                    $split_label = 'نسبة ' . rtrim(rtrim(number_format($sv, 2, '.', ''), '0'), '.') . '%';
+                    $split_color = '#0369a1';
+                    $split_bg    = '#eff6ff';
+                } elseif ($st === 2) {
+                    $split_label = 'مبلغ ثابت';
+                    $split_color = '#92400e';
+                    $split_bg    = '#fef3c7';
+                } elseif ($st === 3) {
+                    $split_label = 'كامل الباقي';
+                    $split_color = '#15803d';
+                    $split_bg    = '#dcfce7';
+                } else {
+                    $split_label = '—';
+                    $split_color = '#64748b';
+                    $split_bg    = '#f1f5f9';
+                }
+
+                // 🆕 النسبة من إجمالي صرف الموظف (للموظفين بـ split)
+                $share_pct = ($emp_cash_total > 0 && $emp_is_split)
+                    ? round(($alloc / $emp_cash_total) * 100, 1)
+                    : null;
+
+                // عد الحركات للبنوك/المحافظ
+                if ((int)($a['PROVIDER_TYPE'] ?? 1) === 2) $stat_wallet_count++;
+                else $stat_bank_count++;
+
+                $recipients[] = [
+                    'emp_no'        => $eno,
+                    'emp_name'      => $emp_name,
+                    'emp_branch'    => $branch_name,
+                    'emp_req_amount'=> $emp_req_amount,    // 🆕 إجمالي صرف الموظف للطلب
+                    'emp_net_total' => $emp_net_total,     // 🆕 الراتب الصافي للموظف
+                    'emp_dues'      => $emp_dues,          // 🆕 ACCRUED_323 للموظف
+                    'emp_acc_count' => $emp_acc_count,     // 🆕 عدد حسابات الموظف
+                    'emp_is_split'  => $emp_is_split ? 1 : 0,
+                    'recipient'     => $recipient_name,
+                    'rel_label'     => $rel_label,
+                    'type'          => $type,
+                    'type_color'    => $type_color,
+                    'type_bg'       => $type_bg,
+                    'provider'      => $a['PROVIDER_NAME'] ?? '',
+                    'provider_type' => (int)($a['PROVIDER_TYPE'] ?? 1),
+                    'prov_branch'   => $a['PROV_BRANCH_NAME'] ?? '',
+                    'iban'          => $a['IBAN'] ?? '',
+                    'account_no'    => $a['ACCOUNT_NO'] ?? '',
+                    'is_default'    => (int)($a['IS_DEFAULT'] ?? 0),
+                    'amount'        => $alloc,
+                    // 🆕 طريقة التوزيع
+                    'split_type'    => $st,
+                    'split_value'   => $sv,
+                    'split_label'   => $split_label,
+                    'split_color'   => $split_color,
+                    'split_bg'      => $split_bg,
+                    // 🆕 النسبة من إجمالي صرف الموظف
+                    'share_pct'     => $share_pct,
+                ];
+                $stat_total_alloc += $alloc;
+            }
+        }
+        // ترتيب: الموظفون أولاً (الورثة معهم)، ثم رقم الموظف
+        usort($recipients, function($a, $b){
+            if ($a['emp_no'] !== $b['emp_no']) return $a['emp_no'] <=> $b['emp_no'];
+            $order = ['self' => 1, 'other_owner' => 2, 'benef' => 3];
+            return ($order[$a['type']] ?? 9) <=> ($order[$b['type']] ?? 9);
+        });
+        ?>
+
+        <!-- 🆕 شريط ملفات الإكسل المستوردة — يظهر فوق tabs الموظفين -->
+        <?php if (!empty($import_files)):
+            $req_id_imp = (int)($rs['REQ_ID'] ?? 0);
+        ?>
+            <div class="alert alert-info py-2 mb-2 d-flex flex-wrap align-items-center justify-content-between gap-2"
+                 style="background:linear-gradient(135deg,#eff6ff,#fff);border:1px solid #bfdbfe;font-size:.82rem">
+                <div>
+                    <i class="fa fa-paperclip text-primary me-1"></i>
+                    <b>هذا الطلب أُنشئ عبر استيراد Excel.</b>
+                    <span class="text-muted">عدد الملفات: <b><?= count($import_files) ?></b></span>
+                </div>
+                <div class="d-flex flex-wrap gap-1">
+                    <?php foreach ($import_files as $f):
+                        $fp   = $f['FILE_PATH'] ?? '';
+                        $fn   = $f['FILE_NAME'] ?? $fp;
+                        $note = $f['NOTE']      ?? '';
+                    ?>
+                        <a class="btn btn-sm btn-outline-primary"
+                           href="<?= base_url("$MODULE_NAME/$TB_NAME/public_download_import_file/{$req_id_imp}/" . rawurlencode($fp)) ?>"
+                           title="<?= htmlspecialchars($note) ?>">
+                            <i class="fa fa-download me-1"></i>
+                            <span style="max-width:280px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom">
+                                <?= htmlspecialchars($fn) ?>
+                            </span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <!-- ═══════════════════ Tabs ═══════════════════ -->
+        <ul class="nav nav-tabs mb-2" id="detailTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tab-emps-btn" data-bs-toggle="tab" data-bs-target="#tab-emps" type="button">
+                    <i class="fa fa-users me-1"></i> الموظفون
+                    <span class="badge bg-primary ms-1"><?= count($detail_rows) ?></span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-recipients-btn" data-bs-toggle="tab" data-bs-target="#tab-recipients" type="button">
+                    <i class="fa fa-money me-1"></i> المستفيدون
+                    <span class="badge bg-success ms-1"><?= count($recipients) ?></span>
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="detailTabsContent">
+        <!-- ─────── Tab 1: الموظفون ─────── -->
+        <div class="tab-pane fade show active" id="tab-emps" role="tabpanel">
+
+        <?php
+        // عدّ الحالات (4 حالات: 1=فعّال, 0=متقاعد, 2=متوفى, 4=حساب مغلق)
+        $emp_st_counts = [1=>0, 0=>0, 2=>0, 4=>0];
+        foreach ($detail_rows as $_d) {
+            $_eno = (int)($_d['EMP_NO'] ?? 0);
+            $_es  = $emp_summary_local[$_eno] ?? null;
+            $_st  = $_es ? (int)($_es['display_status'] ?? 1) : 1;
+            if (isset($emp_st_counts[$_st])) $emp_st_counts[$_st]++;
+        }
+        ?>
+        <!-- Legend: مفتاح ألوان حالات الموظفين -->
+        <div class="emp-legend mb-2">
+            <span class="emp-legend-title"><i class="fa fa-paint-brush me-1"></i> دلالة الألوان:</span>
+            <span class="emp-legend-item">
+                <span class="emp-legend-swatch" style="background:#fff;border:1px solid #cbd5e1"></span>
+                <span style="color:#15803d;font-weight:700"><i class="fa fa-check-circle"></i> فعّال</span>
+                <small>(<?= $emp_st_counts[1] ?>)</small>
+            </span>
+            <span class="emp-legend-item">
+                <span class="emp-legend-swatch" style="background:#ffedd5"></span>
+                <span style="color:#9a3412;font-weight:700"><i class="fa fa-clock-o"></i> متقاعد</span>
+                <small>(<?= $emp_st_counts[0] ?>)</small>
+            </span>
+            <span class="emp-legend-item">
+                <span class="emp-legend-swatch" style="background:#fee2e2"></span>
+                <span style="color:#991b1b;font-weight:700"><i class="fa fa-times-circle"></i> متوفى</span>
+                <small>(<?= $emp_st_counts[2] ?>)</small>
+            </span>
+            <span class="emp-legend-item">
+                <span class="emp-legend-swatch" style="background:#fef3c7"></span>
+                <span style="color:#92400e;font-weight:700"><i class="fa fa-ban"></i> حساب مغلق</span>
+                <small>(<?= $emp_st_counts[4] ?>)</small>
+            </span>
+        </div>
+
         <div class="table-responsive">
             <table class="table table-bordered table-sm detail-tbl" id="detailTable">
                 <thead class="table-light">
@@ -633,15 +1143,152 @@ $status_badges = [0 => ['مسودة','#fef3c7','#92400e'], 1 => ['معتمد','#
                 </tr>
                 </thead>
                 <tbody id="detailBody">
-                <?php $dtl_count = 1;
+                <?php
+                $dtl_count = 1;
+                $colspan_distrib = ($can_partial ? 1 : 0) + 3 + ($is_type_2 ? 2 : 0) + 1 + ($is_type_2 ? 1 : 0) + 2 + (($can_add || $can_partial) ? 1 : 0);
+                $accounts_map_local = isset($accounts_map) && is_array($accounts_map) ? $accounts_map : [];
+                $emp_summary_local  = isset($emp_summary)  && is_array($emp_summary)  ? $emp_summary  : [];
                 foreach ($detail_rows as $d):
                     $ds = (int)($d['DETAIL_STATUS'] ?? 0);
                     $dsb = $status_badges[$ds] ?? ['—','#f1f5f9','#475569'];
+                    $eno = (int)($d['EMP_NO'] ?? 0);
+                    $emp_accs_all = $accounts_map_local[$eno] ?? [];
+                    // فصل الحسابات: نشطة (للتوزيع) + موقوفة (للتنبيه فقط)
+                    $emp_accs_active = array_filter($emp_accs_all, function($a) {
+                        return !empty($a['ACC_ID']) && (int)($a['ACC_IS_ACTIVE'] ?? 1) === 1;
+                    });
+                    $emp_accs_inactive = array_filter($emp_accs_all, function($a) {
+                        return !empty($a['ACC_ID']) && (int)($a['ACC_IS_ACTIVE'] ?? 1) === 0;
+                    });
+                    // ملخص الموظف (من emp_summary)
+                    $es = $emp_summary_local[$eno] ?? null;
+                    $emp_is_active     = $es ? (int)$es['is_active'] : 1;
+                    $emp_disp_status   = $es ? (int)($es['display_status'] ?? 1) : 1;
+                    // 1=فعّال, 0=متقاعد, 2=متوفى, 4=حساب مغلق
+                    $req_amount        = $es ? (float)$es['req_amount'] : (float)($d['REQ_AMOUNT'] ?? 0);
+                    $alloc_total       = $es ? (float)$es['alloc_total'] : 0;
+                    $desired_total     = $es ? (float)$es['desired_total'] : 0;
+                    $is_overage        = $es ? (int)$es['is_overage'] : 0;
+                    // 🆕 تفاصيل التجاوز
+                    $overage_cause     = $es ? (int)($es['overage_cause']     ?? 0) : 0;
+                    $overage_fixed_sum = $es ? (float)($es['overage_fixed_sum'] ?? 0) : 0;
+                    $overage_pct_sum   = $es ? (float)($es['overage_pct_sum']   ?? 0) : 0;
+                    $inactive_acc_cnt  = $es ? (int)$es['inactive_acc_cnt'] : count($emp_accs_inactive);
+                    $benef_total       = $es ? (int)$es['benef_total'] : 0;
+                    $benef_linked      = $es ? (int)$es['benef_linked'] : 0;
+                    $inactive_reasons  = $es ? $es['inactive_reasons'] : [];
+
+                    $has_split    = count($emp_accs_active) > 1;
+                    $has_no_acc   = count($emp_accs_active) === 0;
+                    $has_benef    = false;
+                    foreach ($emp_accs_active as $a) { if (!empty($a['BENEFICIARY_ID'])) { $has_benef = true; break; } }
+
+                    // ⚠️ التحذيرات (للسطر تحت الموظف)
+                    $warnings = [];
+                    if ($is_overage) {
+                        // 🔒 BATCH_CONFIRM يستثني الموظف بالكامل لو في تجاوز
+                        $warnings[] = '<span class="d-block"><i class="fa fa-lock"></i> <b>التوزيع تجاوز المستحق</b> (' . n_format($desired_total) . ' من ' . n_format($req_amount) . ') — الموظف <b>سيُستثنى تلقائياً</b> ولن يُصرف له ولا حساباته (ولا الورثة) أي مبلغ. أصلح التوزيع قبل الاعتماد.</span>';
+                    } else {
+                        $alloc_diff = round($req_amount - $alloc_total, 2);
+                        if (!$has_no_acc && $alloc_diff > 0.01) {
+                            $warnings[] = '<span class="d-warn"><i class="fa fa-exclamation-triangle"></i> متبقي <b>' . n_format($alloc_diff) . '</b> غير موزّع — أضف حساب "كامل الباقي"</span>';
+                        }
+                    }
+                    if ($benef_total > 0 && $benef_linked < $benef_total) {
+                        $missing = $benef_total - $benef_linked;
+                        $warnings[] = '<span class="d-warn"><i class="fa fa-user-times"></i> <b>' . $missing . '</b> من ' . $benef_total . ' وريث غير مربوط بحساب — لن يستلم نصيبه</span>';
+                    }
+                    if ($inactive_acc_cnt > 0) {
+                        $reason_str = !empty($inactive_reasons) ? ' (' . implode(', ', $inactive_reasons) . ')' : '';
+                        $warnings[] = '<span class="d-info"><i class="fa fa-pause-circle"></i> <b>' . $inactive_acc_cnt . '</b> حساب موقوف' . $reason_str . ' — لن يُصرف عليه</span>';
+                    }
+
+                    // لون الصف: حسب حالة الموظف (4 حالات) ثم تحذيرات إضافية
+                    // الأولوية: متوفى > حساب مغلق > overage/no-acc > متقاعد > تحذيرات > عادي
+                    $row_bg = '';
+                    if ($emp_disp_status === 2)                        $row_bg = 'background:#fee2e2'; // متوفى — أحمر فاتح
+                    elseif ($emp_disp_status === 4)                    $row_bg = 'background:#fef3c7'; // حساب مغلق — أصفر داكن
+                    elseif ($has_no_acc || $is_overage)                $row_bg = 'background:#fef2f2'; // overage — أحمر باهت
+                    elseif ($emp_disp_status === 0)                    $row_bg = 'background:#ffedd5'; // متقاعد — برتقالي فاتح
+                    elseif (count($warnings) > 0 || $has_benef)        $row_bg = 'background:#fefce8'; // تحذيرات — أصفر فاتح
+
+                    // عدّاد للـ legend
+                    if (!isset($emp_status_count)) $emp_status_count = [1=>0, 0=>0, 2=>0, 4=>0];
+                    if (isset($emp_status_count[$emp_disp_status])) $emp_status_count[$emp_disp_status]++;
                 ?>
-                <tr>
+                <tr<?= $row_bg ? ' style="' . $row_bg . '"' : '' ?>>
                     <?php if ($can_partial): ?><td class="text-center"><input type="checkbox" class="dtl-chk" value="<?= $d['DETAIL_ID'] ?>" data-status="<?= $ds ?>"></td><?php endif; ?>
                     <td class="text-center text-muted"><?= $dtl_count++ ?></td>
-                    <td><span class="fw-bold"><?= $d['EMP_NO'] ?? '' ?></span> <span class="text-muted">- <?= $d['EMP_NAME'] ?? '' ?></span></td>
+                    <td><span class="fw-bold"><?= $d['EMP_NO'] ?? '' ?></span> <span class="text-muted">- <?= $d['EMP_NAME'] ?? '' ?></span>
+                        <?php if ($is_overage): ?>
+                            <span class="b-tag b-blocked" title="التوزيع تجاوز المستحق — سيُستثنى تلقائياً عند الاعتماد"><i class="fa fa-lock"></i> محظور</span>
+                        <?php endif; ?>
+                        <?php
+                        // Badge حالة الموظف — 4 حالات بألوان مميزة
+                        if ($emp_disp_status === 2): ?>
+                            <span class="b-tag" style="background:#fee2e2;color:#991b1b;font-weight:700" title="الموظف متوفى — حساب لمستفيد/وريث">
+                                <i class="fa fa-times-circle"></i> متوفى
+                            </span>
+                        <?php elseif ($emp_disp_status === 4): ?>
+                            <span class="b-tag" style="background:#fef3c7;color:#92400e;font-weight:700" title="حسابات الموظف مغلقة من البنك">
+                                <i class="fa fa-ban"></i> حساب مغلق
+                            </span>
+                        <?php elseif ($emp_disp_status === 0): ?>
+                            <span class="b-tag" style="background:#ffedd5;color:#9a3412;font-weight:700" title="موظف متقاعد">
+                                <i class="fa fa-clock-o"></i> متقاعد
+                            </span>
+                        <?php endif; ?>
+                        <?php if ($has_split): ?>
+                            <span class="b-tag b-multi" title="مبلغ هذا الموظف موزّع على أكثر من حساب"><i class="fa fa-sitemap"></i> <?= count($emp_accs_active) ?> حسابات</span>
+                        <?php endif; ?>
+                        <?php if ($has_benef): ?>
+                            <span class="b-tag b-benef" title="جزء من المبلغ يصرف لمستفيد/وريث"><i class="fa fa-users"></i> ورث</span>
+                        <?php endif; ?>
+                        <?php if ($has_no_acc): ?>
+                            <span class="b-tag b-warn" title="لا يوجد حسابات نشطة لهذا الموظف"><i class="fa fa-exclamation-triangle"></i> بدون حسابات</span>
+                        <?php endif; ?>
+                        <?php if ($inactive_acc_cnt > 0): ?>
+                            <span class="b-tag b-pause" title="<?= $inactive_acc_cnt ?> حساب موقوف"><i class="fa fa-pause"></i> <?= $inactive_acc_cnt ?> موقوف</span>
+                        <?php endif; ?>
+                        <?php
+                        // 🆕 زر "📋 X بند" — يفتح modal بالبنود الأصلية (لو الموظف جاي من استيراد إكسل)
+                        $imp_lines_cnt = (int)($d['IMPORT_LINES_CNT'] ?? 0);
+                        if ($imp_lines_cnt > 1):
+                        ?>
+                            <button type="button" class="b-tag" style="background:#eef2ff;color:#3730a3;font-weight:700;border:0;cursor:pointer"
+                                    onclick="showImportLines(<?= (int)$d['DETAIL_ID'] ?>, '<?= htmlspecialchars(addslashes($d['EMP_NAME'] ?? ''), ENT_QUOTES) ?>', <?= (int)$imp_lines_cnt ?>)"
+                                    title="عرض البنود الأصلية المستوردة من Excel قبل الدمج">
+                                <i class="fa fa-list-ol"></i> <?= $imp_lines_cnt ?> بند مدموج
+                            </button>
+                        <?php elseif ($imp_lines_cnt == 1): ?>
+                            <span class="b-tag" style="background:#f1f5f9;color:#475569;font-size:.62rem"
+                                  title="مستورد من Excel (سطر واحد)">
+                                <i class="fa fa-file-excel-o"></i>
+                            </span>
+                        <?php endif; ?>
+                        <?php
+                        // 🆕 Override badge — يعرض إذا كان فيه override على هذا السطر
+                        $ovr_pt    = isset($d['OVERRIDE_PROVIDER_TYPE']) ? $d['OVERRIDE_PROVIDER_TYPE'] : null;
+                        $ovr_acc   = isset($d['OVERRIDE_ACC_ID']) && $d['OVERRIDE_ACC_ID'] ? (int)$d['OVERRIDE_ACC_ID'] : null;
+                        $ovr_label = $d['OVERRIDE_LABEL'] ?? '';
+                        $has_override = ($ovr_pt !== null && $ovr_pt !== '') || $ovr_acc;
+                        if ($has_override):
+                            $bg = $ovr_acc ? '#fef3c7' : ((int)$ovr_pt === 2 ? '#f5f3ff' : '#dbeafe');
+                            $fg = $ovr_acc ? '#92400e' : ((int)$ovr_pt === 2 ? '#6d28d9' : '#1e40af');
+                            $ic = $ovr_acc ? 'fa-bullseye' : ((int)$ovr_pt === 2 ? 'fa-mobile' : 'fa-bank');
+                        ?>
+                            <span class="b-tag" title="<?= htmlspecialchars($ovr_label) ?>"
+                                  style="background:<?= $bg ?>;color:<?= $fg ?>;font-weight:700">
+                                <i class="fa <?= $ic ?>"></i> <?= htmlspecialchars($ovr_label) ?>
+                            </span>
+                        <?php else: ?>
+                            <!-- 🆕 badge "افتراضي" يظهر دائماً لما ما فيه override — عشان المحاسب ما ينسى -->
+                            <span class="b-tag" title="التوزيع الافتراضي حسب حسابات الموظف"
+                                  style="background:#f1f5f9;color:#475569;font-weight:700;border:1px dashed #cbd5e1">
+                                <i class="fa fa-cog"></i> افتراضي
+                            </span>
+                        <?php endif; ?>
+                    </td>
                     <td><?= $d['BRANCH_NAME'] ?? '' ?></td>
                     <?php if ($is_type_2): ?>
                     <td class="text-end" style="color:#475569"><?= n_format((float)($d['NET_SALARY_CALC'] ?? 0)) ?></td>
@@ -658,13 +1305,105 @@ $status_badges = [0 => ['مسودة','#fef3c7','#92400e'], 1 => ['معتمد','#
                     <td><span style="background:<?= $dsb[1] ?>;color:<?= $dsb[2] ?>;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:600"><?= $dsb[0] ?></span></td>
                     <td class="text-muted" style="font-size:.75rem"><?= $d['NOTE'] ?? '' ?></td>
                     <?php if ($can_add || $can_partial): ?>
-                    <td class="text-center">
+                    <td class="text-center actions-cell">
                         <?php if ($ds != 9): ?>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteDetail(<?= $d['DETAIL_ID'] ?>)" title="<?= $ds == 0 ? 'حذف' : ($ds == 1 ? 'إلغاء اعتماد' : 'عكس صرف') ?>"><i class="fa fa-<?= $ds == 0 ? 'trash' : ($ds == 1 ? 'undo' : 'reply') ?>"></i></button>
+                            <?php if ($ds == 0 || $ds == 1):
+                                // 🆕 Inline toggle group — تبديل سريع بدون modal
+                                $is_default  = !$has_override;
+                                $is_bank     = ($ovr_pt == 1 && !$ovr_acc);
+                                $is_wallet   = ($ovr_pt == 2 && !$ovr_acc);
+                                $is_specific = !empty($ovr_acc);
+                                $emp_name_js = htmlspecialchars(addslashes($d['EMP_NAME'] ?? ''), ENT_QUOTES);
+                                $pt_arg      = $ovr_pt !== null && $ovr_pt !== '' ? (int)$ovr_pt : 'null';
+                                $acc_arg     = $ovr_acc ? (int)$ovr_acc : 'null';
+                            ?>
+                                <div class="ovr-toggle btn-group btn-group-sm me-1" role="group" data-detail-id="<?= $d['DETAIL_ID'] ?>">
+                                    <button type="button" class="btn btn-sm <?= $is_default  ? 'btn-secondary' : 'btn-outline-secondary' ?> ovr-tog"
+                                            onclick="quickSetOverride(<?= $d['DETAIL_ID'] ?>, 'default')"
+                                            title="افتراضي — توزيع تلقائي حسب حسابات الموظف">
+                                        <i class="fa fa-cog"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm <?= $is_bank ? 'btn-primary' : 'btn-outline-primary' ?> ovr-tog"
+                                            onclick="quickSetOverride(<?= $d['DETAIL_ID'] ?>, 'bank')"
+                                            title="بنك فقط — كل المبلغ على حسابات البنوك">
+                                        <i class="fa fa-bank"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm <?= $is_wallet ? 'btn-info text-white' : 'btn-outline-info' ?> ovr-tog"
+                                            onclick="quickSetOverride(<?= $d['DETAIL_ID'] ?>, 'wallet')"
+                                            title="محفظة فقط — كل المبلغ على المحافظ">
+                                        <i class="fa fa-mobile"></i>
+                                    </button>
+                                </div>
+                                <!-- 🆕 زر "تعديل التوزيع" واضح — يفتح المودال (للحالات المعقدة + اختيار حساب محدد) -->
+                                <button type="button" class="btn btn-sm <?= $is_specific ? 'btn-warning' : 'btn-outline-warning' ?> me-1"
+                                        onclick="openOverrideModal(<?= $d['DETAIL_ID'] ?>, <?= $eno ?>, '<?= $emp_name_js ?>', <?= (float)($d['REQ_AMOUNT'] ?? 0) ?>, <?= $pt_arg ?>, <?= $acc_arg ?>)"
+                                        title="تعديل التوزيع — افتح نافذة الخيارات الكاملة">
+                                    <i class="fa fa-random"></i> تعديل
+                                </button>
+                            <?php endif; ?>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteDetail(<?= $d['DETAIL_ID'] ?>)" title="<?= $ds == 0 ? 'حذف' : ($ds == 1 ? 'إلغاء اعتماد' : 'عكس صرف') ?>"><i class="fa fa-<?= $ds == 0 ? 'trash' : ($ds == 1 ? 'undo' : 'reply') ?>"></i></button>
                         <?php endif; ?>
                     </td>
                     <?php endif; ?>
                 </tr>
+                <?php
+                // التحذيرات والـ pills نُقلت إلى Tab 2 (المستفيدون) — نظافة جدول Tab 1
+                // فقط نُظهر تحذيرات حرجة inline (overage / no-acc) كـ صف تنبيه صغير
+                if ($is_overage || $has_no_acc):
+                ?>
+                <tr class="emp-warning-row">
+                    <td colspan="<?= $colspan_distrib ?>" style="background:#fef2f2;padding:.4rem .75rem;border-top:0;font-size:.78rem;color:#991b1b">
+                        <?php if ($is_overage):
+                            // 🛠 توضيح السبب المحدد للتجاوز + زر إصلاح
+                            $cause_msg = '';
+                            switch ($overage_cause) {
+                                case 1:
+                                    $cause_msg = 'مجموع <b>المبالغ الثابتة</b> ' . n_format($overage_fixed_sum)
+                                               . ' أكبر من المستحق ' . n_format($req_amount)
+                                               . ' — قلّل قيمة حساب أو أكثر';
+                                    break;
+                                case 2:
+                                    $cause_msg = 'مجموع <b>النسب المئوية</b> ' . round($overage_pct_sum, 2)
+                                               . '% أكبر من 100% — قلّل النسب';
+                                    break;
+                                case 3:
+                                    $pct_amt   = round($req_amount * $overage_pct_sum / 100, 2);
+                                    $cause_msg = '<b>المبالغ الثابتة + النسب</b> ('
+                                               . n_format($overage_fixed_sum) . ' + ' . n_format($pct_amt) . ' = '
+                                               . n_format($overage_fixed_sum + $pct_amt) . ') أكبر من المستحق '
+                                               . n_format($req_amount);
+                                    break;
+                                default:
+                                    $cause_msg = 'التوزيع غير صحيح';
+                            }
+                        ?>
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div>
+                                    <i class="fa fa-lock me-1"></i>
+                                    <b>التوزيع تجاوز المستحق</b> — <?= $cause_msg ?>
+                                    <div style="font-size:.7rem;color:#7f1d1d;margin-top:.15rem">
+                                        <i class="fa fa-info-circle"></i>
+                                        الموظف <b>سيُستثنى تلقائياً</b> عند الاعتماد ولن يُصرف له (ولا للورثة) أي مبلغ.
+                                    </div>
+                                </div>
+                                <a href="<?= base_url('payment_accounts/payment_accounts/emp/' . (int)$eno) ?>"
+                                   target="_blank" rel="noopener"
+                                   class="btn btn-sm btn-danger" style="white-space:nowrap">
+                                    <i class="fa fa-wrench"></i> إصلاح التوزيع
+                                </a>
+                            </div>
+                        <?php else: ?>
+                            <i class="fa fa-exclamation-triangle me-1"></i>
+                            <b>لا يوجد حسابات نشطة</b> — لن يُصرف لهذا الموظف.
+                            <a href="<?= base_url('payment_accounts/payment_accounts/emp/' . (int)$eno) ?>"
+                               target="_blank" rel="noopener"
+                               class="btn btn-sm btn-outline-danger ms-2">
+                                <i class="fa fa-external-link"></i> إضافة حساب
+                            </a>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endif; ?>
                 <?php endforeach; ?>
                 </tbody>
                 <tfoot>
@@ -692,9 +1431,268 @@ $status_badges = [0 => ['مسودة','#fef3c7','#92400e'], 1 => ['معتمد','#
             </table>
         </div>
         <div id="detailLimitSummary"></div>
+        </div><!-- /tab-emps -->
+
+        <!-- ─────── Tab 2: المستفيدون ─────── -->
+        <div class="tab-pane fade" id="tab-recipients" role="tabpanel">
+            <!-- إحصائيات سريعة (الصف الأول: العدد) -->
+            <div class="rcp-stats mb-2">
+                <div class="rcp-stat">
+                    <div class="rs-lbl"><i class="fa fa-list-ol"></i> إجمالي الحركات</div>
+                    <div class="rs-val"><?= count($recipients) ?></div>
+                    <div class="rs-sub"><?= $stat_bank_count ?> بنك<?php if ($stat_wallet_count > 0): ?> + <?= $stat_wallet_count ?> محفظة<?php endif; ?></div>
+                </div>
+                <div class="rcp-stat c-self">
+                    <div class="rs-lbl"><i class="fa fa-user"></i> الموظف يقبض لنفسه</div>
+                    <div class="rs-val"><?= $stat_self ?></div>
+                </div>
+                <div class="rcp-stat c-benef">
+                    <div class="rs-lbl"><i class="fa fa-users"></i> ورثة / مستفيدون</div>
+                    <div class="rs-val"><?= $stat_benef ?></div>
+                </div>
+                <?php if ($stat_other_owner > 0): ?>
+                <div class="rcp-stat c-owner">
+                    <div class="rs-lbl"><i class="fa fa-id-card"></i> صاحب حساب مختلف</div>
+                    <div class="rs-val"><?= $stat_other_owner ?></div>
+                </div>
+                <?php endif; ?>
+                <?php if ($stat_split_emps > 0): ?>
+                <div class="rcp-stat c-split" title="موظفون مبلغهم موزّع على أكثر من حساب">
+                    <div class="rs-lbl"><i class="fa fa-sitemap"></i> موظفون بتوزيع</div>
+                    <div class="rs-val"><?= $stat_split_emps ?></div>
+                </div>
+                <?php endif; ?>
+                <?php if ($stat_blocked > 0 || $stat_no_acc > 0): ?>
+                <div class="rcp-stat c-warn" title="موظفون لن يُصرف لهم — راجع تبويب الموظفين">
+                    <div class="rs-lbl"><i class="fa fa-exclamation-triangle"></i> مستثنون</div>
+                    <div class="rs-val"><?= $stat_blocked + $stat_no_acc ?></div>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- إحصائيات سريعة (الصف الثاني: المبالغ) -->
+            <div class="rcp-stats">
+                <div class="rcp-stat c-amt">
+                    <div class="rs-lbl"><i class="fa fa-money"></i> إجمالي المبلغ المُصرَف للبنوك</div>
+                    <div class="rs-val"><?= n_format($stat_total_alloc) ?></div>
+                    <div class="rs-sub" style="color:#cbd5e1">يظهر في الجدول أدناه</div>
+                </div>
+                <?php
+                // 🆕 "سيُرحَّل كمستحقات" + "إجمالي صافي الشهر" — مفاهيم خاصة بنوع 2
+                // (دفعة من الراتب) فقط — حيث الجزء غير المصروف يُرحَّل كمستحقات.
+                // لباقي الأنواع: لا معنى لها (نوع 5 = إضافات/استحقاقات، نوع 3 = من المستحقات…).
+                $show_dues_split = ($req_type_val == 2) && ($stat_total_dues > 0);
+                if ($show_dues_split):
+                ?>
+                <div class="rcp-stat c-dues">
+                    <div class="rs-lbl"><i class="fa fa-archive"></i> سيُرحَّل كمستحقات</div>
+                    <div class="rs-val"><?= n_format($stat_total_dues) ?></div>
+                    <div class="rs-sub">يُضاف لرصيد الموظف — لا تحويل بنكي</div>
+                </div>
+                <div class="rcp-stat c-net">
+                    <div class="rs-lbl"><i class="fa fa-check-circle"></i> إجمالي صافي الشهر</div>
+                    <div class="rs-val"><?= n_format($stat_total_alloc + $stat_total_dues) ?></div>
+                    <div class="rs-sub">نقد + مستحقات = صافي</div>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- شريط البحث والتصدير -->
+            <div class="rcp-toolbar">
+                <div class="input-group input-group-sm" style="max-width:380px">
+                    <span class="input-group-text"><i class="fa fa-search"></i></span>
+                    <input type="text" id="rcpSearch" class="form-control" placeholder="بحث: موظف، مستلم، بنك، حساب، IBAN...">
+                    <button class="btn btn-outline-secondary" type="button" id="rcpSearchClear" title="مسح"><i class="fa fa-times"></i></button>
+                </div>
+                <div class="ms-auto d-flex gap-1 flex-wrap">
+                    <select id="rcpFilterType" class="form-select form-select-sm" style="width:auto">
+                        <option value="">— كل الأنواع —</option>
+                        <option value="self">الموظف نفسه</option>
+                        <option value="benef">ورثة فقط</option>
+                        <option value="other_owner">صاحب حساب مختلف</option>
+                    </select>
+                    <select id="rcpFilterSplit" class="form-select form-select-sm" style="width:auto" title="فلترة حسب طريقة التوزيع">
+                        <option value="">— كل طرق التوزيع —</option>
+                        <option value="0">كامل (حساب واحد)</option>
+                        <option value="2">مبلغ ثابت</option>
+                        <option value="1">نسبة مئوية</option>
+                        <option value="3">كامل الباقي</option>
+                    </select>
+                    <button type="button" class="btn btn-success btn-sm" id="rcpExportBtn" title="تصدير Excel">
+                        <i class="fa fa-file-excel-o me-1"></i> تصدير Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- جدول المستفيدين -->
+            <div class="table-responsive">
+            <table class="table table-bordered table-sm rcp-tbl mb-0" id="recipientsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:40px">#</th>
+                        <th>الموظف الأصلي</th>
+                        <th>المقر</th>
+                        <th style="width:90px">النوع</th>
+                        <th>المستلِم</th>
+                        <th>البنك / المحفظة</th>
+                        <th>الفرع</th>
+                        <th>الحساب / IBAN</th>
+                        <th style="width:120px">طريقة التوزيع</th>
+                        <th class="text-end" style="width:140px">المبلغ</th>
+                    </tr>
+                </thead>
+                <tbody id="recipientsBody">
+                    <!-- ⚡ Lazy load: الصفوف تُبنى عبر JS عند فتح Tab 2 لأول مرة (تسريع تحميل الصفحة) -->
+                    <tr id="rcpLoadingRow"><td colspan="10" class="text-center py-4 text-muted">
+                        <i class="fa fa-info-circle"></i> اضغط تبويب "المستفيدون" لعرض التفاصيل
+                    </td></tr>
+                </tbody>
+                <tfoot>
+                <tr style="background:#1e293b;color:#fff;font-weight:800">
+                    <td colspan="9" class="text-end">الإجمالي</td>
+                    <td class="text-end" id="rcpTotalCell" style="direction:ltr"><?= n_format($stat_total_alloc) ?></td>
+                </tr>
+                </tfoot>
+            </table>
+            </div>
+            <div id="rcpFilterInfo" class="mt-2 text-muted text-center" style="font-size:.78rem;display:none"></div>
+        </div><!-- /tab-recipients -->
+
+        </div><!-- /tab-content -->
+
+        <!-- ⚡ بيانات Tab 2 كـ JSON (lazy build في JS عند فتح التبويب) -->
+        <script type="application/json" id="rcpData"><?= json_encode($recipients, JSON_UNESCAPED_UNICODE) ?></script>
+
     </div>
 </div>
 <?php endif; ?>
+
+<?php
+// ═══════════════════════════════════════════════════════════
+// 🆕 قسم المرفقات — يظهر بعد إنشاء الطلب فقط
+// ═══════════════════════════════════════════════════════════
+if (!$isCreate && $HaveRs):
+    $att_req_id    = (int)($rs['REQ_ID'] ?? 0);
+    $att_category  = 'payment_req';
+    $att_can_upload = ($rs['STATUS'] ?? 0) == 0 ? 1 : 0; // upload فقط للمسودات
+    // قائمة المرفقات الحالية
+    $this->load->model('attachments/attachment_model');
+    $att_rows = $this->attachment_model->get_list($att_req_id, $att_category);
+    if (!is_array($att_rows)) $att_rows = [];
+?>
+<div class="row mt-3">
+<div class="col-lg-12">
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fa fa-paperclip me-2 text-primary"></i> المرفقات
+            <span class="badge bg-info ms-2"><?= count($att_rows) ?></span>
+        </h3>
+        <?php if ($att_can_upload): ?>
+            <button class="btn btn-success btn-sm ms-auto" onclick="openAttachUpload()">
+                <i class="fa fa-upload me-1"></i> رفع مرفق جديد
+            </button>
+        <?php endif; ?>
+    </div>
+    <div class="card-body">
+        <?php if (count($att_rows) === 0): ?>
+            <div class="alert alert-light text-center text-muted py-3">
+                <i class="fa fa-inbox fa-2x d-block mb-2" style="opacity:.4"></i>
+                لا توجد مرفقات بعد
+            </div>
+        <?php else: ?>
+            <div class="table-responsive">
+            <table class="table table-bordered table-sm" style="font-size:.82rem">
+                <thead class="table-light">
+                <tr>
+                    <th style="width:40px">#</th>
+                    <th>اسم الملف</th>
+                    <th style="width:170px">رفعه</th>
+                    <th style="width:140px">التاريخ</th>
+                    <th style="width:120px;text-align:center">إجراءات</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php $cur_user_id = method_exists($this, 'IsAuthorized') ? get_curr_user()->id : 0; ?>
+                <?php foreach ($att_rows as $i => $att): ?>
+                    <tr id="att_row_<?= $att['ID'] ?>">
+                        <td><?= $i + 1 ?></td>
+                        <td>
+                            <a href="<?= base_url("archive/download/" . $att['FILE_PATH'] . "/" . clear_url($att['FILE_NAME'])) ?>"
+                               target="_blank">
+                                <i class="fa fa-file me-1 text-primary"></i>
+                                <?= htmlspecialchars($att['FILE_NAME']) ?>
+                            </a>
+                        </td>
+                        <td><?= htmlspecialchars(get_user_name($att['ENTRY_USER'])) ?></td>
+                        <td><?= htmlspecialchars($att['ENTRY_DATE']) ?></td>
+                        <td class="text-center">
+                            <a href="<?= base_url("archive/download/" . $att['FILE_PATH'] . "/" . clear_url($att['FILE_NAME'])) ?>"
+                               target="_blank" class="btn btn-sm btn-outline-primary" title="تحميل">
+                                <i class="fa fa-download"></i>
+                            </a>
+                            <?php if ($att_can_upload && (int)$att['ENTRY_USER'] === (int)$cur_user_id): ?>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteAttachment(<?= $att['ID'] ?>)" title="حذف">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!$att_can_upload): ?>
+            <div class="alert alert-warning py-2 mt-2 mb-0" style="font-size:.78rem">
+                <i class="fa fa-info-circle"></i>
+                المرفقات قابلة للرفع/الحذف فقط في حالة "مسودة".
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+</div>
+</div>
+
+<!-- مودال رفع مرفق -->
+<?php if ($att_can_upload): ?>
+<div class="modal fade" id="attachUploadModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title fw-bold"><i class="fa fa-upload me-2"></i> رفع مرفق جديد</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="attachUploadForm" enctype="multipart/form-data">
+                    <input type="hidden" name="identity" value="<?= $att_req_id ?>">
+                    <input type="hidden" name="category" value="<?= $att_category ?>">
+                    <input type="hidden" name="upload_type" value="attachment">
+                    <div class="mb-2">
+                        <label class="form-label fw-bold">اختر الملف</label>
+                        <input type="file" name="file" class="form-control" required>
+                    </div>
+                    <div class="alert alert-light py-2" style="font-size:.78rem">
+                        <i class="fa fa-info-circle text-info"></i>
+                        المسموح: PDF, Word, Excel, صور, ZIP — حتى 150MB
+                    </div>
+                    <div id="attachUploadProgress" style="display:none">
+                        <div class="progress"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%">جاري الرفع...</div></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-light btn-sm" data-bs-dismiss="modal">إلغاء</button>
+                <button class="btn btn-success btn-sm" onclick="submitAttachUpload()">
+                    <i class="fa fa-upload me-1"></i> رفع
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+<?php endif; // attachments section ?>
 
 <?php
 $log_rows = isset($log_rows) && is_array($log_rows) ? $log_rows : [];
@@ -821,6 +1819,223 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
     <?php $this->load->view('payment_req_import_modal'); ?>
 <?php endif; ?>
 
+<!-- ═════════ 🆕 Modal: عرض البنود الأصلية المستوردة من Excel ═════════ -->
+<div class="modal fade" id="impLinesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content" style="border:0;border-radius:12px">
+            <div class="modal-header py-2" style="background:linear-gradient(135deg,#4338ca,#6366f1);border-radius:12px 12px 0 0">
+                <h6 class="modal-title text-white fw-bold">
+                    <i class="fa fa-list-ol me-1"></i>
+                    البنود الأصلية المستوردة <span id="impLinesEmpName"></span>
+                    <span class="badge bg-light text-dark ms-2" id="impLinesCount">0</span>
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="impLinesBody">
+                <div class="text-center py-4 text-muted"><i class="fa fa-spinner fa-spin"></i> جاري التحميل...</div>
+            </div>
+            <div class="modal-footer py-2">
+                <a href="#" id="impLinesDownloadBtn" class="btn btn-success btn-sm" style="display:none">
+                    <i class="fa fa-download me-1"></i> تنزيل ملف Excel
+                </a>
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var IMP_LINES_URL = '<?= base_url($MODULE_NAME . "/" . $TB_NAME . "/public_get_import_lines_json") ?>';
+        var DOWNLOAD_BASE = '<?= base_url($MODULE_NAME . "/" . $TB_NAME . "/public_download_import_file") ?>';
+        var REQ_ID_FOR_DL = <?= (int)($rs['REQ_ID'] ?? 0) ?>;
+
+        // helper تنسيق رقم
+        function _fmtAmt(n) {
+            n = parseFloat(n) || 0;
+            return n.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+        function _esc(s) { return $('<div>').text(s == null ? '' : s).html(); }
+
+        window.showImportLines = function (detailId, empName, expectedCount) {
+            $('#impLinesEmpName').text(empName ? '— ' + empName : '');
+            $('#impLinesCount').text(expectedCount || 0);
+            $('#impLinesBody').html('<div class="text-center py-4 text-muted"><i class="fa fa-spinner fa-spin"></i> جاري التحميل...</div>');
+            $('#impLinesDownloadBtn').hide();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('impLinesModal')).show();
+
+            $.ajax({
+                url: IMP_LINES_URL, method: 'GET', data: { detail_id: detailId }, dataType: 'json'
+            }).done(function (resp) {
+                if (!resp || !resp.ok) {
+                    $('#impLinesBody').html('<div class="alert alert-danger">' + _esc(resp && resp.msg ? resp.msg : 'فشل التحميل') + '</div>');
+                    return;
+                }
+                var rows = resp.data || [];
+                if (rows.length === 0) {
+                    $('#impLinesBody').html('<div class="alert alert-light text-center py-3"><i class="fa fa-inbox fa-2x d-block mb-2 text-muted"></i>لا يوجد بنود مستوردة لهذا الموظف</div>');
+                    return;
+                }
+                $('#impLinesCount').text(rows.length);
+
+                // ملف الإكسل (لو موجود — موحّد بين كل البنود عادةً)
+                var firstFilePath = rows[0].FILE_PATH || '';
+                var firstFileName = rows[0].FILE_NAME || '';
+                var importDate    = rows[0].IMPORT_DATE || '';
+                if (firstFilePath && REQ_ID_FOR_DL) {
+                    $('#impLinesDownloadBtn').attr('href', DOWNLOAD_BASE + '/' + REQ_ID_FOR_DL + '/' + encodeURIComponent(firstFilePath)).show();
+                }
+
+                // بناء جدول البنود
+                var html = '';
+                if (firstFileName || importDate) {
+                    html += '<div class="alert alert-light py-2 mb-2" style="font-size:.78rem">';
+                    if (firstFileName) html += '<div><i class="fa fa-file-excel-o text-success"></i> <b>الملف:</b> ' + _esc(firstFileName) + '</div>';
+                    if (importDate)    html += '<div><i class="fa fa-clock-o text-muted"></i> <b>تاريخ الاستيراد:</b> ' + _esc(importDate) + '</div>';
+                    html += '</div>';
+                }
+
+                html += '<table class="table table-sm table-bordered" style="font-size:.82rem">';
+                html += '<thead style="background:#f8fafc"><tr>';
+                html += '<th style="width:50px" class="text-center">#</th>';
+                html += '<th style="width:90px" class="text-center">صف Excel</th>';
+                html += '<th class="text-end" style="width:130px">المبلغ</th>';
+                html += '<th>ملاحظة الصف الأصلي</th>';
+                html += '</tr></thead><tbody>';
+
+                var total = 0;
+                rows.forEach(function (r, i) {
+                    var amt = parseFloat(r.AMOUNT) || 0;
+                    total += amt;
+                    html += '<tr>';
+                    html += '<td class="text-center text-muted">' + (i + 1) + '</td>';
+                    html += '<td class="text-center"><span class="badge bg-light text-dark" style="font-family:monospace">' + (r.EXCEL_ROW_NUM || '—') + '</span></td>';
+                    html += '<td class="text-end" style="font-family:monospace;font-weight:700;color:#059669">' + _fmtAmt(amt) + '</td>';
+                    html += '<td>' + (r.ORIGINAL_NOTE ? _esc(r.ORIGINAL_NOTE) : '<span class="text-muted">—</span>') + '</td>';
+                    html += '</tr>';
+                });
+                html += '</tbody>';
+                html += '<tfoot><tr style="background:#eef2ff"><th colspan="2" class="text-end">الإجمالي:</th>';
+                html += '<th class="text-end" style="font-family:monospace;color:#3730a3">' + _fmtAmt(total) + '</th>';
+                html += '<th></th></tr></tfoot>';
+                html += '</table>';
+                $('#impLinesBody').html(html);
+            }).fail(function () {
+                $('#impLinesBody').html('<div class="alert alert-danger">فشل الاتصال بالسيرفر</div>');
+            });
+        };
+    })();
+</script>
+
+<!-- ═════════ Modal: تعديل توزيع الصرف لسطر معين ═════════ -->
+<div class="modal fade" id="overrideModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#f8fafc;border-bottom:2px solid #e2e8f0">
+        <h5 class="modal-title" style="font-size:1rem;font-weight:700">
+          <i class="fa fa-random text-primary me-1"></i> تعديل توزيع الصرف
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="ovr_detail_id">
+        <input type="hidden" id="ovr_emp_no">
+
+        <div class="mb-3" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:.6rem .9rem">
+          <div style="font-size:.78rem;color:#1e40af;font-weight:600">الموظف:</div>
+          <div id="ovr_emp_label" style="font-weight:700;font-size:.9rem"></div>
+          <div style="font-size:.78rem;color:#475569;margin-top:.2rem">
+            <i class="fa fa-money me-1"></i> المبلغ: <b id="ovr_amount_label" style="color:#1e40af"></b>
+          </div>
+        </div>
+
+        <label class="fw-bold mb-2" style="font-size:.85rem">طريقة التوزيع:</label>
+        <div class="ovr-options">
+          <label class="ovr-opt">
+            <input type="radio" name="ovr_mode" value="default" checked>
+            <span class="ovr-opt-card">
+              <i class="fa fa-cogs ovr-opt-icon" style="color:#64748b"></i>
+              <div>
+                <div class="ovr-opt-title">افتراضي</div>
+                <div class="ovr-opt-desc">حسب توزيع الموظف الثابت في حساباته</div>
+              </div>
+            </span>
+          </label>
+          <label class="ovr-opt">
+            <input type="radio" name="ovr_mode" value="bank">
+            <span class="ovr-opt-card">
+              <i class="fa fa-bank ovr-opt-icon" style="color:#1e40af"></i>
+              <div>
+                <div class="ovr-opt-title">بنك فقط</div>
+                <div class="ovr-opt-desc">صرف كامل المبلغ على حسابات البنك (تجاهل المحافظ)</div>
+              </div>
+            </span>
+          </label>
+          <label class="ovr-opt">
+            <input type="radio" name="ovr_mode" value="wallet">
+            <span class="ovr-opt-card">
+              <i class="fa fa-mobile ovr-opt-icon" style="color:#6d28d9"></i>
+              <div>
+                <div class="ovr-opt-title">محفظة فقط</div>
+                <div class="ovr-opt-desc">صرف كامل المبلغ على حسابات المحفظة (تجاهل البنوك)</div>
+              </div>
+            </span>
+          </label>
+          <label class="ovr-opt">
+            <input type="radio" name="ovr_mode" value="specific">
+            <span class="ovr-opt-card">
+              <i class="fa fa-bullseye ovr-opt-icon" style="color:#9a3412"></i>
+              <div>
+                <div class="ovr-opt-title">حساب محدد</div>
+                <div class="ovr-opt-desc">100% للحساب المختار من القائمة</div>
+              </div>
+            </span>
+          </label>
+        </div>
+
+        <div id="ovr_specific_box" class="mt-3" style="display:none">
+          <label class="fw-bold mb-1" style="font-size:.8rem">اختر الحساب:</label>
+          <div id="ovr_acc_loading" class="text-center text-muted py-3" style="font-size:.8rem">
+            <i class="fa fa-spinner fa-spin"></i> جاري تحميل الحسابات...
+          </div>
+          <div id="ovr_acc_list" class="ovr-acc-list" style="display:none"></div>
+          <div id="ovr_acc_empty" class="text-center text-muted py-3" style="font-size:.8rem;display:none">
+            <i class="fa fa-info-circle"></i> لا يوجد حسابات نشطة لهذا الموظف
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="background:#f8fafc">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary btn-sm" id="ovrSaveBtn"><i class="fa fa-save me-1"></i> حفظ التوزيع</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.ovr-options{display:flex;flex-direction:column;gap:.5rem}
+.ovr-opt{display:block;cursor:pointer;margin:0}
+.ovr-opt input{position:absolute;opacity:0;pointer-events:none}
+.ovr-opt-card{display:flex;align-items:center;gap:.7rem;padding:.6rem .9rem;border:2px solid #e2e8f0;border-radius:8px;background:#fff;transition:all .15s}
+.ovr-opt:hover .ovr-opt-card{border-color:#cbd5e1;background:#f8fafc}
+.ovr-opt input:checked + .ovr-opt-card{border-color:#1e40af;background:#eff6ff;box-shadow:0 0 0 2px rgba(30,64,175,.1)}
+.ovr-opt-icon{font-size:1.2rem;width:24px;text-align:center}
+.ovr-opt-title{font-weight:700;font-size:.85rem;color:#1e293b}
+.ovr-opt-desc{font-size:.72rem;color:#64748b;margin-top:.1rem}
+
+.ovr-acc-list{display:flex;flex-direction:column;gap:.4rem;max-height:300px;overflow-y:auto}
+.ovr-acc-item{display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;border:1.5px solid #e2e8f0;border-radius:6px;background:#fff;cursor:pointer;transition:all .15s}
+.ovr-acc-item:hover{border-color:#93c5fd;background:#f8fafc}
+.ovr-acc-item.selected{border-color:#059669;background:#f0fdf4}
+.ovr-acc-item .ai-icon{font-size:1rem;width:22px;text-align:center}
+.ovr-acc-item .ai-info{flex:1;font-size:.78rem}
+.ovr-acc-item .ai-prov{font-weight:700;color:#1e293b}
+.ovr-acc-item .ai-line{font-size:.7rem;color:#64748b;font-family:monospace;margin-top:.1rem}
+.ovr-acc-item .ai-owner{font-size:.7rem;color:#7c3aed;margin-top:.1rem}
+.ovr-acc-item .ai-tag{font-size:.65rem;padding:.1em .4em;border-radius:4px;font-weight:700}
+.ovr-acc-item .ai-tag.tag-default{background:#fef3c7;color:#92400e}
+</style>
+
 <?php ob_start(); ?>
 <script type="text/javascript">
 
@@ -830,6 +2045,15 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
     $(function(){
         $('.sel2:not("[id^=\'s2\']")').select2();
         $('#the_month').datetimepicker({ format: 'YYYYMM', minViewMode: 'months', pickTime: false });
+        // 🆕 شهر فلتر اختياري (للنوع 3) — useCurrent:false عشان ما يتعبّى تلقائياً بالشهر الحالي
+        if (document.getElementById('filter_month')) {
+            $('#filter_month').datetimepicker({
+                format: 'YYYYMM',
+                minViewMode: 'months',
+                pickTime: false,
+                useCurrent: false   // ⭐ يبقى فاضي حتى المحاسب يختار يدوياً
+            });
+        }
 
         // فتح مودال Excel تلقائياً لو جاي من إنشاء + Excel
         if(window.location.search.indexOf('open_excel=1') > -1 && typeof openImpExcelModal === 'function'){
@@ -909,7 +2133,11 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
         // إخفاء كل الحقول الديناميكية
         $('#show_type2_section, #show_calc_section, #show_percent_grp, #show_amount_grp').hide();
         $('#show_calc_method_grp, #show_limits_grp, #show_pay_type_grp, #show_benefit_grp').hide();
+        $('#show_amount_mode_grp, #show_filter_month_grp').hide();
         $('#calc_method, #percent_val').val('');
+        $('#show_amount_mode').val('same');
+        // 🆕 الشهر العلوي — نخفيه للنوع 3 (لا معنى مالي له)، ونُظهره لباقي الأنواع
+        $('#the_month').closest('.form-group').toggle(rt != 3);
 
         // بطاقات الاختيار لكل الأنواع — نوع 5 بدون "كل الموظفين"
         $('#wiz_pick_emps, #wiz_pick_excel').hide();
@@ -940,14 +2168,18 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
             $('#show_calc_method_grp').show();
             $('#show_calc_method_sel').val('2');
             showOnCalcMethodChange();
-            $('#wiz_type_hint_text').text('يُخصم من رصيد المستحقات العام — اختر نسبة أو مبلغ ثابت');
+            // 🆕 شهر الفلتر الاختياري — للنوع 3 فقط
+            $('#show_filter_month_grp').show();
+            $('#wiz_type_hint_text').text('يُخصم من رصيد المستحقات العام — اختر نسبة أو مبلغ ثابت. يمكن فلترة الموظفين بشهر احتساب معيّن.');
         }
         else if(rt == 4) {
             showLoadPayTypes('12');
-            $('#show_amount_grp').show();
+            $('#show_amount_mode_grp').show();
+            $('#show_amount_mode').val('same');
+            showOnAmountModeChange();
             $('#show_type2_section').show();
             showCheckMonth();
-            $('#wiz_type_hint_text').text('يصرف المتبقي من بند 323 للشهر المحدد — بعد خصم الراتب الكامل أو الجزئي');
+            $('#wiz_type_hint_text').text('المتبقي من بند 323 للشهر — اختر "نفس المبلغ لكل الموظفين" أو "مبلغ مختلف لكل موظف"');
         }
         else if(rt == 5) {
             showLoadBenefitItems();
@@ -981,9 +2213,23 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
 
     function showOnCalcMethodChange(){
         var cm = $('#show_calc_method_sel').val() || $('#calc_method').val();
+        var rt = $('#req_type').val();
         $('#show_percent_grp').toggle(cm == '1');
-        $('#show_amount_grp').toggle(cm == '2');
         $('#calc_method').val(cm);
+        // طريقة المبلغ تظهر لنوع 3 فقط لما cm=2 (مبلغ ثابت)
+        if(rt == '3'){
+            if(cm == '2'){
+                $('#show_amount_mode_grp').show();
+                if(!$('#show_amount_mode').val()) $('#show_amount_mode').val('same');
+                showOnAmountModeChange();
+            } else {
+                $('#show_amount_mode_grp').hide();
+                $('#show_amount_grp').toggle(false);
+                $('#show_req_amount').val('').prop('required', false);
+            }
+        } else {
+            $('#show_amount_grp').toggle(cm == '2');
+        }
         _wizRebuildAmountsIfOpen();
     }
 
@@ -994,16 +2240,23 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
         }
     }
 
-    // نوع 5: نفس المبلغ أو مبلغ مختلف
+    // أنواع 3 (cm=2)، 4، 5: نفس المبلغ أو مبلغ مختلف
     function showOnAmountModeChange(){
         var mode = $('#show_amount_mode').val();
-        if(mode === 'same'){
+        var rt = $('#req_type').val();
+        var cm = $('#calc_method').val();
+        // الـ master amount (المبلغ الموحد) يظهر فقط في mode=same للأنواع المعنية
+        var masterApplies = (rt == '3' && cm == '2') || rt == '4' || rt == '5';
+        if(masterApplies && mode === 'same'){
             $('#show_amount_grp').show();
             $('#show_req_amount').prop('required', true);
-        } else {
+        } else if(masterApplies && mode === 'diff'){
             $('#show_amount_grp').hide();
             $('#show_req_amount').val('').prop('required', false);
         }
+        // "كل الموظفين" مخفية في diff (يدوي per-emp) ولنوع 5 دايماً
+        var hideAllCard = (rt == '5') || (mode === 'diff' && (rt == '3' || rt == '4'));
+        $('#wiz_choice_all_card').toggle(!hideAllCard);
         _wizRebuildAmountsIfOpen();
     }
 
@@ -1283,7 +2536,8 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
                 setTimeout(function(){ $('#addResults').fadeOut(); }, fails.length > 0 ? 10000 : 3000);
                 _queue = [];
                 _renderQueue();
-                refreshDetails();
+                // 🆕 soft refresh لتحديث جدول الموظفين + tab المستفيدين + الإحصائيات
+                if (success > 0) softRefreshAll();
                 return;
             }
             var q = _queue[done];
@@ -1318,6 +2572,293 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
             } catch(e){ danger_msg('خطأ', e.message); }
         }, 'json');
     }
+
+    // ════════════════════════════════════════════════════════════
+    // OVERRIDE MODAL — تعديل توزيع الصرف لسطر معين
+    // ════════════════════════════════════════════════════════════
+    var ovrSetUrl   = "<?= base_url('payment_req/payment_req/public_detail_set_override') ?>";
+    var ovrAccUrl   = "<?= base_url('payment_req/payment_req/public_emp_accounts_json') ?>";
+    var _ovrAccCache = {};
+    var _ovrSelectedAcc = null;
+    // 🆕 flag — يصير true بعد أي تعديل inline سريع، ويسبّب refresh عند الانتقال لتبويب المستفيدين
+    var _recipientsStale = false;
+
+    // 🆕 تحديث ذكي بدون reload — يجلب الـ HTML الجديد للصفحة ويستبدل tab المستفيدين + جدول الموظفين
+    // المستخدم لن يلاحظ شيء (لا وميض ولا فقدان scroll)
+    function softRefreshAll(callback){
+        $.get(window.location.href, function(html){
+            try {
+                var $doc = $('<div>').html(html);
+
+                // استبدال tab المستفيدين بكل ما فيه (cards + table)
+                var $newRecipients = $doc.find('#tab-recipients');
+                if ($newRecipients.length) {
+                    $('#tab-recipients').html($newRecipients.html());
+                }
+
+                // 🆕 استبدال tab الموظفين أيضاً (فيه stats cards علوية + الجدول)
+                var $newEmps = $doc.find('#tab-emps');
+                if ($newEmps.length) {
+                    // نحتفظ بالـ scroll الحالي
+                    var sc = $(window).scrollTop();
+                    $('#tab-emps').html($newEmps.html());
+                    $(window).scrollTop(sc);
+                }
+
+                // re-init tooltips
+                if (typeof initTooltips === 'function') initTooltips();
+                _recipientsStale = false;
+                if (typeof callback === 'function') callback();
+            } catch(e){
+                console.error('softRefreshAll error:', e);
+                // fallback
+                if (typeof callback === 'function') callback();
+            }
+        }).fail(function(){
+            console.error('softRefreshAll: AJAX failed');
+        });
+    }
+
+    // 🆕 تبديل سريع للـ override بدون modal (default / bank / wallet)
+    function quickSetOverride(detailId, mode){
+        if (!detailId) return;
+        var pt = '', acc = '';
+        if (mode === 'bank')        { pt = 1; }
+        else if (mode === 'wallet') { pt = 2; }
+        // 'default' → كلاهما فاضي (NULL)
+
+        // نستخدم $.ajax مباشرة عشان نعالج الـ HTTP errors بدقة
+        $.ajax({
+            url: ovrSetUrl,
+            method: 'POST',
+            data: { detail_id: detailId, provider_type: pt, acc_id: acc },
+            dataType: 'json'
+        }).done(function(j){
+            if (j && j.ok) {
+                refreshDetails();
+                _recipientsStale = true;
+            } else {
+                danger_msg('خطأ', (j && j.msg) ? j.msg : 'فشل التحديث');
+            }
+        }).fail(function(xhr){
+            var msg = 'فشل الاتصال بالسيرفر';
+            if (xhr && xhr.status === 404) msg = 'الـ URL غير موجود — تحقق من الصلاحيات';
+            else if (xhr && xhr.status === 403) msg = 'ليس لديك صلاحية';
+            else if (xhr && xhr.status >= 500)  msg = 'خطأ في السيرفر (' + xhr.status + ')';
+            danger_msg('خطأ', msg);
+        });
+    }
+
+    // 🆕 لما يضغط المستخدم على تبويب المستفيدين بعد تعديلات inline → soft refresh
+    $(document).on('show.bs.tab', '#tab-recipients-btn', function(){
+        if (_recipientsStale) {
+            softRefreshAll();
+        }
+    });
+
+    // 🆕 Delegated event handlers للأزرار المُولّدة من JS (data-attributes بدل inline onclick)
+    $(document).on('click', '[data-action="quick-ovr"]', function(){
+        var did  = parseInt($(this).data('detail'));
+        var mode = $(this).data('mode');
+        if (did && mode) quickSetOverride(did, mode);
+    });
+    $(document).on('click', '[data-action="open-ovr"]', function(){
+        var $b   = $(this);
+        var did  = parseInt($b.data('detail'));
+        var emp  = parseInt($b.data('emp'));
+        var name = String($b.data('name') || '');
+        var amt  = parseFloat($b.data('amt')) || 0;
+        var ptR  = $b.data('pt');
+        var acR  = $b.data('acc');
+        var pt   = (ptR === '' || ptR === null || ptR === undefined) ? null : parseInt(ptR);
+        var ac   = (acR === '' || acR === null || acR === undefined) ? null : parseInt(acR);
+        if (did) openOverrideModal(did, emp, name, amt, pt, ac);
+    });
+    $(document).on('click', '[data-action="del-detail"]', function(){
+        var did = parseInt($(this).data('detail'));
+        if (did && typeof deleteDetail === 'function') deleteDetail(did);
+    });
+
+    // 🆕 تطبيق override جماعي على المحدّدين بـ checkbox
+    function bulkSetOverride(mode){
+        var ids = [];
+        $('.dtl-chk:checked').each(function(){
+            var ds = parseInt($(this).data('status'));
+            if (ds === 0 || ds === 1) ids.push($(this).val());
+        });
+        if (ids.length === 0) {
+            warning_msg('تنبيه', 'حدد موظفاً واحداً على الأقل (مسودة أو معتمد)');
+            return;
+        }
+        var modeLabel = mode === 'default' ? 'افتراضي' : (mode === 'bank' ? 'بنك فقط' : 'محفظة فقط');
+        if (!confirm('تطبيق "' + modeLabel + '" على ' + ids.length + ' موظف؟')) return;
+
+        var pt = '', acc = '';
+        if (mode === 'bank')        { pt = 1; }
+        else if (mode === 'wallet') { pt = 2; }
+
+        var done = 0, fails = 0;
+        var doNext = function(){
+            if (done + fails >= ids.length) {
+                var msg = 'تم تحديث ' + done + ' موظف' + (fails > 0 ? ' (فشل ' + fails + ')' : '');
+                (done > 0 ? success_msg : danger_msg)('انتهى', msg);
+                // 🆕 soft refresh لتحديث جدول الموظفين + tab المستفيدين + الإحصائيات
+                if (done > 0) softRefreshAll();
+                return;
+            }
+            var id = ids[done + fails];
+            get_data(ovrSetUrl, {detail_id: id, provider_type: pt, acc_id: acc}, function(resp){
+                try {
+                    var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+                    if (j.ok) done++; else fails++;
+                } catch(e){ fails++; }
+                doNext();
+            }, 'json');
+        };
+        doNext();
+    }
+
+    function openOverrideModal(detailId, empNo, empName, amount, currentPt, currentAcc){
+        // 🆕 reset كامل لحالة الـ modal قبل العرض (تفادي backdrop عالق + selection قديم)
+        var modalEl = document.getElementById('overrideModal');
+        // dispose أي instance سابق + تنظيف backdrop عالق
+        var prev = bootstrap.Modal.getInstance(modalEl);
+        if (prev) { try { prev.dispose(); } catch(e){} }
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open').css('padding-right', '').css('overflow', '');
+
+        $('#ovr_detail_id').val(detailId);
+        $('#ovr_emp_no').val(empNo);
+        $('#ovr_emp_label').text(empNo + ' — ' + (empName || ''));
+        $('#ovr_amount_label').text(parseFloat(amount || 0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}));
+        _ovrSelectedAcc = currentAcc || null;
+
+        // إخفاء قسم الحسابات حتى المستخدم يختار "specific"
+        $('#ovr_specific_box').hide();
+
+        // اختر الـ radio حسب الحالة الحالية
+        var mode = 'default';
+        if (currentAcc)              mode = 'specific';
+        else if (currentPt === 1)    mode = 'bank';
+        else if (currentPt === 2)    mode = 'wallet';
+        $('input[name="ovr_mode"][value="' + mode + '"]').prop('checked', true).trigger('change');
+
+        var modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+
+    $(document).on('change', 'input[name="ovr_mode"]', function(){
+        var mode = $(this).val();
+        if (mode === 'specific') {
+            $('#ovr_specific_box').show();
+            _ovrLoadAccounts();
+        } else {
+            $('#ovr_specific_box').hide();
+        }
+    });
+
+    function _ovrLoadAccounts(){
+        var emp = $('#ovr_emp_no').val();
+        if (!emp) return;
+
+        // عرض الـ list من الـ cache لو موجود
+        if (_ovrAccCache[emp]) { _ovrRenderAccs(_ovrAccCache[emp]); return; }
+
+        $('#ovr_acc_loading').show();
+        $('#ovr_acc_list').hide();
+        $('#ovr_acc_empty').hide();
+
+        get_data(ovrAccUrl, {emp_no: emp}, function(resp){
+            try {
+                var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+                var rows = (j && j.data) ? j.data : [];
+                _ovrAccCache[emp] = rows;
+                _ovrRenderAccs(rows);
+            } catch(e){
+                $('#ovr_acc_loading').hide();
+                $('#ovr_acc_empty').show().text('خطأ في التحميل: ' + e.message);
+            }
+        }, 'json');
+    }
+
+    function _ovrRenderAccs(rows){
+        $('#ovr_acc_loading').hide();
+        if (!rows || rows.length === 0) {
+            $('#ovr_acc_empty').show();
+            $('#ovr_acc_list').hide();
+            return;
+        }
+        var html = '';
+        rows.forEach(function(a){
+            var isWallet = parseInt(a.PROVIDER_TYPE) === 2;
+            var isDef    = parseInt(a.IS_DEFAULT) === 1;
+            var icon     = isWallet ? 'fa-mobile' : 'fa-bank';
+            var iconCol  = isWallet ? '#6d28d9' : '#1e40af';
+            var accNum   = a.ACCOUNT_NO || a.WALLET_NUMBER || '—';
+            var sel = (_ovrSelectedAcc && parseInt(_ovrSelectedAcc) === parseInt(a.ACC_ID)) ? ' selected' : '';
+
+            html += '<div class="ovr-acc-item' + sel + '" data-acc="' + a.ACC_ID + '">';
+            html += '<i class="fa ' + icon + ' ai-icon" style="color:' + iconCol + '"></i>';
+            html += '<div class="ai-info">';
+            html += '<div class="ai-prov">' + (a.PROVIDER_NAME || '') +
+                    (isDef ? ' <span class="ai-tag tag-default">⭐ افتراضي</span>' : '') + '</div>';
+            html += '<div class="ai-line">#' + accNum + (a.BANK_BRANCH_NAME ? ' — ' + a.BANK_BRANCH_NAME : '') + '</div>';
+            if (a.OWNER_NAME) {
+                html += '<div class="ai-owner"><i class="fa fa-user-o"></i> ' + a.OWNER_NAME +
+                        (a.REL_NAME ? ' (' + a.REL_NAME + ')' : '') + '</div>';
+            }
+            html += '</div>';
+            html += '</div>';
+        });
+        $('#ovr_acc_list').html(html).show();
+        $('#ovr_acc_empty').hide();
+    }
+
+    $(document).on('click', '.ovr-acc-item', function(){
+        $('.ovr-acc-item').removeClass('selected');
+        $(this).addClass('selected');
+        _ovrSelectedAcc = $(this).data('acc');
+    });
+
+    $(document).on('click', '#ovrSaveBtn', function(){
+        var detailId = $('#ovr_detail_id').val();
+        if (!detailId) return;
+        var mode = $('input[name="ovr_mode"]:checked').val();
+        var pt = '', acc = '';
+        if (mode === 'bank')          { pt = 1; }
+        else if (mode === 'wallet')   { pt = 2; }
+        else if (mode === 'specific') {
+            if (!_ovrSelectedAcc) { danger_msg('خطأ','اختر حساب من القائمة أولاً'); return; }
+            acc = _ovrSelectedAcc;
+        }
+
+        get_data(ovrSetUrl, {detail_id: detailId, provider_type: pt, acc_id: acc}, function(resp){
+            try {
+                var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+                if (j.ok) {
+                    success_msg('تم','تم تحديث التوزيع');
+                    // 🆕 إغلاق + dispose + تنظيف backdrop عشان modal تاني يفتح
+                    var modalEl = document.getElementById('overrideModal');
+                    var inst = bootstrap.Modal.getInstance(modalEl);
+                    if (inst) {
+                        inst.hide();
+                        // بعد ما الـ animation تخلص، dispose
+                        setTimeout(function(){
+                            try { inst.dispose(); } catch(e){}
+                            $('.modal-backdrop').remove();
+                            $('body').removeClass('modal-open').css('padding-right', '').css('overflow', '');
+                        }, 300);
+                    }
+                    // reset internal state
+                    _ovrSelectedAcc = null;
+                    // 🆕 soft refresh — بدون reload للصفحة
+                    softRefreshAll();
+                } else {
+                    danger_msg('خطأ', j.msg);
+                }
+            } catch(e){ danger_msg('خطأ', e.message); }
+        }, 'json');
+    });
 
     // خرائط مستخدمة في تحديث الحالة والسجل ديناميكياً
     var _statusBarColors = {
@@ -1415,10 +2956,44 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
                     else if(ds === 1){ actIcon = 'fa-undo'; actTitle = 'إلغاء اعتماد'; }
                     else if(ds === 2){ actIcon = 'fa-reply'; actTitle = 'عكس صرف'; }
 
-                    html += '<tr>';
+                    // 🆕 Override badge — يظهر دائماً (override أو افتراضي)
+                    var ovrPt = d.OVERRIDE_PROVIDER_TYPE;
+                    var ovrAcc = d.OVERRIDE_ACC_ID;
+                    var ovrLabel = d.OVERRIDE_LABEL || '';
+                    var hasOvr = (ovrPt !== null && ovrPt !== undefined && ovrPt !== '') || ovrAcc;
+                    var ovrBadge = '';
+                    if (hasOvr) {
+                        var ovrBg = ovrAcc ? '#fef3c7' : (parseInt(ovrPt) === 2 ? '#f5f3ff' : '#dbeafe');
+                        var ovrFg = ovrAcc ? '#92400e' : (parseInt(ovrPt) === 2 ? '#6d28d9' : '#1e40af');
+                        var ovrIc = ovrAcc ? 'fa-bullseye' : (parseInt(ovrPt) === 2 ? 'fa-mobile' : 'fa-bank');
+                        ovrBadge = ' <span class="b-tag" title="' + (ovrLabel||'').replace(/"/g,'&quot;') +
+                                   '" style="background:' + ovrBg + ';color:' + ovrFg + ';font-weight:700">' +
+                                   '<i class="fa ' + ovrIc + '"></i> ' + (ovrLabel||'') + '</span>';
+                    } else {
+                        // 🆕 badge "افتراضي" دائم لما ما فيه override
+                        ovrBadge = ' <span class="b-tag" title="التوزيع الافتراضي حسب حسابات الموظف" ' +
+                                   'style="background:#f1f5f9;color:#475569;font-weight:700;border:1px dashed #cbd5e1">' +
+                                   '<i class="fa fa-cog"></i> افتراضي</span>';
+                    }
+
+                    // 🆕 Status badge + row background
+                    var dispSt = parseInt(d.EMP_DISPLAY_STATUS == null ? 1 : d.EMP_DISPLAY_STATUS);
+                    var stBadge = ''; var rowBg = '';
+                    if (dispSt === 2) {
+                        stBadge = ' <span class="b-tag" style="background:#fee2e2;color:#991b1b;font-weight:700" title="متوفى"><i class="fa fa-times-circle"></i> متوفى</span>';
+                        rowBg = ' style="background:#fee2e2"';
+                    } else if (dispSt === 4) {
+                        stBadge = ' <span class="b-tag" style="background:#fef3c7;color:#92400e;font-weight:700" title="حساب مغلق"><i class="fa fa-ban"></i> حساب مغلق</span>';
+                        rowBg = ' style="background:#fef3c7"';
+                    } else if (dispSt === 0) {
+                        stBadge = ' <span class="b-tag" style="background:#ffedd5;color:#9a3412;font-weight:700" title="متقاعد"><i class="fa fa-clock-o"></i> متقاعد</span>';
+                        rowBg = ' style="background:#ffedd5"';
+                    }
+
+                    html += '<tr' + rowBg + '>';
                     if(_detailCanPartial) html += '<td class="text-center"><input type="checkbox" class="dtl-chk" value="'+d.DETAIL_ID+'" data-status="'+ds+'"></td>';
                     html += '<td class="text-center text-muted">' + (i+1) + '</td>';
-                    html += '<td><span class="fw-bold">' + d.EMP_NO + '</span> <span class="text-muted">- ' + (d.EMP_NAME||'') + '</span></td>';
+                    html += '<td><span class="fw-bold">' + d.EMP_NO + '</span> <span class="text-muted">- ' + (d.EMP_NAME||'') + '</span>' + stBadge + ovrBadge + '</td>';
                     html += '<td>' + (d.BRANCH_NAME||'') + '</td>';
                     if(_detailIsType2) html += '<td class="text-end" style="color:#475569">' + nf(parseFloat(d.NET_SALARY_CALC||0)) + '</td>';
                     var lf = d.LIMIT_FLAG || '';
@@ -1432,7 +3007,28 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
                     html += '<td class="text-muted" style="font-size:.75rem">' + (d.NOTE||'') + '</td>';
                     if(_detailCanAct){
                         if(ds !== 9 && actIcon){
-                            html += '<td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="deleteDetail(' + d.DETAIL_ID + ')" title="' + actTitle + '"><i class="fa ' + actIcon + '"></i></button></td>';
+                            var actHtml = '<td class="text-center actions-cell">';
+                            if (ds === 0 || ds === 1) {
+                                // 🆕 Inline toggle group + data-attributes (delegated events)
+                                // نتجنّب inline onclick مع JSON عشان لا يكسر الـ HTML
+                                var ptArg = (ovrPt !== null && ovrPt !== undefined && ovrPt !== '') ? parseInt(ovrPt) : '';
+                                var accArg = ovrAcc ? parseInt(ovrAcc) : '';
+                                var isDef = !hasOvr;
+                                var isBnk = (parseInt(ovrPt) === 1 && !ovrAcc);
+                                var isWlt = (parseInt(ovrPt) === 2 && !ovrAcc);
+                                var isSpc = !!ovrAcc;
+                                var nameEsc = String(d.EMP_NAME || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                                actHtml += '<div class="ovr-toggle btn-group btn-group-sm me-1" role="group" data-detail-id="' + d.DETAIL_ID + '">';
+                                actHtml += '<button type="button" class="btn btn-sm ' + (isDef ? 'btn-secondary' : 'btn-outline-secondary') + ' ovr-tog" data-action="quick-ovr" data-detail="' + d.DETAIL_ID + '" data-mode="default" title="افتراضي"><i class="fa fa-cog"></i></button>';
+                                actHtml += '<button type="button" class="btn btn-sm ' + (isBnk ? 'btn-primary'   : 'btn-outline-primary')   + ' ovr-tog" data-action="quick-ovr" data-detail="' + d.DETAIL_ID + '" data-mode="bank" title="بنك فقط"><i class="fa fa-bank"></i></button>';
+                                actHtml += '<button type="button" class="btn btn-sm ' + (isWlt ? 'btn-info text-white' : 'btn-outline-info') + ' ovr-tog" data-action="quick-ovr" data-detail="' + d.DETAIL_ID + '" data-mode="wallet" title="محفظة فقط"><i class="fa fa-mobile"></i></button>';
+                                actHtml += '</div>';
+                                // 🆕 زر "تعديل التوزيع" مفصول — يفتح المودال
+                                actHtml += '<button type="button" class="btn btn-sm ' + (isSpc ? 'btn-warning' : 'btn-outline-warning') + ' me-1" data-action="open-ovr" data-detail="' + d.DETAIL_ID + '" data-emp="' + d.EMP_NO + '" data-name="' + nameEsc + '" data-amt="' + amt + '" data-pt="' + ptArg + '" data-acc="' + accArg + '" title="تعديل التوزيع — افتح نافذة الخيارات الكاملة"><i class="fa fa-random"></i> تعديل</button>';
+                            }
+                            actHtml += '<button class="btn btn-sm btn-outline-danger" data-action="del-detail" data-detail="' + d.DETAIL_ID + '" title="' + actTitle + '"><i class="fa ' + actIcon + '"></i></button>';
+                            actHtml += '</td>';
+                            html += actHtml;
                         } else {
                             html += '<td class="text-center"></td>';
                         }
@@ -1529,32 +3125,38 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
     var _walletMonth = '<?= $rs['THE_MONTH'] ?? '' ?>';
 
     // يُحتسب مجموع ACCRUED_323 للطلب ذاته — يتحدّث مع كل refreshDetails
-    function _renderWalletSummary(reqAmount, totalAccrued323){
+    function _renderWalletSummary(reqAmount, totalAccrued323, directBase){
         if (!_walletMonth) return;
         jQuery.post(salCheckUrl, { month: _walletMonth }, function(resp) {
             var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
             if (!j.calculated) return;
-            var base = parseFloat(j.total_323) || parseFloat(j.total_net) || 0;
+            // ✅ base = الصافي من صفوف التفاصيل مباشرة (= مجموع عمود "الصافي" في الجدول)
+            // directBase تأتي من PHP محسوبة من $detail_rows.NET_SALARY_CALC — مصدر موثوق
+            // (لا تعتمد على procedure recompile)
+            var base = parseFloat(directBase) || parseFloat(j.total_323) || parseFloat(j.total_net) || 0;
+            // المُستهلك من الصافي = مبلغ الصرف (نقد) + سيُرحّل (مستحقات) لهذا الطلب
+            var consumed = parseFloat(reqAmount) + parseFloat(totalAccrued323);
+            var remaining = Math.max(base - consumed, 0);
             var pct = base > 0 ? ((reqAmount / base) * 100).toFixed(1) : 0;
             if (pct > 999) pct = '>100';
             var html = '<div style="font-size:.8rem;font-weight:700;color:#64748b;margin-bottom:.4rem"><i class="fa fa-pie-chart me-1"></i> ملخص الرواتب للشهر</div>';
             html += '<div class="pr-row">';
-            html += '<div class="pr-card c-total"><div class="c-label"><i class="fa fa-money"></i> إجمالي بند 323</div><div class="c-val">' + nf(base) + '</div><div class="c-cnt" title="إجمالي موظفي الشهر (ليس موظفي الطلب)">' + j.emp_count + ' موظف <small style="opacity:.7">(الشهر كله)</small></div></div>';
+            html += '<div class="pr-card c-total"><div class="c-label"><i class="fa fa-money"></i> إجمالي الصافي للشهر</div><div class="c-val">' + nf(base) + '</div><div class="c-cnt" title="مجموع عمود الصافي في التفاصيل">' + j.emp_count + ' موظف <small style="opacity:.7">(الشهر كله)</small></div></div>';
             html += '<div class="pr-card" style="border-color:#fde68a;background:#fefce8"><div class="c-label"><i class="fa fa-pencil"></i> مسودة (كل الطلبات)</div><div class="c-val" style="color:#92400e">' + nf(j.total_draft) + '</div></div>';
             html += '<div class="pr-card" style="border-color:#bfdbfe;background:#dbeafe"><div class="c-label"><i class="fa fa-check"></i> معتمد</div><div class="c-val" style="color:#1e40af">' + nf(j.total_approved) + '</div></div>';
             html += '<div class="pr-card" style="border-color:#bbf7d0;background:#f0fdf4"><div class="c-label"><i class="fa fa-check-circle"></i> منفّذ للصرف</div><div class="c-val" style="color:#059669">' + nf(j.total_paid) + '</div></div>';
-            html += '<div class="pr-card c-net"><div class="c-label"><i class="fa fa-file-text-o"></i> مبلغ الصرف (هذا الطلب)</div><div class="c-val">' + nf(reqAmount) + '</div><div class="c-cnt">' + pct + '% من بند 323</div></div>';
+            html += '<div class="pr-card c-net"><div class="c-label"><i class="fa fa-file-text-o"></i> مبلغ الصرف (هذا الطلب)</div><div class="c-val">' + nf(reqAmount) + '</div><div class="c-cnt">' + pct + '% من الصافي</div></div>';
             if (totalAccrued323 > 0) {
                 html += '<div class="pr-card" style="border-color:#e9d5ff;background:#faf5ff"><div class="c-label" style="color:#6b21a8"><i class="fa fa-archive"></i> سيُرحّل كمستحقات</div><div class="c-val" style="color:#6b21a8">' + nf(totalAccrued323) + '</div><div class="c-cnt">من الاحتساب</div></div>';
             }
-            html += '<div class="pr-card c-active"><div class="c-label"><i class="fa fa-arrow-left"></i> المتبقي للصرف</div><div class="c-val">' + nf(j.total_available) + '</div></div>';
+            html += '<div class="pr-card c-active"><div class="c-label"><i class="fa fa-arrow-left"></i> المتبقي للصرف</div><div class="c-val">' + nf(remaining) + '</div></div>';
             html += '</div>';
             $('#showWalletSummary').html(html);
         });
     }
 
     // التهيئة الأولى عند تحميل الصفحة
-    _renderWalletSummary(<?= $total_amount ?>, <?= $total_accrued_323 ?>);
+    _renderWalletSummary(<?= $total_amount ?>, <?= $total_accrued_323 ?>, <?= $total_net_calc ?>);
     <?php else: ?>
     // stub — لا شيء لتحديثه لأن النوع ليس 2
     function _renderWalletSummary(){}
@@ -1595,10 +3197,9 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
             if (j.calculated) {
                 var _h = '<div class="alert alert-success py-2 mb-0 mt-2" style="font-size:.82rem;border-radius:8px">';
                 _h += '<i class="fa fa-check-circle me-1"></i> <strong>الشهر محتسب</strong>';
-                if(j.source === 'admin_test') _h += ' <span class="badge bg-info">غير مرحّل</span>';
+                if(j.source === 'calc') _h += ' <span class="badge bg-success">من جدول الاحتساب</span>';
                 _h += ' — ' + j.emp_count + ' موظف';
-                _h += ' | إجمالي صافي: <strong>' + nf(j.total_net) + '</strong>';
-                if(j.total_323 > 0) _h += ' | مستحقات (323): <strong>' + nf(j.total_323) + '</strong>';
+                _h += ' | إجمالي الصافي: <strong>' + nf(j.total_net) + '</strong>';
                 _h += '</div>';
                 $('#show_month_status').html(_h);
                 $('#show_calc_section').hide();
@@ -1643,12 +3244,14 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
         var cm = $('#calc_method').val();
         var am = $('#show_amount_mode').val();
         // المبلغ مقفل (مش قابل للتعديل):
-        // - نوع 1، 2، 3 نسبة، 4 (حساب تلقائي)
-        // - نوع 5 نفس المبلغ (اليوزر اختار مبلغ موحد)
-        // - نوع 3 مبلغ ثابت (نفس المبلغ للكل)
-        var isLockedAll = (rt == '1') || (rt == '2') || (rt == '3' && cm == '1') || (rt == '4')
-                       || (rt == '5' && am === 'same')
-                       || (rt == '3' && cm == '2');
+        // - نوع 1، 2، 3 نسبة (حساب تلقائي)
+        // - نوع 3 مبلغ ثابت + same، نوع 4 + same، نوع 5 + same (مبلغ موحد)
+        // مفتوح للتعديل (per-emp):
+        // - نوع 3 مبلغ ثابت + diff، نوع 4 + diff، نوع 5 + diff
+        var isLockedAll = (rt == '1') || (rt == '2') || (rt == '3' && cm == '1')
+                       || (rt == '3' && cm == '2' && am === 'same')
+                       || (rt == '4' && am === 'same')
+                       || (rt == '5' && am === 'same');
         var placeholder = cfg.amtRequired ? 'أدخل المبلغ *' : cfg.amtHint;
         var amtLabel;
         if(isLockedAll) amtLabel = 'المبالغ <span class="text-muted fw-normal">(' + cfg.amtHint + ' — موحد للكل)</span>';
@@ -1656,8 +3259,9 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
         else amtLabel = 'المبالغ <span class="text-muted fw-normal">(فاضي = '+cfg.amtHint+')</span>';
         // المبلغ الافتراضي من الإعدادات (مبلغ ثابت بالماستر)
         var defaultAmt = '';
-        if(rt == '3' && cm == '2') defaultAmt = $('#show_req_amount').val() || '';
-        else if(rt == '5' && $('#show_amount_mode').val() === 'same') defaultAmt = $('#show_req_amount').val() || '';
+        if(rt == '3' && cm == '2' && am === 'same') defaultAmt = $('#show_req_amount').val() || '';
+        else if(rt == '4' && am === 'same') defaultAmt = $('#show_req_amount').val() || '';
+        else if(rt == '5' && am === 'same') defaultAmt = $('#show_req_amount').val() || '';
         var html = '';
         for(var i=0; i<sel.length; i++){
             var empNo = sel[i];
@@ -1668,8 +3272,10 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
             html += '<tr>';
             html += '<td class="text-center text-muted">'+(i+1)+'</td>';
             html += '<td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:350px" title="'+empName+'">'+empName+'</td>';
-            // لو مقفل مع مبلغ موحد (نوع 3 ثابت، نوع 5 نفس) نعرض المبلغ
-            var showLockedAmt = (rt == '3' && cm == '2') || (rt == '5' && am === 'same');
+            // لو مقفل مع مبلغ موحد (3 ثابت+same، 4+same، 5+same) نعرض المبلغ
+            var showLockedAmt = (rt == '3' && cm == '2' && am === 'same')
+                             || (rt == '4' && am === 'same')
+                             || (rt == '5' && am === 'same');
             var inputValue = isLockedAll ? (showLockedAmt ? (defaultAmt || prevAmt || '') : '') : prevAmt;
             html += '<td><input type="number" class="form-control form-control-sm wiz-pick-amt" data-emp="'+empNo+'" value="'+inputValue+'" min="0" step="0.01" placeholder="'+placeholder+'"'+(isLockedAll ? ' disabled' : '')+' onchange="wizSavePickAmt(this)" style="'+(isLockedAll ? 'background:#f1f5f9;cursor:not-allowed' : '')+'"></td>';
             html += '<td class="text-center"><button class="btn btn-sm btn-outline-danger p-0 px-1" onclick="wizRemovePickedEmp(\''+empNo+'\')"><i class="fa fa-times"></i></button></td>';
@@ -1735,8 +3341,22 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
         if(rt == '1'){ amtRequired = false; amtHint = 'كامل المستحقات'; }
         else if(rt == '2'){ amtRequired = false; amtHint = 'حسب النسبة والحدود'; }
         else if(rt == '3' && cm == '1'){ amtRequired = false; amtHint = 'حسب النسبة'; }
-        else if(rt == '3'){ amtRequired = true; amtHint = 'أدخل المبلغ'; }
-        else if(rt == '4'){ amtRequired = false; amtHint = 'حسب الشهر'; }
+        else if(rt == '3' && cm == '2'){
+            if(am === 'same' && parseFloat(sameAmt) > 0){
+                amtRequired = false; amtHint = 'المبلغ الموحد: ' + sameAmt;
+            } else {
+                amtRequired = true; amtHint = 'أدخل المبلغ';
+            }
+        }
+        else if(rt == '4'){
+            if(am === 'same' && parseFloat(sameAmt) > 0){
+                amtRequired = false; amtHint = 'المبلغ الموحد: ' + sameAmt;
+            } else if(am === 'diff'){
+                amtRequired = true; amtHint = 'أدخل المبلغ';
+            } else {
+                amtRequired = false; amtHint = 'حسب الشهر';
+            }
+        }
         else if(rt == '5'){
             if(am === 'same' && parseFloat(sameAmt) > 0){
                 amtRequired = false; amtHint = 'المبلغ الموحد: ' + sameAmt;
@@ -1775,8 +3395,14 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
         XLSX.writeFile(wb, 'قالب_'+typeName+'.xlsx');
     }
 
+    // 🆕 نحفظ الـ File object نفسه لرفعه للسيرفر بعد إنشاء الطلب
+    var _wizUploadedFile = null;
+    // 🆕 السطور الخام من الإكسل (لكل سطر: row, emp_no, amount, note) — لحفظها في PAYMENT_REQ_IMP_LINE_TB
+    var _wizExcelRawLines = [];
+
     function wizParseExcel(input){
         if(!input.files || !input.files[0]) return;
+        _wizUploadedFile = input.files[0];   // 🆕 احتفظ بالملف
         var reader = new FileReader();
         reader.onload = function(e){
             try {
@@ -1785,7 +3411,13 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
                 var data = XLSX.utils.sheet_to_json(ws, {header:1});
                 var cfg = _wizExcelCols();
                 _wizExcelEmps = [];
+                _wizExcelRawLines = [];   // 🆕 reset
                 var errors = [];
+                // 🆕 تجميع الصفوف لكل موظف (دمج التكرار + الصف الواحد لكل موظف)
+                var byEmp = {};       // emp_no → { amount: total, rows: [excel rows] }
+                var mergedEmps = 0;   // عدد الموظفين الذين عندهم > سطر
+                var mergedRows = 0;   // إجمالي الصفوف المدموجة
+
                 for(var i=1; i<data.length; i++){
                     var row = data[i];
                     var empNo = row[0];
@@ -1793,12 +3425,36 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
                     empNo = String(parseInt(empNo));
                     if(!empNo || empNo === 'NaN') continue;
                     var amt = parseFloat(row[1]) || 0;
+                    var noteVal = (row[2] != null) ? String(row[2]).trim() : '';
                     if(cfg.amtRequired && amt <= 0){
                         errors.push('صف '+(i+1)+': الموظف '+empNo+' بدون مبلغ');
                         continue;
                     }
-                    _wizExcelEmps.push({emp_no: empNo, amount: amt});
+                    if (!byEmp[empNo]) {
+                        byEmp[empNo] = { amount: 0, rows: [] };
+                    }
+                    byEmp[empNo].amount += amt;
+                    byEmp[empNo].rows.push(i+1);
+                    // 🆕 احفظ السطر الخام للحفظ لاحقاً في الجدول الفرعي
+                    _wizExcelRawLines.push({
+                        row: i+1, emp_no: empNo, amount: amt, note: noteVal
+                    });
                 }
+
+                // تحويل الـ map إلى array + احتساب الـ merged stats
+                Object.keys(byEmp).forEach(function(eno){
+                    var info = byEmp[eno];
+                    if (info.rows.length > 1) {
+                        mergedEmps++;
+                        mergedRows += info.rows.length;
+                    }
+                    _wizExcelEmps.push({
+                        emp_no: eno,
+                        amount: Math.round(info.amount * 100) / 100,   // 2 decimals
+                        merged_count: info.rows.length,
+                        merged_rows:  info.rows
+                    });
+                });
                 if(_wizExcelEmps.length === 0){
                     var msg = errors.length > 0 ? errors.join('<br>') : 'لم يتم العثور على أرقام موظفين بالملف';
                     $('#wiz_excel_result').html('<div class="alert alert-warning py-2" style="font-size:.82rem"><i class="fa fa-exclamation-triangle me-1"></i> '+msg+'</div>').show();
@@ -1813,9 +3469,25 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
                 var noAmt = _wizExcelEmps.length - withAmt;
                 if(noAmt > 0 && !cfg.amtRequired) html += ' | '+noAmt+' بدون مبلغ (سيُحتسب تلقائياً)';
                 if(errors.length > 0) html += '<br><span class="text-warning">'+errors.length+' صف تم تجاهله (بدون مبلغ)</span>';
+                // 🆕 ملاحظة الدمج (لو فيه)
+                if(mergedEmps > 0){
+                    html += '<br><span style="color:#3730a3"><i class="fa fa-magic"></i> تم دمج <strong>'+mergedRows+'</strong> صف من Excel ضمن <strong>'+mergedEmps+'</strong> موظف (مكرر — تم جمع المبالغ)</span>';
+                }
                 html += '</div>';
                 $('#wiz_excel_result').html(html).show();
                 $('#wiz_excel_actions').show();
+
+                // 🆕 لما الإكسل يحوي مبالغ → نُجبر "طريقة المبلغ" = مختلف لكل موظف
+                // ونُخفي حقل "المبلغ لكل موظف" (لأنه جاي من الإكسل)
+                if (withAmt > 0) {
+                    if ($('#show_amount_mode_grp').is(':visible') || $('#show_amount_mode').length) {
+                        $('#show_amount_mode').val('diff');
+                        if (typeof showOnAmountModeChange === 'function') showOnAmountModeChange();
+                    }
+                    // نضمن إخفاء حقل المبلغ + إزالة required
+                    $('#show_amount_grp').hide();
+                    $('#show_req_amount').val('').prop('required', false);
+                }
 
                 var empNos = _wizExcelEmps.map(function(r){ return r.emp_no; });
                 $('#wiz_emp_select').val(empNos).trigger('change');
@@ -1853,27 +3525,32 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
             if(cm == '1') pctVal = $('#show_percent_input').val() || $('#show_percent_sel').val() || '';
         }
         return {
-            the_month:   $('#the_month').val(),
-            req_type:    rt,
-            calc_method: $('#calc_method').val() || '',
-            percent_val: pctVal,
-            req_amount:  $('#show_req_amount').val() || '',
-            pay_type:    $('#pay_type').val() || '',
-            sal_from:    '',
-            sal_to:      '',
-            branch_no:   $('#wiz_branch_no').val() || '',
-            l_value:     $('#show_l_value').val() || '1400',
-            h_value:     $('#show_h_value').val() || '3400',
-            entry_date:  $('#entry_date').val() || '',
-            note:        $('#note').val() || 'إنشاء من الويزارد'
+            the_month:    $('#the_month').val(),
+            req_type:     rt,
+            calc_method:  $('#calc_method').val() || '',
+            percent_val:  pctVal,
+            req_amount:   $('#show_req_amount').val() || '',
+            pay_type:     $('#pay_type').val() || '',
+            sal_from:     '',
+            sal_to:       '',
+            branch_no:    $('#wiz_branch_no').val() || '',
+            l_value:      $('#show_l_value').val() || '1400',
+            h_value:      $('#show_h_value').val() || '3400',
+            entry_date:   $('#entry_date').val() || '',
+            note:         $('#note').val() || 'إنشاء من الويزارد',
+            // 🆕 شهر فلتر اختياري — للنوع 3 فقط (موجود في DOM فقط لما الـ wizard يظهر)
+            filter_month: $('#filter_month').val() || ''
         };
     }
 
     function _wizValidate(){
         var p = _wizParams();
         var rt = p.req_type;
-        if(!p.the_month || p.the_month.length !== 6){ danger_msg('تحذير','أدخل الشهر بصيغة YYYYMM'); return false; }
         if(!rt){ danger_msg('تحذير','اختر نوع الطلب'); return false; }
+        // 🆕 الشهر مطلوب لكل الأنواع ما عدا 3 (دفعة من المستحقات — لا معنى مالي للشهر)
+        if(rt != '3' && (!p.the_month || p.the_month.length !== 6)){
+            danger_msg('تحذير','أدخل الشهر بصيغة YYYYMM'); return false;
+        }
 
         // الشهر محتسب — أنواع 1,2,4
         if(rt == '1' || rt == '2' || rt == '4'){
@@ -1905,14 +3582,24 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
             if(p.calc_method == '1' && (!p.percent_val || parseFloat(p.percent_val) <= 0)){
                 danger_msg('تحذير','أدخل النسبة %'); return false;
             }
-            if(p.calc_method == '2' && (!p.req_amount || parseFloat(p.req_amount) <= 0)){
-                danger_msg('تحذير','أدخل المبلغ'); return false;
+            if(p.calc_method == '2'){
+                var am3 = $('#show_amount_mode').val() || 'same';
+                if(am3 === 'same' && (!p.req_amount || parseFloat(p.req_amount) <= 0)){
+                    danger_msg('تحذير','أدخل المبلغ الموحد'); return false;
+                }
+                // diff: المبلغ يُتحقق منه per-emp في wizPreviewSelected
             }
         }
 
         // نوع 4: مستحقات حسب الشهر
         if(rt == '4'){
             if(!p.pay_type){ danger_msg('تحذير','اختر بند المستحقات'); return false; }
+            var am4 = $('#show_amount_mode').val() || 'same';
+            if(am4 === 'same' && p.req_amount && parseFloat(p.req_amount) <= 0){
+                danger_msg('تحذير','المبلغ الموحد يجب أن يكون أكبر من صفر'); return false;
+            }
+            // same بدون مبلغ → fallback لاحتساب المتبقي تلقائياً (sentinel)
+            // diff: المبلغ يُتحقق منه per-emp
         }
 
         // نوع 5: استحقاقات وإضافات
@@ -2003,6 +3690,22 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
                 if(!j.ok){ danger_msg('خطأ', j.msg || 'خطأ'); wizBackToSettings(); return; }
                 var rows = j.data || [];
 
+                // نوع 4 + same + master amount > 0 → طبّق المبلغ الموحد على كل الموظفين
+                // (الـ procedure يستخدم LEAST(master, المتبقي) — نعكس نفس المنطق في المعاينة)
+                var amHere = $('#show_amount_mode').val();
+                var masterAmt = parseFloat($('#show_req_amount').val()) || 0;
+                if(rt == '4' && amHere === 'same' && masterAmt > 0){
+                    for(var i=0; i<rows.length; i++){
+                        if(rows[i].HAS_EXISTING == 0){
+                            var origCalc = parseFloat(rows[i].CALC_AMOUNT) || 0;
+                            // المبلغ الفعلي = الأقل بين الموحد والمتبقي للموظف
+                            rows[i].CALC_AMOUNT = (origCalc > 0) ? Math.min(masterAmt, origCalc) : 0;
+                            // لو فيه متبقي > 0، اقبله رغم أن SKIP_REASON قد يكون موجود
+                            if(origCalc > 0) rows[i].SKIP_REASON = null;
+                        }
+                    }
+                }
+
                 if(_wizMode === 'selected'){
                     var selEmps = ($('#wiz_emp_select').val() || []).map(String);
                     if(selEmps.length > 0){
@@ -2046,11 +3749,20 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
         _wizTotalAmt = totalAmt;
 
         var calcDesc = '';
+        var _am = $('#show_amount_mode').val();
         if(p.req_type == '1') calcDesc = 'كامل المستحقات';
         else if(p.req_type == '2') calcDesc = p.percent_val + '% من المستحقات';
-        else if(p.req_type == '3') calcDesc = (p.calc_method == '1' ? p.percent_val + '% من الرصيد' : fmtA(p.req_amount)+' لكل موظف');
-        else if(p.req_type == '4') calcDesc = 'المتبقي من مستحقات بند 323 للشهر';
-        else if(p.req_type == '5') calcDesc = ($('#show_amount_mode').val() === 'same' ? fmtA(p.req_amount)+' لكل موظف' : 'مبلغ لكل موظف');
+        else if(p.req_type == '3'){
+            if(p.calc_method == '1') calcDesc = p.percent_val + '% من الرصيد';
+            else if(_am === 'diff') calcDesc = 'مبلغ مختلف لكل موظف';
+            else calcDesc = fmtA(p.req_amount)+' لكل موظف';
+        }
+        else if(p.req_type == '4'){
+            if(_am === 'diff') calcDesc = 'مبلغ مختلف لكل موظف';
+            else if(_am === 'same' && parseFloat(p.req_amount) > 0) calcDesc = fmtA(p.req_amount)+' لكل موظف';
+            else calcDesc = 'المتبقي من مستحقات بند 323 للشهر';
+        }
+        else if(p.req_type == '5') calcDesc = (_am === 'same' ? fmtA(p.req_amount)+' لكل موظف' : 'مبلغ لكل موظف');
         _wizCalcDesc = calcDesc;
 
         var noAmtLabel = (p.req_type == '2') ? 'مرحّل مسبقاً' : 'لا يوجد رصيد';
@@ -2418,22 +4130,62 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
 
     function _wizAddSelectedEmps(btn, reqId, emps, idx, ok, fails){
         if(idx >= emps.length){
-            $(btn).prop('disabled',false).html('<i class="fa fa-check-circle"></i> إنشاء الطلب وإضافة الموظفين');
-            if(fails.length > 0){
-                // عرض أسباب الفشل للمستخدم
-                var failsHtml = '<div class="text-start"><strong>فشل إضافة '+fails.length+' من '+emps.length+' موظف:</strong><ul style="font-size:.82rem;margin:0;padding-inline-start:1.2rem">';
-                for(var f=0; f<Math.min(fails.length, 10); f++){
-                    failsHtml += '<li>'+fails[f].emp+': '+fails[f].msg+'</li>';
+            // 🆕 لو فيه ملف إكسل مرفوع، نحفظه كـ attachment على الطلب
+            // (يحدث قبل ما نعرض النجاح ونوجه المستخدم)
+            var afterAttach = function(){
+                $(btn).prop('disabled',false).html('<i class="fa fa-check-circle"></i> إنشاء الطلب وإضافة الموظفين');
+                if(fails.length > 0){
+                    var failsHtml = '<div class="text-start"><strong>فشل إضافة '+fails.length+' من '+emps.length+' موظف:</strong><ul style="font-size:.82rem;margin:0;padding-inline-start:1.2rem">';
+                    for(var f=0; f<Math.min(fails.length, 10); f++){
+                        failsHtml += '<li>'+fails[f].emp+': '+fails[f].msg+'</li>';
+                    }
+                    if(fails.length > 10) failsHtml += '<li>... و'+(fails.length-10)+' أخرى</li>';
+                    failsHtml += '</ul></div>';
+                    danger_msg(ok > 0 ? 'تم جزئياً' : 'فشل الإضافة', failsHtml);
                 }
-                if(fails.length > 10) failsHtml += '<li>... و'+(fails.length-10)+' أخرى</li>';
-                failsHtml += '</ul></div>';
-                danger_msg(ok > 0 ? 'تم جزئياً' : 'فشل الإضافة', failsHtml);
-            }
-            if(ok > 0){
-                var j = {ok: true, req_id: reqId, msg: 'تم إنشاء الطلب #'+reqId+' مع '+ok+' موظف'};
-                _wizShowSuccess(j);
+                if(ok > 0){
+                    var j = {ok: true, req_id: reqId, msg: 'تم إنشاء الطلب #'+reqId+' مع '+ok+' موظف'};
+                    _wizShowSuccess(j);
+                } else {
+                    $('#wiz_step3_buttons').show();
+                }
+            };
+
+            // 🆕 الترتيب: أولاً نرفع الملف ⮕ نحصل على attachment_id ⮕ نحفظ البنود الخام
+            //          ⮕ نُكمل بـ afterAttach() اللي يعرض النجاح
+            var saveLinesAndDone = function(att_id){
+                if(_wizExcelRawLines.length === 0 || reqId <= 0){
+                    afterAttach(); return;
+                }
+                $.ajax({
+                    url: '<?= base_url("$MODULE_NAME/$TB_NAME/public_save_import_lines_for_req") ?>',
+                    method: 'POST',
+                    data: { req_id: reqId, lines: JSON.stringify(_wizExcelRawLines), attachment_id: att_id || '' },
+                    dataType: 'json'
+                }).always(function(){
+                    _wizExcelRawLines = [];   // امسحه
+                    afterAttach();
+                });
+            };
+
+            if(_wizUploadedFile && reqId > 0){
+                var fd = new FormData();
+                fd.append('req_id', reqId);
+                fd.append('excel_file', _wizUploadedFile);
+                $.ajax({
+                    url: '<?= base_url("$MODULE_NAME/$TB_NAME/public_save_import_file_for_req") ?>',
+                    method: 'POST', data: fd, processData: false, contentType: false,
+                    dataType: 'json'
+                }).done(function(resp){
+                    var att = (resp && resp.attachment_id) ? parseInt(resp.attachment_id) : 0;
+                    _wizUploadedFile = null;
+                    saveLinesAndDone(att);
+                }).fail(function(){
+                    _wizUploadedFile = null;
+                    saveLinesAndDone(0);   // كمل حفظ البنود حتى لو فشل رفع الملف
+                });
             } else {
-                $('#wiz_step3_buttons').show();
+                saveLinesAndDone(0);
             }
             return;
         }
@@ -2512,6 +4264,316 @@ $REQ_ID_JS      = $req_id_val ? $req_id_val : 'null';
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'معاينة');
         XLSX.writeFile(wb, 'معاينة_صرف_'+p.the_month+'.xlsx');
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // Tab 2: المستفيدون — Lazy Build + البحث + الفلترة + التصدير
+    // ═══════════════════════════════════════════════════════════
+    var _rcpSearchTimer;
+    var _rcpBuilt = false;
+    var _rcpData = null;
+
+    // قراءة بيانات Tab 2 من JSON (مرة واحدة)
+    function _rcpLoadData(){
+        if (_rcpData !== null) return _rcpData;
+        var el = document.getElementById('rcpData');
+        if (!el) return [];
+        try {
+            _rcpData = JSON.parse(el.textContent || el.innerText || '[]');
+        } catch(e) {
+            _rcpData = [];
+        }
+        return _rcpData;
+    }
+
+    // بناء الـ rows دفعة واحدة (HTML string concatenation = أسرع طريقة)
+    function _rcpBuildRows(){
+        if (_rcpBuilt) return;
+        var data = _rcpLoadData();
+        var $body = $('#recipientsBody');
+        if (!data || data.length === 0) {
+            $body.html('<tr><td colspan="10" class="text-center py-4 text-muted">' +
+                '<i class="fa fa-info-circle"></i> لا يوجد حركات صرف للعرض</td></tr>');
+            _rcpBuilt = true;
+            return;
+        }
+
+        // إظهار رسالة بناء (لكميات كبيرة)
+        if (data.length > 200) {
+            $body.html('<tr><td colspan="10" class="text-center py-4 text-muted">' +
+                '<i class="fa fa-spinner fa-spin"></i> جاري بناء ' + data.length + ' حركة...</td></tr>');
+        }
+
+        // نبني HTML في setTimeout لتفادي تجميد الـ UI
+        setTimeout(function(){
+            var html = '';
+            for (var i = 0; i < data.length; i++) {
+                var r = data[i];
+                var idx = i + 1;
+                var isWallet = r.provider_type === 2;
+                var ibanShort = r.iban ? (r.iban.substring(0, 8) + '…' + r.iban.substring(r.iban.length - 4)) : '';
+                var search = ((r.emp_no||'') + ' ' + (r.emp_name||'') + ' ' + (r.recipient||'') + ' ' +
+                              (r.rel_label||'') + ' ' + (r.provider||'') + ' ' + (r.prov_branch||'') + ' ' +
+                              (r.account_no||'') + ' ' + (r.iban||'') + ' ' + (r.split_label||'')).toLowerCase();
+
+                var typeIcon, typeText;
+                if (r.type === 'self')      { typeIcon = 'user';       typeText = 'الموظف'; }
+                else if (r.type === 'benef'){ typeIcon = 'users';      typeText = 'وريث'; }
+                else                        { typeIcon = 'id-card';    typeText = 'صاحب حساب'; }
+
+                html += '<tr class="rcp-row"' +
+                    ' data-search="' + _rcpEscape(search) + '"' +
+                    ' data-type="' + r.type + '"' +
+                    ' data-split="' + r.split_type + '"' +
+                    ' data-emp="' + r.emp_no + '">';
+                html += '<td class="text-center text-muted">' + idx + '</td>';
+                html += '<td><span class="fw-bold">' + r.emp_no + '</span>';
+                if (r.emp_is_split) {
+                    html += ' <span class="rcp-split-tag" title="' + r.emp_acc_count + ' حسابات لهذا الموظف"><i class="fa fa-sitemap"></i> ' + r.emp_acc_count + '</span>';
+                }
+                html += '<br><small class="text-muted">' + _rcpEscape(r.emp_name) + '</small></td>';
+                html += '<td style="font-size:.78rem">' + _rcpEscape(r.emp_branch || '') + '</td>';
+                html += '<td><span class="rcp-type" style="background:' + r.type_bg + ';color:' + r.type_color + '">' +
+                        '<i class="fa fa-' + typeIcon + '"></i> ' + typeText + '</span></td>';
+                html += '<td><b>' + _rcpEscape(r.recipient) + '</b>';
+                if (r.type !== 'self') html += '<br><small class="text-muted">' + _rcpEscape(r.rel_label) + '</small>';
+                if (r.is_default)      html += ' <span class="rcp-def">افتراضي</span>';
+                html += '</td>';
+                html += '<td><i class="fa fa-' + (isWallet ? 'mobile' : 'bank') + '" style="color:' + (isWallet ? '#6d28d9' : '#1e40af') + '"></i> ' + _rcpEscape(r.provider) + '</td>';
+                html += '<td style="font-size:.78rem">' + _rcpEscape(r.prov_branch || '—') + '</td>';
+                html += '<td style="font-family:monospace;direction:ltr;font-size:.74rem">';
+                if (r.account_no) html += '<div>#' + _rcpEscape(r.account_no) + '</div>';
+                if (r.iban)       html += '<div title="' + _rcpEscape(r.iban) + '" class="text-muted">' + ibanShort + '</div>';
+                html += '</td>';
+                html += '<td><span class="rcp-split-pill" style="background:' + r.split_bg + ';color:' + r.split_color + '">' + _rcpEscape(r.split_label) + '</span>';
+                if (r.split_type === 2 && r.split_value > 0) {
+                    html += '<small class="d-block text-muted" style="font-size:.65rem;direction:ltr">' + _rcpFmt(r.split_value) + '</small>';
+                }
+                html += '</td>';
+                html += '<td class="text-end" style="direction:ltr">';
+                html += '<span class="fw-bold" style="color:#059669;font-size:.92rem">' + _rcpFmt(r.amount) + '</span>';
+                if (r.emp_is_split && r.share_pct !== null && r.share_pct !== undefined) {
+                    html += '<small class="d-block text-muted" style="font-size:.65rem;line-height:1.2;direction:rtl">' +
+                            r.share_pct + '% من ' + _rcpFmt(r.emp_req_amount) + '</small>';
+                } else if (r.emp_dues > 0) {
+                    html += '<small class="d-block text-muted" style="font-size:.62rem;line-height:1.2;direction:rtl" title="مبلغ سيُرحَّل للمستحقات">' +
+                            '+ ' + _rcpFmt(r.emp_dues) + ' مستحقات</small>';
+                }
+                html += '</td>';
+                html += '</tr>';
+            }
+            $body.html(html);
+            _rcpBuilt = true;
+        }, 30); // setTimeout قصير لإفلات الـ UI thread
+    }
+
+    function _rcpEscape(s){
+        if (s === null || s === undefined) return '';
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // بناء عند فتح Tab 2 لأول مرة
+    $(document).on('shown.bs.tab', '#tab-recipients-btn', function(){
+        if (!_rcpBuilt) _rcpBuildRows();
+    });
+
+    function _rcpFilter(){
+        var q = ($('#rcpSearch').val() || '').trim().toLowerCase();
+        var typeFilter = $('#rcpFilterType').val() || '';
+        var splitFilter = $('#rcpFilterSplit').val() || '';
+        var $rows = $('#recipientsBody tr.rcp-row');
+        var visible = 0;
+        var totalAmt = 0;
+
+        $rows.each(function(){
+            var $r = $(this);
+            var search = $r.attr('data-search') || '';
+            var type = $r.attr('data-type') || '';
+            var split = $r.attr('data-split') || '';
+            var matchSearch = !q || search.indexOf(q) !== -1;
+            var matchType = !typeFilter || type === typeFilter;
+            var matchSplit = !splitFilter || split === splitFilter;
+            if (matchSearch && matchType && matchSplit) {
+                $r.removeClass('row-hidden');
+                visible++;
+                // قراءة المبلغ من السطر الأول للعمود الأخير (span.fw-bold)
+                var amtTxt = $r.find('td:last .fw-bold').first().text().replace(/[^\d.-]/g, '');
+                totalAmt += parseFloat(amtTxt) || 0;
+            } else {
+                $r.addClass('row-hidden');
+            }
+        });
+
+        // تحديث إعادة ترقيم
+        var idx = 0;
+        $rows.not('.row-hidden').each(function(){
+            idx++;
+            $(this).find('td:first').text(idx);
+        });
+
+        // تحديث إجمالي
+        $('#rcpTotalCell').text(_rcpFmt(totalAmt));
+
+        // معلومة الفلترة
+        if (q || typeFilter || splitFilter) {
+            $('#rcpFilterInfo').show().html(
+                '<i class="fa fa-filter"></i> عرض <b>' + visible + '</b> من <b>' + $rows.length + '</b> حركة' +
+                (q ? ' — البحث: <b>"' + q + '"</b>' : '') +
+                ' — مجموع المعروض: <b>' + _rcpFmt(totalAmt) + '</b>'
+            );
+        } else {
+            $('#rcpFilterInfo').hide();
+        }
+    }
+
+    function _rcpFmt(n){
+        return Number(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+
+    $(document).on('input', '#rcpSearch', function(){
+        clearTimeout(_rcpSearchTimer);
+        _rcpSearchTimer = setTimeout(_rcpFilter, 150);
+    });
+    $(document).on('change', '#rcpFilterType, #rcpFilterSplit', _rcpFilter);
+    $(document).on('click', '#rcpSearchClear', function(){
+        $('#rcpSearch').val('').trigger('input').focus();
+    });
+
+    // تصدير Tab 2 إلى Excel — كل البيانات المفيدة للمحاسب
+    $(document).on('click', '#rcpExportBtn', function(){
+        if (typeof XLSX === 'undefined') { danger_msg('خطأ', 'مكتبة Excel غير محمّلة'); return; }
+        var data = [[
+            '#','رقم الموظف','اسم الموظف','المقر',
+            'نوع المستلم','المستلم','العلاقة',
+            'البنك/المحفظة','فرع البنك','رقم الحساب','IBAN',
+            'طريقة التوزيع','حصة من إجمالي صرف الموظف %','إجمالي صرف الموظف',
+            'سيُرحَّل للمستحقات','المبلغ المُحوَّل (هذه الحركة)'
+        ]];
+        var idx = 0; var totalAmt = 0;
+        $('#recipientsBody tr.rcp-row').not('.row-hidden').each(function(){
+            idx++;
+            var $r = $(this);
+            var cells = $r.find('td');
+            var empNo   = $r.find('td:eq(1) .fw-bold').text().trim();
+            var empName = $r.find('td:eq(1) small').text().trim();
+            var branch  = cells.eq(2).text().trim();
+            var typeText= $r.find('td:eq(3) .rcp-type').text().trim();
+            var rcpName = $r.find('td:eq(4) b').text().trim();
+            var rcpRel  = $r.find('td:eq(4) small').text().trim();
+            var bank    = $r.find('td:eq(5)').text().trim();
+            var prov_br = cells.eq(6).text().trim();
+            var accDivs = $r.find('td:eq(7) div');
+            var accNum  = accDivs.eq(0).text().replace('#','').trim();
+            var ibanTxt = accDivs.length > 1 ? (accDivs.eq(1).attr('title') || accDivs.eq(1).text().trim()) : '';
+            var splitLabel = $r.find('td:eq(8) .rcp-split-pill').text().trim();
+            // المبلغ من span.fw-bold (السطر الأول)
+            var amtTxt  = $r.find('td:last .fw-bold').first().text().replace(/[^\d.-]/g, '');
+            var amt = parseFloat(amtTxt) || 0;
+            // الحصة و الإجمالي و المستحقات (من الـ small text)
+            var subTxt  = $r.find('td:last small').text().trim();
+            var sharePct = '';
+            var empTotal = '';
+            var empDues  = '';
+            var sharePctMatch = subTxt.match(/(\d+\.?\d*)\s*%/);
+            var empTotalMatch = subTxt.match(/من\s+([\d,]+\.?\d*)/);
+            var empDuesMatch  = subTxt.match(/\+\s*([\d,]+\.?\d*)\s*مستحقات/);
+            if (sharePctMatch) sharePct = sharePctMatch[1] + '%';
+            if (empTotalMatch) empTotal = empTotalMatch[1].replace(/,/g,'');
+            if (empDuesMatch)  empDues  = empDuesMatch[1].replace(/,/g,'');
+            totalAmt += amt;
+            data.push([
+                idx, empNo, empName, branch,
+                typeText, rcpName, rcpRel,
+                bank, prov_br, accNum, ibanTxt,
+                splitLabel,
+                sharePct,
+                empTotal ? parseFloat(empTotal) : '',
+                empDues  ? parseFloat(empDues)  : '',
+                amt
+            ]);
+        });
+        // صف الإجمالي
+        var totalRow = new Array(15).fill('');
+        totalRow[14] = 'الإجمالي';
+        totalRow[15] = totalAmt;
+        data.push(totalRow);
+        var wb = XLSX.utils.book_new();
+        var ws = XLSX.utils.aoa_to_sheet(data);
+        // RTL
+        if (!ws['!views']) ws['!views'] = [{RTL:true}];
+        // عرض الأعمدة
+        ws['!cols'] = [
+            {wch:5},{wch:10},{wch:28},{wch:14},
+            {wch:10},{wch:24},{wch:14},
+            {wch:18},{wch:14},{wch:14},{wch:24},
+            {wch:14},{wch:10},{wch:14},
+            {wch:14},{wch:14}
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, 'المستفيدون');
+        XLSX.writeFile(wb, 'مستفيدون_<?= $rs['REQ_NO'] ?? 'طلب' ?>.xlsx');
+    });
+
+// ════════════════════════════════════════════════════════════
+// 🆕 المرفقات: رفع + حذف
+// ════════════════════════════════════════════════════════════
+function openAttachUpload(){
+    var m = document.getElementById('attachUploadModal');
+    if (!m) return;
+    var inst = bootstrap.Modal.getOrCreateInstance(m);
+    document.getElementById('attachUploadForm').reset();
+    document.getElementById('attachUploadProgress').style.display = 'none';
+    inst.show();
+}
+
+function submitAttachUpload(){
+    var form = document.getElementById('attachUploadForm');
+    if (!form.file.files.length) {
+        warning_msg('تنبيه', 'اختر ملفاً أولاً');
+        return;
+    }
+    var fd = new FormData(form);
+    document.getElementById('attachUploadProgress').style.display = 'block';
+
+    $.ajax({
+        url: '<?= base_url("archive/archive/upload_file") ?>',
+        type: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false,
+        success: function(resp){
+            document.getElementById('attachUploadProgress').style.display = 'none';
+            var msg = String(resp).trim();
+            // الـ archive controller يرجع رقم ID على النجاح، أو نص خطأ على الفشل
+            if (/^\d+$/.test(msg) && parseInt(msg) > 0) {
+                success_msg('تم', 'تم رفع المرفق');
+                setTimeout(function(){ location.reload(); }, 800);
+            } else if (msg.indexOf('بنجاح') >= 0) {
+                success_msg('تم', 'تم رفع المرفق');
+                setTimeout(function(){ location.reload(); }, 800);
+            } else {
+                danger_msg('خطأ', msg || 'فشل الرفع');
+            }
+        },
+        error: function(){
+            document.getElementById('attachUploadProgress').style.display = 'none';
+            danger_msg('خطأ', 'فشل في الاتصال بالخادم');
+        }
+    });
+}
+
+function deleteAttachment(id){
+    if (!confirm('هل أنت متأكد من حذف هذا المرفق؟')) return;
+    get_data('<?= base_url("archive/archive/delete_file") ?>', {id: id}, function(resp){
+        var msg = String(resp).trim();
+        if (msg === '1') {
+            var row = document.getElementById('att_row_' + id);
+            if (row) row.remove();
+            success_msg('تم', 'تم حذف المرفق');
+            setTimeout(function(){ location.reload(); }, 600);
+        } else {
+            danger_msg('خطأ', msg || 'فشل الحذف');
+        }
+    }, 'html');
+}
 
 </script>
 <?php sec_scripts(ob_get_clean()); ?>

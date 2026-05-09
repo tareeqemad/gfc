@@ -325,7 +325,12 @@ function showConfirmModal(action, batchId){
         h += '<tr><td class="text-muted">عدد الموظفين</td><td class="fw-bold">'+info.emp+'</td></tr>';
         h += '<tr><td class="text-muted">إجمالي المبلغ</td><td class="fw-bold">'+info.amount+'</td></tr>';
         h += '</table>';
-        h += '<div class="alert alert-warning py-2 mb-0" style="font-size:.82rem"><i class="fa fa-info-circle me-1"></i> سيتم إرجاع الموظفين لحالة معتمد وحذف الدفعة.</div>';
+        h += '<div class="alert alert-warning py-2 mb-0" style="font-size:.82rem">';
+        h += '<i class="fa fa-info-circle me-1"></i> سيتم:<br>';
+        h += '- إرجاع الموظفين لحالة "معتمد"<br>';
+        h += '- وضع الدفعة بحالة "ملغاة" (تبقى ظاهرة في السجل للتسلسل)<br>';
+        h += '- لا يمكن استرجاع الدفعة بعد الإلغاء — احتسب من جديد لو احتجت';
+        h += '</div>';
     }
 
     $('#cam_body').html(h);

@@ -211,3 +211,54 @@ SELECT P.*, AC.*
 ```
 
 الفرق: الـ joins تعمل على 200 صف فقط (الصفحة)، مش 1800.
+
+## ١١. Oracle nested correlation — `ORA-00904: invalid identifier`
+
+**العَرَض:** عند subquery داخل LISTAGG/SELECT داخل الـ outer SELECT، الـ outer alias لا يتم حله:
+
+```sql
+SELECT BD.EMP_NO,
+       (SELECT LISTAGG(BANK_LBL, '/') WITHIN GROUP (ORDER BY BANK_LBL)
+          FROM (SELECT DISTINCT NVL(SNAP_PROVIDER_NAME, ...) AS BANK_LBL
+                  FROM PAYMENT_BATCH_DETAIL_TB
+                 WHERE BATCH_ID = BD.BATCH_ID    -- ❌ ORA-00904: "BD"."BATCH_ID"
+                   AND EMP_NO   = BD.EMP_NO))    AS BANK_NAME
+  FROM PAYMENT_BATCH_DETAIL_TB BD
+ GROUP BY BD.BATCH_ID, BD.EMP_NO
+```
+
+**السبب:** Oracle (12c-19c) لا يدعم correlation عبر nested inline view على عمق ٢. الـ inline view الداخلية (`SELECT DISTINCT ...`) لا ترى `BD` من الـ outer query.
+
+**حلول:**
+
+### حل ١ — alias صريح للجدول الداخلي
+```sql
+(SELECT LISTAGG(...) FROM (
+    SELECT DISTINCT BD3.EMP_NO, BD3.BATCH_ID, ...
+      FROM PAYMENT_BATCH_DETAIL_TB BD3   -- ← alias مهم
+     WHERE BD3.BATCH_ID = BD.BATCH_ID
+       AND BD3.EMP_NO   = BD.EMP_NO
+))
+```
+
+### حل ٢ — استخدام aggregate function (الأفضل)
+بدل الـ subquery، نستخدم `LISTAGG` كـ aggregate في الـ outer query مع `GROUP BY`:
+
+```sql
+SELECT BD.EMP_NO,
+       LISTAGG(NVL(BD.SNAP_PROVIDER_NAME, ...), ' / ')
+          WITHIN GROUP (ORDER BY ...) AS BANK_NAME
+  FROM PAYMENT_BATCH_DETAIL_TB BD
+ GROUP BY BD.BATCH_ID, BD.EMP_NO
+```
+
+ولإزالة التكرار (لو مش Oracle 19c+ حيث `LISTAGG(DISTINCT ...)`):
+```sql
+REPLACE(
+  REGEXP_REPLACE(
+    LISTAGG(name, '|') WITHIN GROUP (ORDER BY name),
+    '([^|]+)(\|\1)+', '\1'    -- يزيل التكرار: A|A|B → A|B
+  ),
+  '|', ' / '
+)
+```

@@ -128,9 +128,17 @@ tr.selected-row{background:#eff6ff !important}
 
                 <!-- REQUESTS LIST -->
                 <div id="requests_section">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                         <h6 class="fw-bold mb-0" style="font-size:.85rem"><i class="fa fa-list-alt me-1"></i> الطلبات المعتمدة</h6>
-                        <div class="d-flex gap-1 align-items-center">
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
+                            <!-- اختيار طريقة الصرف عند الاحتساب — قبل ضغط زر "احتساب" -->
+                            <div id="methodChoice" class="d-flex align-items-center gap-2" style="display:none!important">
+                                <label class="mb-0 fw-bold" style="font-size:.78rem;color:#475569"><i class="fa fa-route me-1"></i> طريقة الصرف:</label>
+                                <select id="dp_disburse_method" class="form-select form-select-sm" style="width:auto;font-size:.78rem">
+                                    <option value="2">الجديدة — توزيع على الحسابات</option>
+                                    <option value="1">القديمة — بنك EMPLOYEES</option>
+                                </select>
+                            </div>
                             <span class="text-muted" style="font-size:.75rem" id="selectedCount"></span>
                             <button class="btn btn-sm btn-success" onclick="loadPreview()" id="btnPreview" style="display:none">
                                 <i class="fa fa-calculator"></i> احتساب المحدد
@@ -287,12 +295,95 @@ tr.selected-row{background:#eff6ff !important}
     .method-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.1)}
     .method-card:hover[onclick*="1"]{border-color:#3b82f6!important}
     .method-card:hover[onclick*="2"]{border-color:#10b981!important}
+
+    /* Preview Modal */
+    .pv-stat-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem}
+    .pv-stat{flex:1;min-width:130px;text-align:center;padding:.65rem .5rem;border-radius:10px;border:1px solid #e2e8f0;background:#fff}
+    .pv-stat .lbl{font-size:.7rem;color:#64748b;margin-bottom:.2rem}
+    .pv-stat .val{font-size:1.4rem;font-weight:800;line-height:1.2}
+    .pv-stat.s-total{background:#1e293b;border-color:#1e293b;color:#fff}
+    .pv-stat.s-total .lbl{color:#94a3b8}
+    .pv-stat.s-ok   {background:#f0fdf4;border-color:#bbf7d0}
+    .pv-stat.s-ok   .val{color:#15803d}
+    .pv-stat.s-warn {background:#fffbeb;border-color:#fde68a}
+    .pv-stat.s-warn .val{color:#92400e}
+    .pv-stat.s-err  {background:#fef2f2;border-color:#fecaca}
+    .pv-stat.s-err  .val{color:#b91c1c}
+    .pv-stat.s-amt  {background:#eff6ff;border-color:#bfdbfe}
+    .pv-stat.s-amt  .val{color:#1e40af;font-size:1.05rem;direction:ltr;display:inline-block}
+
+    .pv-section{border:1px solid #e2e8f0;border-radius:10px;margin-bottom:.75rem;overflow:hidden}
+    .pv-section-head{padding:.55rem .85rem;font-weight:700;font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:.5rem}
+    .pv-section.s-err  .pv-section-head{background:#fef2f2;color:#991b1b}
+    .pv-section.s-warn .pv-section-head{background:#fffbeb;color:#92400e}
+    .pv-section.s-ok   .pv-section-head{background:#f0fdf4;color:#166534}
+    .pv-section-body{max-height:0;overflow:hidden;transition:max-height .25s}
+    .pv-section.expanded .pv-section-body{max-height:60vh;overflow-y:auto}
+    .pv-section-head .arrow{margin-inline-start:auto;transition:transform .2s}
+    .pv-section.expanded .arrow{transform:rotate(90deg)}
+
+    .pv-table{width:100%;font-size:.78rem;background:#fff}
+    .pv-table th,.pv-table td{padding:.45rem .65rem;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+    .pv-table thead{position:sticky;top:0;background:#f8fafc;z-index:1}
+    .pv-table th{font-weight:700;font-size:.72rem;color:#64748b}
+    .pv-table .num{direction:ltr;font-family:monospace;font-weight:700}
+    .pv-issue{font-size:.72rem;color:#991b1b;font-weight:600}
+    .pv-warn-issue{font-size:.72rem;color:#92400e;font-weight:600}
+    .pv-emp-link{color:#1e40af;text-decoration:none;font-weight:700}
+    .pv-emp-link:hover{text-decoration:underline}
+    .pv-fix-btn{padding:.15em .55em;font-size:.7rem;border-radius:5px;background:#fff;border:1px solid #cbd5e1;color:#475569;cursor:pointer}
+    .pv-fix-btn:hover{background:#e0f2fe;color:#0369a1;border-color:#7dd3fc}
 </style>
 
+<!-- ══════════ Modal: معاينة الاحتساب (للطريقة الجديدة) ══════════ -->
+<div class="modal fade" id="batchPreviewModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content" style="border:0;border-radius:12px;overflow:hidden">
+            <div class="modal-header py-2" style="background:#0f172a">
+                <h6 class="modal-title text-white fw-bold">
+                    <i class="fa fa-search-plus me-1"></i> معاينة الاحتساب — مراجعة قبل الاعتماد
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="batchPreviewBody">
+                <div class="text-center py-5 text-muted">
+                    <i class="fa fa-spinner fa-spin fa-2x"></i>
+                    <div class="mt-2">جاري الفحص...</div>
+                </div>
+            </div>
+            <div class="modal-footer py-2 d-flex justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span id="pvForceWrap" style="display:none">
+                        <input type="checkbox" id="pvForceConfirm" class="form-check-input">
+                        <label for="pvForceConfirm" class="form-check-label" style="font-size:.78rem;color:#92400e">
+                            أؤكد المتابعة رغم التحذيرات
+                        </label>
+                    </span>
+                </div>
+                <div class="d-flex gap-1">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">
+                        <i class="fa fa-times"></i> إلغاء
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="javascript:_runPreview();">
+                        <i class="fa fa-refresh"></i> إعادة الفحص
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm" id="pvConfirmBtn" disabled
+                            onclick="javascript:_doConfirmAfterPreview();">
+                        <i class="fa fa-check-circle"></i> اعتماد الاحتساب
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php
-$batch_history_url  = base_url("$MODULE_NAME/$TB_NAME/batch_history_data");
-$batch_cancel_url_b = base_url("$MODULE_NAME/$TB_NAME/batch_cancel_action");
+$batch_history_url   = base_url("$MODULE_NAME/$TB_NAME/batch_history_data");
+$batch_cancel_url_b  = base_url("$MODULE_NAME/$TB_NAME/batch_cancel_action");
 $batch_reverse_url_b = base_url("$MODULE_NAME/$TB_NAME/batch_reverse_pay_action");
+$batch_preview_url_b = base_url("$MODULE_NAME/$TB_NAME/batch_preview_validation_json");
+$batch_split_preview_url_b = base_url("$MODULE_NAME/$TB_NAME/batch_compute_preview_json");
+$emp_url_base        = base_url('payment_accounts/payment_accounts/emp');
 $_vars_js = '<script type="text/javascript">'
     . 'var getPageUrl="' . $get_page_url . '";'
     . 'var batchDataUrl="' . $batch_data_url . '";'
@@ -306,6 +397,9 @@ $_vars_js = '<script type="text/javascript">'
     . 'var batchHistoryJsonUrl="' . base_url("$MODULE_NAME/$TB_NAME/batch_history_json") . '";'
     . 'var bankFileUrl="' . base_url("$MODULE_NAME/$TB_NAME/export_bank_file") . '";'
     . 'var bankListUrl="' . base_url("$MODULE_NAME/$TB_NAME/export_bank_list") . '";'
+    . 'var batchPreviewUrl="' . $batch_preview_url_b . '";'
+    . 'var batchSplitPreviewUrl="' . $batch_split_preview_url_b . '";'
+    . 'var empUrlBase="' . $emp_url_base . '";'
     . '</script>';
 
 $scripts = $_vars_js . <<<'SCRIPT'
@@ -436,7 +530,13 @@ function toggleAll(el){
 function updateSelectedCount(){
     var n = _selectedReqIds.length;
     $('#selectedCount').text(n > 0 ? n + ' طلب محدد' : '');
-    if(n > 0) $('#btnPreview').show(); else $('#btnPreview').hide();
+    if(n > 0){
+        $('#btnPreview').show();
+        $('#methodChoice').css('display','flex');
+    } else {
+        $('#btnPreview').hide();
+        $('#methodChoice').hide();
+    }
 }
 
 // ===================== LOAD PREVIEW =====================
@@ -447,24 +547,41 @@ function backToRequests(){
     $('html, body').animate({scrollTop: 0}, 200);
 }
 
+// طريقة الصرف المختارة عند الاحتساب — تُستخدم في الاعتماد بدون modal
+var _chosenMethod = 1;
+// بيانات التوزيع للطريقة الجديدة (per-emp + accounts)
+var _splitData = null;
+
 function loadPreview(){
     if(_selectedReqIds.length === 0){ danger_msg('تحذير','يجب تحديد طلب واحد على الأقل'); return; }
 
     _previewReqIds = _selectedReqIds.join(',');
+    _chosenMethod = parseInt($('#dp_disburse_method').val()) || 1;
+
     // إخفاء الفلاتر والطلبات — عرض المعاينة فقط
     var selCount = _selectedReqIds.length;
+    var methodLabel = (_chosenMethod === 2) ? 'الطريقة الجديدة (توزيع تفصيلي)' : 'الطريقة القديمة (بنك EMPLOYEES)';
     $('#loadingTitle').text('جاري احتساب الصرف...');
-    $('#loadingDetail').text('تجميع ' + selCount + ' طلب — حساب المبالغ وبيانات البنوك');
+    $('#loadingDetail').text('تجميع ' + selCount + ' طلب بـ ' + methodLabel);
     $('#batch_form, #requests_section, #batchCardHeader').hide();
     $('#batchLoading').show();
     $('#preview_section').hide();
 
+    if(_chosenMethod === 2){
+        _loadSplitPreview();
+    } else {
+        _loadLegacyPreview();
+    }
+}
+
+function _loadLegacyPreview(){
     get_data(batchDataUrl, {req_ids: _previewReqIds}, function(resp){
         $('#batchLoading').hide();
         var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
         if(!j.ok){ danger_msg('خطأ', j.msg || 'فشل تحميل البيانات'); return; }
         _previewData = j.rows || [];
         if(_previewData.length === 0){ danger_msg('تحذير','لا توجد بيانات معتمدة للصرف في الطلبات المحددة — قد تكون محتسبة مسبقاً (راجع سجل الدفعات)'); return; }
+        _splitData = null;
         renderPreview(_previewData);
         $('#preview_section, #previewDivider, #btnExport, #btnPrint').show();
         $('#batchActions').css('display','flex');
@@ -493,6 +610,210 @@ function loadPreview(){
             $('#batchSummary').prepend(whtml);
         }
     }, 'json');
+}
+
+// ===================== LOAD SPLIT PREVIEW (الطريقة الجديدة) =====================
+// يطلب من السيرفر التوزيع التفصيلي ثم يعرضه
+function _loadSplitPreview(){
+    get_data(batchSplitPreviewUrl, {req_ids: _previewReqIds, exclude_detail_ids: ''}, function(resp){
+        $('#batchLoading').hide();
+        var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+        if(!j.ok){ danger_msg('خطأ', j.msg || 'فشل تحميل التوزيع'); return; }
+        var emps = j.data || [];
+        if(emps.length === 0){
+            danger_msg('تحذير','لا توجد بيانات معتمدة للصرف في الطلبات المحددة — قد تكون محتسبة مسبقاً (راجع سجل الدفعات)');
+            return;
+        }
+        _splitData = j;
+        _previewData = null;
+        renderSplitPreview(j);
+        $('#preview_section, #previewDivider, #btnExport, #btnPrint').show();
+        $('#batchActions').css('display','flex');
+        if(canPay) { $('#btnConfirm').show(); $('#btnPay').hide(); }
+        _batchId = 0;
+
+        if((j.totals && j.totals.err) > 0){
+            danger_msg('تنبيه',
+                'يوجد ' + j.totals.err + ' موظف بأخطاء — لن يُشملوا في الاعتماد إلا بعد تصحيح حساباتهم'
+            );
+        }
+    }, 'json');
+}
+
+// ===================== RENDER SPLIT PREVIEW =====================
+function renderSplitPreview(j){
+    var emps = j.data || [];
+    var t = j.totals || {};
+    var html = '';
+
+    // إجماليات
+    html += '<div class="pr-row mb-3">';
+    html += '<div class="pr-card c-active"><div class="c-label"><i class="fa fa-users"></i> الموظفين</div><div class="c-val">' + (t.employees||0) + '</div></div>';
+    html += '<div class="pr-card" style="background:#dcfce7;border-color:#86efac"><div class="c-label" style="color:#15803d"><i class="fa fa-check-circle"></i> سليم</div><div class="c-val" style="color:#166534">' + (t.ok||0) + '</div></div>';
+    html += '<div class="pr-card" style="background:#fef9c3;border-color:#fde68a"><div class="c-label" style="color:#a16207"><i class="fa fa-exclamation-triangle"></i> تحذيرات</div><div class="c-val" style="color:#92400e">' + (t.warn||0) + '</div></div>';
+    html += '<div class="pr-card" style="background:#fee2e2;border-color:#fca5a5"><div class="c-label" style="color:#b91c1c"><i class="fa fa-times-circle"></i> أخطاء</div><div class="c-val" style="color:#991b1b">' + (t.err||0) + '</div></div>';
+    html += '<div class="pr-card c-total"><div class="c-label">المبلغ الإجمالي</div><div class="c-val">' + nf(t.total_amount||0) + '</div></div>';
+    if((t.err||0) > 0){
+        html += '<div class="pr-card" style="background:#f1f5f9;border-color:#cbd5e1"><div class="c-label">المبلغ الآمن (بدون الأخطاء)</div><div class="c-val">' + nf(t.safe_amount||0) + '</div></div>';
+    }
+    html += '</div>';
+
+    if((t.err||0) > 0){
+        html += '<div class="alert alert-danger py-2 mb-2" style="font-size:.85rem">';
+        html += '<i class="fa fa-times-circle me-1"></i> <strong>' + t.err + ' موظف</strong> بأخطاء — راجع التفاصيل أدناه. ';
+        html += 'الموظفون بحالة <span class="badge bg-danger">ERR</span> لن يُشملوا في الدفعة عند الاعتماد.';
+        html += '</div>';
+    }
+
+    // جدول الموظفين — كل موظف expandable لعرض حساباته
+    html += '<div class="card border-0" style="background:#f8fafc">';
+    html += '<div class="card-body p-2">';
+    html += '<div class="d-flex align-items-center mb-2 px-2 py-1" style="background:#f1f5f9;border-radius:6px">';
+    html += '<label class="mb-0" style="font-size:.78rem"><input type="checkbox" id="splitChkAll" onchange="_splitToggleAll(this)" checked> <b>تحديد الكل</b> (الموظفون بحالة ERR لن يُحدَّدوا)</label>';
+    html += '</div>';
+    html += '<table class="table table-sm mb-0" style="font-size:.82rem;background:#fff;border-radius:8px;overflow:hidden">';
+    html += '<thead class="table-light"><tr>';
+    html += '<th style="width:30px"></th>';
+    html += '<th style="width:36px"></th>';
+    html += '<th style="width:30px">#</th>';
+    html += '<th>الموظف</th>';
+    html += '<th>المقر</th>';
+    html += '<th class="text-center" style="width:90px">حسابات</th>';
+    html += '<th class="text-end" style="width:130px">المستحق</th>';
+    html += '<th class="text-end" style="width:130px">المخصّص</th>';
+    html += '<th class="text-center" style="width:80px">الحالة</th>';
+    html += '</tr></thead><tbody>';
+
+    for(var i=0; i<emps.length; i++){
+        var e = emps[i];
+        var statusBadge = _splitStatusBadge(e.status);
+        var rowCls = (e.status === 'ERR') ? ' style="background:#fef2f2"' : (e.status === 'WARN' ? ' style="background:#fefce8"' : '');
+        var diff = (parseFloat(e.alloc_total||0) - parseFloat(e.total_amount||0));
+        var allocCls = (Math.abs(diff) < 0.01) ? '' : ' style="color:#dc2626;font-weight:700"';
+        var canInclude = (e.status !== 'ERR');
+        var chkAttr = canInclude ? 'checked' : 'disabled';
+
+        html += '<tr class="emp-row" data-emp="' + e.emp_no + '"' + rowCls + '>';
+        html += '<td class="text-center"><input type="checkbox" class="split-emp-chk" data-emp="' + e.emp_no + '" data-details="' + (e.detail_ids||'') + '" ' + chkAttr + '></td>';
+        html += '<td class="text-center">';
+        if(e.accounts && e.accounts.length > 0){
+            html += '<button class="btn btn-sm btn-link p-0 toggle-acc" onclick="_splitToggleAccs(' + e.emp_no + ')" title="عرض/إخفاء الحسابات"><i class="fa fa-chevron-down"></i></button>';
+        }
+        html += '</td>';
+        html += '<td>' + (i+1) + '</td>';
+        html += '<td><b>' + e.emp_no + '</b><br><small>' + (e.emp_name||'') + '</small>';
+        if(parseInt(e.is_active) === 0) html += ' <span class="badge bg-secondary" style="font-size:.6rem">متقاعد</span>';
+        html += '</td>';
+        html += '<td>' + (e.branch_name||'—') + '</td>';
+        html += '<td class="text-center">' + (e.acc_cnt||0) + '</td>';
+        html += '<td class="text-end fw-bold">' + nf(e.total_amount) + '</td>';
+        html += '<td class="text-end"' + allocCls + '>' + nf(e.alloc_total) + '</td>';
+        html += '<td class="text-center">' + statusBadge + '</td>';
+        html += '</tr>';
+
+        // صف التفاصيل (حسابات الموظف)
+        if(e.accounts && e.accounts.length > 0){
+            html += '<tr class="acc-detail-row" data-emp="' + e.emp_no + '" style="display:none"><td colspan="9" style="padding:0;background:#f8fafc">';
+            html += _splitRenderAccounts(e);
+            html += '</td></tr>';
+        }
+        // لو فيه issue، اعرضه تحت
+        if(e.issue){
+            html += '<tr class="emp-issue-row" data-emp="' + e.emp_no + '"><td colspan="9" style="background:' + (e.status === 'ERR' ? '#fee2e2' : '#fef9c3') + ';padding:.4rem .8rem;font-size:.8rem">';
+            html += '<i class="fa fa-' + (e.status === 'ERR' ? 'times-circle text-danger' : 'exclamation-triangle text-warning') + ' me-1"></i> ';
+            html += e.issue;
+            html += '</td></tr>';
+        }
+    }
+    html += '</tbody></table>';
+    html += '</div></div>';
+
+    $('#batchSummary').html('');
+    $('#batchBanks').html(html);
+}
+
+function _splitStatusBadge(status){
+    if(status === 'OK')   return '<span class="badge bg-success">OK</span>';
+    if(status === 'WARN') return '<span class="badge bg-warning text-dark">WARN</span>';
+    if(status === 'ERR')  return '<span class="badge bg-danger">ERR</span>';
+    return '<span class="badge bg-secondary">' + status + '</span>';
+}
+
+function _splitToggleAccs(empNo){
+    var $row = $('.acc-detail-row[data-emp="' + empNo + '"]');
+    var $ic  = $('.emp-row[data-emp="' + empNo + '"] .toggle-acc i');
+    if($row.is(':visible')){
+        $row.hide();
+        $ic.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+    } else {
+        $row.show();
+        $ic.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+    }
+}
+
+function _splitToggleAll(el){
+    $('.split-emp-chk:not(:disabled)').prop('checked', el.checked);
+}
+
+// يرجع: detail IDs المحدّدة (للموظفين المُحدَّدين)
+function _splitGetSelectedDetailIds(){
+    var ids = [];
+    $('.split-emp-chk:checked').each(function(){
+        var d = $(this).data('details');
+        if(d) ids = ids.concat(String(d).split(','));
+    });
+    return ids.filter(function(x){ return x && x.length > 0; }).join(',');
+}
+
+// يرجع: detail IDs المستثناة (للموظفين غير المحدّدين أو ERR)
+function _splitGetExcludedDetailIds(){
+    var ids = [];
+    $('.split-emp-chk:not(:checked), .split-emp-chk:disabled').each(function(){
+        var d = $(this).data('details');
+        if(d) ids = ids.concat(String(d).split(','));
+    });
+    return ids.filter(function(x){ return x && x.length > 0; }).join(',');
+}
+
+function _splitRenderAccounts(e){
+    var html = '<table class="table table-sm mb-0" style="font-size:.78rem;background:#fff">';
+    html += '<thead style="background:#e2e8f0"><tr>';
+    html += '<th style="width:30px">#</th>';
+    html += '<th>المزود</th>';
+    html += '<th>الفرع</th>';
+    html += '<th>صاحب الحساب</th>';
+    html += '<th>رقم الحساب / IBAN</th>';
+    html += '<th class="text-center" style="width:90px">طريقة التوزيع</th>';
+    html += '<th class="text-end" style="width:130px">المخصّص</th>';
+    html += '</tr></thead><tbody>';
+    for(var k=0; k<e.accounts.length; k++){
+        var a = e.accounts[k];
+        var splitLbl = '';
+        if(a.split_type === 2) splitLbl = 'مبلغ ثابت<br><small>' + nf(a.split_value) + '</small>';
+        else if(a.split_type === 1) splitLbl = 'نسبة<br><small>' + a.split_value + '%</small>';
+        else if(a.split_type === 3) splitLbl = 'كامل الباقي';
+        else splitLbl = '—';
+        var ownerInfo = '<b>' + (a.owner_name||'—') + '</b>';
+        if(a.beneficiary_id) ownerInfo += '<br><small class="text-warning"><i class="fa fa-users"></i> ' + (a.benef_rel||'وريث') + '</small>';
+        if(a.is_default) ownerInfo += ' <span class="badge bg-primary" style="font-size:.6rem">افتراضي</span>';
+        var accInfo = '';
+        if(a.iban) accInfo += '<div style="direction:ltr;font-family:monospace;font-size:.72rem;color:#475569">' + a.iban + '</div>';
+        if(a.account_no) accInfo += '<div style="direction:ltr;font-family:monospace;font-size:.72rem">' + a.account_no + '</div>';
+        if(!accInfo) accInfo = '<span class="text-muted">—</span>';
+        var provLbl = (a.provider_name||'—');
+        if(a.provider_type === 2) provLbl += ' <i class="fa fa-mobile text-purple" title="محفظة"></i>';
+        html += '<tr>';
+        html += '<td>' + (k+1) + '</td>';
+        html += '<td>' + provLbl + '</td>';
+        html += '<td>' + (a.prov_branch||'—') + '</td>';
+        html += '<td>' + ownerInfo + '</td>';
+        html += '<td>' + accInfo + '</td>';
+        html += '<td class="text-center">' + splitLbl + '</td>';
+        html += '<td class="text-end fw-bold" style="color:#0369a1">' + nf(a.alloc_amount) + '</td>';
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+    return html;
 }
 
 // ===================== RENDER PREVIEW =====================
@@ -958,23 +1279,34 @@ function batchExport(){
 var _pendingConfirm = null;  // {selectedIds, excludeIds, cnt}
 
 function batchConfirm(){
-    var selectedIds = getSelectedDetailIds();
-    if(!selectedIds){ danger_msg('تحذير','يجب تحديد موظف واحد على الأقل'); return; }
     if(_actionInProgress){ danger_msg('تحذير','العملية قيد التنفيذ بالفعل'); return; }
 
-    // نبعث REQ_IDS (قصير) + المستبعدين فقط (unchecked)
-    var allIds = [];
-    $('.detail-chk').each(function(){ allIds.push($(this).val()); });
-    var selectedSet = {};
-    selectedIds.split(',').forEach(function(id){ selectedSet[id] = true; });
-    var excludeIds = allIds.filter(function(id){ return !selectedSet[id]; }).join(',');
-    var cnt = selectedIds.split(',').length;
+    var selectedIds, excludeIds, cnt;
 
-    _pendingConfirm = {selectedIds: selectedIds, excludeIds: excludeIds, cnt: cnt};
+    if(_chosenMethod === 2 && _splitData){
+        // الطريقة الجديدة: نستخدم الـ checkboxes في الـ split view
+        selectedIds = _splitGetSelectedDetailIds();
+        excludeIds  = _splitGetExcludedDetailIds();
+        if(!selectedIds){ danger_msg('تحذير','يجب تحديد موظف واحد على الأقل (الموظفون بحالة ERR لا يمكن اعتمادهم)'); return; }
+        cnt = $('.split-emp-chk:checked').length;
+    } else {
+        // الطريقة القديمة: نستخدم الـ checkboxes في الجدول التقليدي
+        selectedIds = getSelectedDetailIds();
+        if(!selectedIds){ danger_msg('تحذير','يجب تحديد موظف واحد على الأقل'); return; }
+        var allIds = [];
+        $('.detail-chk').each(function(){ allIds.push($(this).val()); });
+        var selectedSet = {};
+        selectedIds.split(',').forEach(function(id){ selectedSet[id] = true; });
+        excludeIds = allIds.filter(function(id){ return !selectedSet[id]; }).join(',');
+        cnt = selectedIds.split(',').length;
+    }
 
-    // افتح modal اختيار الطريقة
-    $('#disburseMethodCount').text(cnt);
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('disburseMethodModal')).show();
+    _pendingConfirm = {selectedIds: selectedIds, excludeIds: excludeIds, cnt: cnt, method: _chosenMethod};
+
+    // الطريقة مختارة من قبل (في شاشة الاحتساب) → اعتماد مباشر بعد تأكيد بسيط
+    var methodLbl = (_chosenMethod === 2) ? 'الطريقة الجديدة (توزيع على الحسابات)' : 'الطريقة القديمة (بنك EMPLOYEES)';
+    if(!confirm('اعتماد ' + cnt + ' موظف بـ ' + methodLbl + '؟')) return;
+    _executeBatchConfirm();
 }
 
 // يُستدعى من زر داخل الـ modal بعد اختيار الطريقة
@@ -982,19 +1314,213 @@ function _doConfirmWithMethod(method){
     if(!_pendingConfirm) return;
     bootstrap.Modal.getOrCreateInstance(document.getElementById('disburseMethodModal')).hide();
 
+    _pendingConfirm.method = method;
+
+    // الطريقة 1 (القديمة): اعتماد مباشر بعد تأكيد بسيط
+    if (method === 1 || method === '1') {
+        if(!confirm('اعتماد ' + _pendingConfirm.cnt + ' موظف بالطريقة القديمة (بنك EMPLOYEES)؟')) {
+            _pendingConfirm = null; return;
+        }
+        _executeBatchConfirm();
+        return;
+    }
+
+    // الطريقة 2 (الجديدة): فتح modal preview للمراجعة
+    _runPreview();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('batchPreviewModal')).show();
+}
+
+// =============== PREVIEW الطريقة الجديدة ===============
+var _previewData = null;
+
+function _runPreview(){
+    if(!_pendingConfirm) return;
+    $('#batchPreviewBody').html(
+        '<div class="text-center py-5 text-muted">' +
+        '<i class="fa fa-spinner fa-spin fa-2x"></i>' +
+        '<div class="mt-2">جاري فحص ' + _pendingConfirm.cnt + ' موظف...</div></div>'
+    );
+    $('#pvConfirmBtn').prop('disabled', true);
+    $('#pvForceWrap').hide();
+    $('#pvForceConfirm').prop('checked', false);
+
+    get_data(batchPreviewUrl, {
+        req_ids: _previewReqIds,
+        exclude_detail_ids: _pendingConfirm.excludeIds
+    }, function(resp){
+        var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+        if(!j.ok){
+            $('#batchPreviewBody').html('<div class="alert alert-danger">' + (j.msg || 'فشل الفحص') + '</div>');
+            return;
+        }
+        _previewData = j;
+        _renderPreview(j);
+    }, 'json');
+}
+
+function _renderPreview(j){
+    var t = j.totals || {};
+    var rows = j.data || [];
+    var html = '';
+
+    // إجماليات
+    html += '<div class="pv-stat-row">';
+    html += '<div class="pv-stat s-total"><div class="lbl">إجمالي الموظفين</div><div class="val">' + (t.employees||0) + '</div></div>';
+    html += '<div class="pv-stat s-ok"><div class="lbl"><i class="fa fa-check-circle"></i> سليم</div><div class="val">' + (t.ok||0) + '</div></div>';
+    html += '<div class="pv-stat s-warn"><div class="lbl"><i class="fa fa-exclamation-triangle"></i> تحذيرات</div><div class="val">' + (t.warn||0) + '</div></div>';
+    html += '<div class="pv-stat s-err"><div class="lbl"><i class="fa fa-times-circle"></i> أخطاء</div><div class="val">' + (t.err||0) + '</div></div>';
+    html += '<div class="pv-stat s-amt"><div class="lbl">المبلغ الإجمالي</div><div class="val">' + nf(t.total_amount||0) + '</div></div>';
+    html += '</div>';
+
+    if((t.err||0) > 0){
+        html += '<div class="alert alert-danger py-2" style="font-size:.85rem">';
+        html += '<i class="fa fa-times-circle"></i> <b>' + (t.err) + ' موظف</b> بأخطاء يجب حلها قبل الاعتماد. ';
+        html += 'مبلغ الأخطاء: <b>' + nf(t.err_amount||0) + '</b> من أصل ' + nf(t.total_amount||0);
+        html += '</div>';
+    }
+
+    // فلترة
+    var errs  = rows.filter(function(r){ return r.STATUS === 'ERR'; });
+    var warns = rows.filter(function(r){ return r.STATUS === 'WARN'; });
+
+    // قسم الأخطاء
+    if(errs.length > 0){
+        html += '<div class="pv-section s-err expanded">';
+        html += '<div class="pv-section-head" onclick="$(this).parent().toggleClass(\'expanded\')">';
+        html += '<i class="fa fa-times-circle"></i> الأخطاء (' + errs.length + ') — يجب إصلاحها';
+        html += '<span class="arrow">›</span></div>';
+        html += '<div class="pv-section-body"><table class="pv-table"><thead><tr>';
+        html += '<th style="width:30px">#</th><th>الموظف</th><th>المقر</th>';
+        html += '<th class="text-end">المستحق</th><th>المشكلة</th><th></th>';
+        html += '</tr></thead><tbody>';
+        errs.forEach(function(r, i){
+            html += '<tr>';
+            html += '<td class="text-muted">' + (i+1) + '</td>';
+            html += '<td><a class="pv-emp-link" href="' + empUrlBase + '/' + r.EMP_NO + '" target="_blank">' +
+                    '<b>' + r.EMP_NO + '</b> — ' + escHtml(r.EMP_NAME||'') + '</a></td>';
+            html += '<td style="font-size:.72rem">' + escHtml(r.BRANCH_NAME||'') + '</td>';
+            html += '<td class="text-end num">' + nf(r.TOTAL_AMOUNT||0) + '</td>';
+            html += '<td class="pv-issue">' + escHtml(r.ISSUE||'') + '</td>';
+            html += '<td><a target="_blank" href="' + empUrlBase + '/' + r.EMP_NO +
+                    '" class="pv-fix-btn"><i class="fa fa-wrench"></i> إصلاح</a></td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table></div></div>';
+    }
+
+    // قسم التحذيرات
+    if(warns.length > 0){
+        html += '<div class="pv-section s-warn">';
+        html += '<div class="pv-section-head" onclick="$(this).parent().toggleClass(\'expanded\')">';
+        html += '<i class="fa fa-exclamation-triangle"></i> التحذيرات (' + warns.length + ') — يمكن المتابعة بعد المراجعة';
+        html += '<span class="arrow">›</span></div>';
+        html += '<div class="pv-section-body"><table class="pv-table"><thead><tr>';
+        html += '<th style="width:30px">#</th><th>الموظف</th><th>المقر</th>';
+        html += '<th class="text-end">المستحق</th><th>التحذير</th><th></th>';
+        html += '</tr></thead><tbody>';
+        warns.forEach(function(r, i){
+            html += '<tr>';
+            html += '<td class="text-muted">' + (i+1) + '</td>';
+            html += '<td><a class="pv-emp-link" href="' + empUrlBase + '/' + r.EMP_NO + '" target="_blank">' +
+                    '<b>' + r.EMP_NO + '</b> — ' + escHtml(r.EMP_NAME||'') + '</a></td>';
+            html += '<td style="font-size:.72rem">' + escHtml(r.BRANCH_NAME||'') + '</td>';
+            html += '<td class="text-end num">' + nf(r.TOTAL_AMOUNT||0) + '</td>';
+            html += '<td class="pv-warn-issue">' + escHtml(r.ISSUE||'') + '</td>';
+            html += '<td><a target="_blank" href="' + empUrlBase + '/' + r.EMP_NO +
+                    '" class="pv-fix-btn"><i class="fa fa-pencil"></i> مراجعة</a></td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table></div></div>';
+    }
+
+    // قسم السليم (مطوّي)
+    var oks = rows.filter(function(r){ return r.STATUS === 'OK'; });
+    if(oks.length > 0){
+        html += '<div class="pv-section s-ok">';
+        html += '<div class="pv-section-head" onclick="$(this).parent().toggleClass(\'expanded\')">';
+        html += '<i class="fa fa-check-circle"></i> سليم (' + oks.length + ') — جاهز للاعتماد';
+        html += '<span class="arrow">›</span></div>';
+        html += '<div class="pv-section-body"><table class="pv-table"><thead><tr>';
+        html += '<th style="width:30px">#</th><th>الموظف</th><th>المقر</th>';
+        html += '<th class="text-end">المستحق</th><th>التوزيع</th>';
+        html += '</tr></thead><tbody>';
+        oks.forEach(function(r, i){
+            var dist = '';
+            if((r.ACC_COUNT||0) === 1) dist = 'حساب واحد';
+            else if((r.FIXED_SUM||0) > 0 && (r.PCT_SUM||0) > 0) dist = (r.ACC_COUNT) + ' حسابات (مختلطة)';
+            else if((r.PCT_SUM||0) > 0) dist = (r.ACC_COUNT) + ' حسابات (نسب)';
+            else if((r.FIXED_SUM||0) > 0) dist = (r.ACC_COUNT) + ' حسابات (مبالغ ثابتة)';
+            else dist = (r.ACC_COUNT) + ' حسابات (تساوي)';
+
+            html += '<tr>';
+            html += '<td class="text-muted">' + (i+1) + '</td>';
+            html += '<td><a class="pv-emp-link" href="' + empUrlBase + '/' + r.EMP_NO + '" target="_blank">' +
+                    '<b>' + r.EMP_NO + '</b> — ' + escHtml(r.EMP_NAME||'') + '</a></td>';
+            html += '<td style="font-size:.72rem">' + escHtml(r.BRANCH_NAME||'') + '</td>';
+            html += '<td class="text-end num">' + nf(r.TOTAL_AMOUNT||0) + '</td>';
+            html += '<td style="font-size:.72rem;color:#475569">' + dist + '</td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table></div></div>';
+    }
+
+    $('#batchPreviewBody').html(html);
+
+    // تفعيل زر التأكيد
+    if((t.err||0) === 0){
+        // ما في أخطاء
+        if((t.warn||0) > 0){
+            // في تحذيرات → checkbox
+            $('#pvForceWrap').show();
+            $('#pvForceConfirm').off('change').on('change', function(){
+                $('#pvConfirmBtn').prop('disabled', !this.checked);
+            });
+            $('#pvConfirmBtn').prop('disabled', true);
+        } else {
+            // كل شيء OK
+            $('#pvForceWrap').hide();
+            $('#pvConfirmBtn').prop('disabled', false);
+        }
+    } else {
+        // في أخطاء → لا اعتماد
+        $('#pvForceWrap').hide();
+        $('#pvConfirmBtn').prop('disabled', true);
+    }
+}
+
+function escHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+}
+
+function _doConfirmAfterPreview(){
+    if(!_previewData) return;
+    if((_previewData.totals.err||0) > 0){
+        danger_msg('تنبيه', 'يجب إصلاح كل الأخطاء قبل الاعتماد');
+        return;
+    }
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('batchPreviewModal')).hide();
+    _executeBatchConfirm();
+}
+
+function _executeBatchConfirm(){
+    if(!_pendingConfirm || !_pendingConfirm.method) return;
     _actionInProgress = true;
     $('#btnConfirm').prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> جاري الاعتماد...');
 
     var payload = {
         req_ids: _previewReqIds,
         exclude_detail_ids: _pendingConfirm.excludeIds,
-        disburse_method: method
+        disburse_method: _pendingConfirm.method
     };
 
     get_data(batchConfirmUrl, payload, function(resp){
         var j = (typeof resp === 'string') ? JSON.parse(resp) : resp;
         _actionInProgress = false;
         _pendingConfirm = null;
+        _previewData = null;
+        _splitData = null;
         $('#btnConfirm').prop('disabled',false).html('<i class="fa fa-check-circle"></i> اعتماد الاحتساب');
         if(j.ok){
             _batchId = j.batch_id;

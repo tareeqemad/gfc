@@ -51,9 +51,11 @@ echo AntiForgeryToken();
                     <h3 class="card-title mb-0"><?= $title ?></h3>
 
                     <div class="card-options d-flex gap-2">
-                        <button type="button" class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#excelImportSection" aria-expanded="false">
-                            <i class="fa fa-file-excel-o"></i> استيراد من Excel
-                        </button>
+                        <?php if ($isCreate): // 🆕 الاستيراد من Excel مخصّص للإضافة الجماعية فقط ?>
+                            <button type="button" class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#excelImportSection" aria-expanded="false">
+                                <i class="fa fa-file-excel-o"></i> استيراد من Excel
+                            </button>
+                        <?php endif; ?>
 
                         <button type="button" id="btnSaveTop" disabled onclick="javascript:save();" class="btn btn-primary">
                             <i class="fa fa-save"></i> حفظ
@@ -160,7 +162,8 @@ echo AntiForgeryToken();
                     </div>
                     <!-- ===== End Summary Panel ===== -->
 
-                    <!-- ===== Excel Import Section (إعادة تصميم) ===== -->
+                    <!-- ===== Excel Import Section (إعادة تصميم) — للإضافة فقط ===== -->
+                    <?php if ($isCreate): ?>
                     <div class="collapse mb-4" id="excelImportSection">
                         <div class="card excel-import-card">
                             <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
@@ -240,7 +243,7 @@ echo AntiForgeryToken();
                         </div>
                     </div>
                     <form id="excelImportForm" class="d-none" enctype="multipart/form-data"><?= AntiForgeryToken(); ?></form>
-                    <!-- ===== End Excel Import Section ===== -->
+                    <?php endif; // ===== End Excel Import Section (create only) ===== ?>
 
                     <form id="<?= $TB_NAME ?>_form" class="manual-input-form">
 
@@ -301,13 +304,23 @@ echo AntiForgeryToken();
                                     <div class="form-group col-sm-12 col-md-6 col-lg-4 pay-row">
                                         <label for="pay">
                                             <i class="fa fa-money text-primary me-1" style="font-size:0.75em;"></i> المبلغ
-                                            <span class="text-muted fw-normal small ms-1" id="balanceHintWrapper">(متبقي: <span id="balanceHint" class="fw-bold text-warning">-</span>)</span>
-                                            <i class="fa fa-question-circle text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="أدخل المبلغ. يجب ألا يتجاوز المتبقي"></i>
+                                            <!-- 🆕 hint للخصم (متبقي) — يظهر للخصومات فقط -->
+                                            <span class="text-muted fw-normal small ms-1" id="balanceHintWrapper" style="display:none">
+                                                (متبقي: <span id="balanceHint" class="fw-bold text-warning">-</span>)
+                                            </span>
+                                            <!-- 🆕 hint للإضافة — يظهر للإضافات فقط -->
+                                            <span class="text-muted fw-normal small ms-1" id="addHintWrapper" style="display:none">
+                                                <i class="fa fa-plus-circle text-success"></i> يُضاف لرصيد الموظف
+                                            </span>
+                                            <i class="fa fa-question-circle text-muted" data-bs-toggle="tooltip" data-bs-placement="top" id="payTooltip"
+                                               title="أدخل المبلغ"></i>
                                         </label>
                                         <div class="input-group">
                                             <input type="number" step="0.01" name="pay" id="pay" class="form-control" placeholder="0.00"
                                                    value="<?= (!$isCreate && $HaveRs) ? ($rs['PAY'] ?? '') : '' ?>">
-                                            <button type="button" id="btnFillBalance" class="btn btn-outline-warning" data-bs-toggle="tooltip" title="ملء المبلغ بالمتبقي">
+                                            <!-- 🆕 زر "ملء بالمتبقي" — للخصومات فقط -->
+                                            <button type="button" id="btnFillBalance" class="btn btn-outline-warning" data-bs-toggle="tooltip"
+                                                    style="display:none" title="ملء المبلغ بالمتبقي">
                                                 <i class="fa fa-fill"></i> المتبقي
                                             </button>
                                         </div>
@@ -394,6 +407,8 @@ $FORM_ID_JS        = json_encode($TB_NAME . '_form');
 $IMPORT_URL_JS     = json_encode($import_url);
 $TEMPLATE_URL_JS   = json_encode($template_url);
 $edit_pay_type_js  = (!$isCreate && $HaveRs) ? ($rs['PAY_TYPE'] ?? '') : '';
+// 🆕 LINE_TYPE من السجل (1=ADD, 2=DED) — لاستخدامه في validation عند التعديل
+$edit_line_type_js = (!$isCreate && $HaveRs) ? (int)($rs['LINE_TYPE'] ?? 0) : 0;
 $PAY_TYPE_TREE_URL_JS = isset($pay_type_tree_url) ? json_encode($pay_type_tree_url) : '""';
 
 $scripts = <<<SCRIPT
@@ -442,7 +457,10 @@ $scripts = <<<SCRIPT
     }
 
     setSaveEnabled(false);
-    
+
+    // 🆕 طبّق الـ UI الصحيح فور التحميل (لو edit بنوع معروف)
+    $(function(){ applyLineTypeUI(); });
+
     function showSummaryLoading(){
         $('#duesSummaryWrap').show();
         $('#sumTotalDue,#sumTotalAdd,#sumTotalDed,#sumBalance,#balanceHint').text('...');
@@ -465,13 +483,13 @@ $scripts = <<<SCRIPT
             var ltClass = 'lt-' + lineType;
             var textEsc = (n.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             if (hasChildren) {
-                html += '<li class="parent_li" data-id="' + n.id + '" data-text="' + textEsc + '">';
+                html += '<li class="parent_li" data-id="' + n.id + '" data-text="' + textEsc + '" data-line-type="' + lineType + '">';
                 html += '<span class="tree-node ' + ltClass + ' pay-type-parent" title="توسيع هذا الفرع">';
                 html += '<i class="fa fa-plus tree-icon"></i> ' + (n.text || '') + '</span>';
                 html += '<ul class="list-unstyled ms-3" style="display:none;">' + buildPayTypeTreeHtml(n.children) + '</ul>';
                 html += '</li>';
             } else {
-                html += '<li data-id="' + n.id + '" data-text="' + textEsc + '">';
+                html += '<li data-id="' + n.id + '" data-text="' + textEsc + '" data-line-type="' + lineType + '">';
                 html += '<span class="tree-node ' + ltClass + ' pay-type-leaf"><i class="fa tree-icon" style="display:inline-block;width:16px;"></i> ' + (n.text || '') + '</span>';
                 html += '</li>';
             }
@@ -527,11 +545,40 @@ $scripts = <<<SCRIPT
             var \$li = $(this).closest('li');
             var id = \$li.data('id');
             var text = \$li.find('.tree-node').text().trim();
-            if (id) selectPayTypeLeaf(id, text);
+            // 🆕 نمرّر lineType (1=ADD، 2=DED) عشان validatePay يستخدمها
+            var lineType = parseInt(\$li.data('line-type')) || 1;
+            if (id) selectPayTypeLeaf(id, text, lineType);
         });
     }
 
-    function selectPayTypeLeaf(id, text) {
+    // 🆕 نخزن نوع البند الحالي (1=ADD، 2=DED) لاستخدامه في validation
+    // عند التعديل (edit): نأخذ القيمة من السجل المخزّن. عند الإضافة: null حتى يختار المستخدم
+    var currentLineType = {$edit_line_type_js} || null;
+
+    // 🆕 يطبّق الـ UI hints حسب نوع البند
+    function applyLineTypeUI() {
+        if (currentLineType === 1) {                                  // إضافة
+            $('#balanceHintWrapper').hide();
+            $('#addHintWrapper').show();
+            $('#btnFillBalance').hide();
+            $('#pay').removeClass('is-invalid');
+            $('#payWarn').hide();
+            // input-group بدون border أصفر
+            $('#pay').closest('.pay-row').css('background', '');
+            \$('#payTooltip').attr('data-bs-original-title', 'أدخل المبلغ المراد إضافته لرصيد الموظف');
+        } else if (currentLineType === 2) {                           // خصم
+            $('#balanceHintWrapper').show();
+            $('#addHintWrapper').hide();
+            $('#btnFillBalance').show();
+            \$('#payTooltip').attr('data-bs-original-title', 'أدخل المبلغ. يجب ألا يتجاوز المتبقي');
+        } else {                                                       // لم يُختر بعد
+            $('#balanceHintWrapper').show();
+            $('#addHintWrapper').hide();
+            $('#btnFillBalance').hide();
+        }
+    }
+
+    function selectPayTypeLeaf(id, text, lineType) {
         if (selectPayTypeForExcel) {
             $('#excel_pay_type').val(id);
             $('#excel_pay_type_display').val(text);
@@ -540,6 +587,8 @@ $scripts = <<<SCRIPT
         } else {
             $('#pay_type').val(id);
             $('#pay_type_display').val(text);
+            currentLineType = lineType || 1;   // 🆕 احتفظ بنوع السطر
+            applyLineTypeUI();                  // 🆕 حدّث الـ UI
             validatePay();
         }
         var modal = bootstrap.Modal.getInstance(document.getElementById('payTypeTreeModal'));
@@ -559,6 +608,15 @@ $scripts = <<<SCRIPT
 
         var v = parseFloat($('#pay').val() || '0');
         var bal = (currentBalance === null) ? null : parseFloat(currentBalance);
+
+        // 🆕 لو البند إضافة (LINE_TYPE=1) → ما فيه سقف. فقط نتأكد إن المبلغ > 0
+        // السقف ينطبق فقط على الخصومات (LINE_TYPE=2) — لأنها تخصم من الرصيد
+        if (currentLineType === 1) {
+            $('#pay').removeClass('is-invalid');
+            $('#payWarn').hide();
+            setSaveEnabled(v > 0);
+            return;
+        }
 
         // summary not loaded yet
         if (bal === null || isNaN(bal)){
